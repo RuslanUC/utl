@@ -11,11 +11,13 @@ FetchContent_Declare(arena-allocator
 FetchContent_MakeAvailable(arena-allocator)
 
 add_library(utl STATIC
+        src/utils.c
         src/string_view.c
         src/field_def.c
         src/message_def.c
         src/message.c
-        src/vector.c)
+        src/vector.c
+        src/encoder.c)
 target_include_directories(utl PUBLIC include)
 target_link_libraries(utl PUBLIC arena)
 

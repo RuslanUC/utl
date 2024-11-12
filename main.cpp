@@ -2,6 +2,7 @@
 
 extern "C" {
 #include "message.h"
+#include "encoder.h"
 }
 
 int main() {
@@ -32,6 +33,12 @@ int main() {
     std::cout << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
     std::cout << utl_Message_getString(message, &message_def->fields[1]).data << std::endl;
 
+    arena_t encoder_arena = arena_new();
+    encoder_arena.flags |= ARENA_DONTALIGN;
+    size_t written_bytes = utl_encode(message, &encoder_arena);
+    std::cout << "Written bytes: " << written_bytes << "\n";
+
+    arena_delete(&encoder_arena);
     utl_Message_free(message);
     arena_delete(&arena);
 

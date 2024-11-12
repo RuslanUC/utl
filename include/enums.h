@@ -11,7 +11,7 @@ typedef enum utl_FieldType {
     INT128,
     INT256,
     DOUBLE,
-    BOOL,
+    BOOL, // TODO: split into FULL_BOOL and BIT_BOOL
     BYTES,
     STRING,
     TLOBJECT,
