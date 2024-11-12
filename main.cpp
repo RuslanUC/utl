@@ -27,7 +27,7 @@ int main() {
     message_def->fields[1].sub_message_def = nullptr;
 
     utl_Message* message = utl_Message_new(&arena, message_def);
-    utl_Message_setInt32(message, &message_def->fields[0], 123123);
+    utl_Message_setInt32(message, &message_def->fields[0], 456456);
     utl_Message_setString(message, &message_def->fields[1], {.size = 3, .data = (char*)"IDK"});
     std::cout << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
     std::cout << utl_Message_getString(message, &message_def->fields[1]).data << std::endl;
