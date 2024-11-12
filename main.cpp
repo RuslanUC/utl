@@ -1,0 +1,39 @@
+#include <iostream>
+
+extern "C" {
+#include "message.h"
+}
+
+int main() {
+    arena_t arena = arena_new();
+    utl_MessageDef* message_def = utl_MessageDef_new(&arena);
+    message_def->id = 123123;
+    message_def->name = {.size = 4, .data = (char*)"test"};
+    message_def->namespace_ = {.size = 0, .data = nullptr};
+    message_def->type = {.size = 4, .data = (char*)"Test"};
+    message_def->typespace = {.size = 0, .data = nullptr};
+    message_def->section = TYPES;
+    message_def->has_optional = false;
+    message_def->layer = 177;
+    message_def->fields_num = 2;
+    message_def->fields = (utl_FieldDef*)arena_alloc(&arena, sizeof(utl_FieldDef) * message_def->fields_num);
+    message_def->fields[0].num = 0;
+    message_def->fields[0].type = INT32;
+    message_def->fields[0].flag_info = 0;
+    message_def->fields[0].sub_message_def = nullptr;
+    message_def->fields[1].num = 1;
+    message_def->fields[1].type = STRING;
+    message_def->fields[1].flag_info = 0;
+    message_def->fields[1].sub_message_def = nullptr;
+
+    utl_Message* message = utl_Message_new(&arena, message_def);
+    utl_Message_setInt32(message, &message_def->fields[0], 123123);
+    utl_Message_setString(message, &message_def->fields[1], {.size = 3, .data = (char*)"IDK"});
+    std::cout << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
+    std::cout << utl_Message_getString(message, &message_def->fields[1]).data << std::endl;
+
+    utl_Message_free(message);
+    arena_delete(&arena);
+
+    return 0;
+}
