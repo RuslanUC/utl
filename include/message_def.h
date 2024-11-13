@@ -8,6 +8,8 @@
 #include "enums.h"
 #include "builtins.h"
 
+typedef struct utl_MessageDefBase {} utl_MessageDefBase;
+
 typedef struct utl_MessageDef {
     uint32_t id;
     utl_StringView name;
@@ -20,5 +22,10 @@ typedef struct utl_MessageDef {
     uint16_t fields_num;
     utl_FieldDef* fields;
 } utl_MessageDef;
+
+typedef struct utl_MessageDefVector {
+    utl_FieldType type;
+    utl_MessageDefBase* sub_message_def;
+} utl_MessageDefVector;
 
 utl_MessageDef* utl_MessageDef_new(arena_t* arena);

@@ -114,7 +114,7 @@ void utl_decode_field(utl_Message* message, utl_FieldDef* field, utl_DecodeBuf* 
             break;
         }
         case TLOBJECT: {
-            utl_Message* new_message = utl_Message_new(field->sub_message_def);
+            utl_Message* new_message = utl_Message_new((utl_MessageDef*)field->sub_message_def);
             utl_Message_setMessage(message, field, new_message);
             buf->pos += utl_decode(new_message, buf->data + buf->pos, buf->size - buf->pos);
             break;

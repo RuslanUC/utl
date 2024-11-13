@@ -7,7 +7,7 @@
 #include "string_view.h"
 #include "enums.h"
 
-struct utl_MessageDef;
+struct utl_MessageDefBase;
 
 typedef struct utl_FieldDef {
     size_t num;
@@ -18,7 +18,7 @@ typedef struct utl_FieldDef {
     // if fields is not optional, flag_info is 0
     uint8_t flag_info;
     // Vectors and TLObjects
-    struct utl_MessageDef* sub_message_def;  // TODO: replace with type name?
+    struct utl_MessageDefBase* sub_message_def;  // TODO: replace with type name?
 } utl_FieldDef;
 
 utl_FieldDef* utl_FieldDef_new(arena_t* arena);
