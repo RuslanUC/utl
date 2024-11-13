@@ -1,64 +1,65 @@
 #include "message.h"
 
 #include <string.h>
+#include <utils.h>
 
 #include "builtins.h"
 
-utl_Message* utl_Message_new(arena_t* arena, utl_MessageDef* message_def) {
-    utl_Message* message = arena_alloc(arena, sizeof(utl_Message));
-    message->arena = arena_new();
-    arena_t* fields_arena = &message->arena;
+utl_Message* utl_Message_new(utl_MessageDef* message_def) {
+    arena_t arena = arena_new();
+    utl_Message* message = arena_alloc(&arena, sizeof(utl_Message));
     message->message_def = message_def;
-    message->table = arena_alloc(fields_arena, sizeof(message_def->fields_num) * sizeof(void*));
+    message->table = arena_alloc(&arena, sizeof(message_def->fields_num) * sizeof(void*));
 
     for(int i = 0; i < message_def->fields_num; i++) {
         const utl_FieldDef field = message_def->fields[i];
         switch (field.type) {
             case INT32: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Int32));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Int32));
                 break;
             }
             case INT64: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Int64));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Int64));
                 break;
             }
             case INT128: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Int128));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Int128));
                 break;
             }
             case INT256: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Int256));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Int256));
                 break;
             }
             case DOUBLE: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Double));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Double));
                 break;
             }
             case BOOL: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Bool));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Bool));
                 break;
             }
             case BYTES: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Bytes));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Bytes));
                 break;
             }
             case STRING: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_String));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_String));
                 break;
             }
             case TLOBJECT:
             case VECTOR: {
-                message->table[i] = arena_alloc(fields_arena, sizeof(utl_Container));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Container));
                 break;
             }
         }
     }
 
+    message->arena = arena;
     return message;
 }
 
 void utl_Message_free(utl_Message* message) {
-    arena_delete(&message->arena);
+    utl_arena_delete(&message->arena);
 }
 
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value){

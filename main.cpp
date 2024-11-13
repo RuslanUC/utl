@@ -28,7 +28,7 @@ int main() {
     message_def->fields[1].flag_info = 0;
     message_def->fields[1].sub_message_def = nullptr;
 
-    utl_Message* message = utl_Message_new(&arena, message_def);
+    utl_Message* message = utl_Message_new(message_def);
     utl_Message_setInt32(message, &message_def->fields[0], 456456);
     utl_Message_setString(message, &message_def->fields[1], {.size = 3, .data = (char*)"IDK"});
     std::cout << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
@@ -39,7 +39,7 @@ int main() {
     size_t written_bytes = utl_encode(message, &encoder_arena);
     std::cout << "Written bytes: " << written_bytes << "\n";
 
-    utl_Message* decoded_message = utl_Message_new(&arena, message_def);
+    utl_Message* decoded_message = utl_Message_new(message_def);
     size_t read_bytes = utl_decode(decoded_message, encoder_arena.data+4, written_bytes); // +4 because, for now, tl id is not used when decoding
     std::cout << "Read bytes: " << read_bytes << "\n";
     std::cout << utl_Message_getInt32(decoded_message, &message_def->fields[0]) << std::endl;

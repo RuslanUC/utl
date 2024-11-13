@@ -7,7 +7,7 @@ typedef struct utl_Message {
     void** table;
 } utl_Message;
 
-utl_Message* utl_Message_new(arena_t* arena, utl_MessageDef* message_def);
+utl_Message* utl_Message_new(utl_MessageDef* message_def);
 void utl_Message_free(utl_Message* message);
 
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value);

@@ -1,10 +1,12 @@
 #include "static_map.h"
 
 #include <string.h>
+#include <utils.h>
 
-utl_Map* utl_Map_new(arena_t* arena, size_t buckets_num) {
-    utl_Map* map = arena_alloc(arena, sizeof(utl_Map));
-    map->arena = arena_new();
+utl_Map* utl_Map_new(size_t buckets_num) {
+    arena_t arena = arena_new();
+    utl_Map* map = arena_alloc(&arena, sizeof(utl_Map));
+    map->arena = arena;
     map->buckets_num = buckets_num;
     map->buckets = arena_alloc(&map->arena, sizeof(utl_ListNode*) * buckets_num);
     memset(map->buckets, 0, sizeof(utl_ListNode*) * buckets_num);
@@ -13,7 +15,7 @@ utl_Map* utl_Map_new(arena_t* arena, size_t buckets_num) {
 }
 
 void utl_Map_free(utl_Map* map) {
-    arena_delete(&map->arena);
+    utl_arena_delete(&map->arena);
 }
 
 void utl_Map_insert(utl_Map* map, uint32_t key, void* value) {
