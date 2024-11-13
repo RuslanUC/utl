@@ -3,6 +3,7 @@
 extern "C" {
 #include "message.h"
 #include "encoder.h"
+#include "decoder.h"
 }
 
 int main() {
@@ -38,7 +39,14 @@ int main() {
     size_t written_bytes = utl_encode(message, &encoder_arena);
     std::cout << "Written bytes: " << written_bytes << "\n";
 
+    utl_Message* decoded_message = utl_Message_new(&arena, message_def);
+    size_t read_bytes = utl_decode(decoded_message, encoder_arena.data+4, written_bytes); // +4 because, for now, tl id is not used when decoding
+    std::cout << "Read bytes: " << read_bytes << "\n";
+    std::cout << utl_Message_getInt32(decoded_message, &message_def->fields[0]) << std::endl;
+    std::cout << utl_Message_getString(decoded_message, &message_def->fields[1]).data << std::endl;
+
     arena_delete(&encoder_arena);
+    utl_Message_free(decoded_message);
     utl_Message_free(message);
     arena_delete(&arena);
 

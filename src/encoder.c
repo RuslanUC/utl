@@ -2,9 +2,6 @@
 
 #include <string.h>
 
-const char BOOL_TRUE[4] = {0x99, 0x72, 0x75, 0xb5};
-const char BOOL_FALSE[4] = {0xbc, 0x79, 0x97, 0x37};
-
 void utl_encode_intX(char* value, arena_t* arena, uint8_t bytes_size) {
     char* buf = arena_alloc(arena, bytes_size);
     if(is_big_endian()) {

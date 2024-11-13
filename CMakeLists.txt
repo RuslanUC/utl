@@ -17,7 +17,8 @@ add_library(utl STATIC
         src/message_def.c
         src/message.c
         src/vector.c
-        src/encoder.c)
+        src/encoder.c
+        src/decoder.c)
 target_include_directories(utl PUBLIC include)
 target_link_libraries(utl PUBLIC arena)
 

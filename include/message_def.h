@@ -1,6 +1,5 @@
 #pragma once
 
-#include <arena.h>
 #include <stdint.h>
 
 #include "arena.h"
