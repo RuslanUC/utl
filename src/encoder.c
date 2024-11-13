@@ -97,7 +97,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena) {
             break;
         }
         case TLOBJECT: {
-            utl_encode(((utl_Container*)value)->value, arena);
+            utl_encode(value, arena);
             break;
         }
         case VECTOR: {

@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <utils.h>
+#include <vector.h>
 
 #include "builtins.h"
 
@@ -46,9 +47,12 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
                 message->table[i] = arena_alloc(&arena, sizeof(utl_String));
                 break;
             }
-            case TLOBJECT:
+            case TLOBJECT: {
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Message*));
+                break;
+            }
             case VECTOR: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Container));
+                message->table[i] = arena_alloc(&arena, sizeof(utl_Vector*));
                 break;
             }
         }
@@ -160,14 +164,7 @@ void utl_Message_setMessage(utl_Message* message, utl_FieldDef* field, utl_Messa
         return;
     }
 
-    if(message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Container));
-    }
-
-    utl_Container* sub_message = message->table[field->num];
-    sub_message->tl_id = value->message_def->id;
-    sub_message->size = sizeof(utl_Message);
-    sub_message->value = value;
+    message->table[field->num] = value;
 }
 
 int32_t utl_Message_getInt32(utl_Message* message, utl_FieldDef* field){
@@ -263,10 +260,6 @@ utl_Message* utl_Message_getMessage(utl_Message* message, utl_FieldDef* field){
         return 0;
     }
 
-    if(message->table[field->num] == NULL) {
-        return 0;
-    }
-
-    return ((utl_Container*)message->table[field->num])->value;
+    return message->table[field->num];
 }
 

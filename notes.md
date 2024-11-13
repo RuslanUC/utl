@@ -12,12 +12,12 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
 ...
 // LAYER 177
 ```
-- MessageDef (ptr MessageDef#1)
+
+- MessageDef (ptr **MessageDef#1**):
   - id - 0x8c718e87
   - name - "messages"
   - namespace_ - "messages"
-  - type - "Messages"
-  - typespace - "messages"
+  - type - (ptr **TypeDef#9**)
   - section - "types"
   - has_optional - false
   - layer - 177
@@ -28,33 +28,32 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
       - name - "messages"
       - type - utl_FieldType::VECTOR
       - flag_info - 0
-      - sub_message_def - (ptr MessageDefVector#2)
+      - sub_message_def - (ptr **MessageDefVector#2**)
     - FieldDef:
       - num - 1
       - name - "chats"
       - type - utl_FieldType::VECTOR
       - flag_info - 0
-      - sub_message_def - (ptr MessageDefVector#5)
+      - sub_message_def - (ptr **MessageDefVector#5**)
     - FieldDef:
       - num - 2
       - name - "users"
       - type - utl_FieldType::VECTOR
       - flag_info - 0
-      - sub_message_def - (ptr MessageDefVector#7)
+      - sub_message_def - (ptr **MessageDefVector#7**)
 
 
-- MessageDefVector (ptr MessageDefVector#2)
+- MessageDefVector (ptr **MessageDefVector#2**):
   - type - utl_FieldType::TLOBJECT
   - flag_info - 0
-  - sub_message_def - (ptr MessageDef#3)
+  - sub_message_def - (ptr **MessageDef#3**)
 
 
-- MessageDef (ptr MessageDef#3)
+- MessageDef (ptr **MessageDef#3**):
   - id - 0x90a6ca84
   - name - "messageEmpty"
   - namespace_ - ""
-  - type - "Message"
-  - typespace - ""
+  - type - (ptr **TypeDef#10**)
   - section - "types"
   - has_optional - true
   - layer - 177
@@ -77,15 +76,14 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
       - name - "peer_id"
       - type - utl_FieldType::TLOBJECT
       - flag_info - 0b00100000
-      - sub_message_def - (ptr MessageDef#4)
+      - sub_message_def - (ptr **MessageDef#4**)
 
 
-- MessageDef (ptr MessageDef#4)
+- MessageDef (ptr **MessageDef#4**):
   - id - 0x59511722
   - name - "peerUser"
   - namespace_ - ""
-  - type - "Peer"
-  - typespace - ""
+  - type - (ptr **TypeDef#11**)
   - section - "types"
   - has_optional - true
   - layer - 177
@@ -99,18 +97,17 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
       - sub_message_def - (ptr 0x00)
 
 
-- MessageDefVector (ptr MessageDefVector#5)
+- MessageDefVector (ptr **MessageDefVector#5**):
   - type - utl_FieldType::TLOBJECT
   - flag_info - 0
-  - sub_message_def - (ptr MessageDef#6)
+  - sub_message_def - (ptr **MessageDef#6**)
 
 
-- MessageDef (ptr MessageDef#6)
+- MessageDef (ptr **MessageDef#6**):
   - id - 0x29562865
   - name - "chatEmpty"
   - namespace_ - ""
-  - type - "Chat"
-  - typespace - ""
+  - type - (ptr **TypeDef#12**)
   - section - "types"
   - has_optional - false
   - layer - 177
@@ -124,18 +121,17 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
       - sub_message_def - (ptr 0x00)
 
 
-- MessageDefVector (ptr MessageDefVector#7)
+- MessageDefVector (ptr **MessageDefVector#7**):
   - type - utl_FieldType::TLOBJECT
   - flag_info - 0
-  - sub_message_def - (ptr MessageDef#8)
+  - sub_message_def - (ptr **MessageDef#8**)
 
 
-- MessageDef (ptr MessageDef#8)
+- MessageDef (ptr **MessageDef#8**):
   - id - 0xd3bc4b7a
   - name - "userEmpty"
   - namespace_ - ""
-  - type - "User"
-  - typespace - ""
+  - type - (ptr **TypeDef#13**)
   - section - "types"
   - has_optional - false
   - layer - 177
@@ -147,3 +143,38 @@ messages.messages#8c718e87 messages:Vector<Message> chats:Vector<Chat> users:Vec
       - type - utl_FieldType::INT64
       - flag_info - 0
       - sub_message_def - (ptr 0x00)
+
+
+- TypeDef (ptr **TypeDef#9**):
+  - name - "Messages"
+  - namespace_ - "Messages"
+  - message_defs_num - 1
+  - message_defs - [ (ptr **MessageDef#1**) ]
+
+
+- TypeDef (ptr **TypeDef#10**):
+  - name - "Message"
+  - namespace_ - ""
+  - message_defs_num - 1
+  - message_defs - [ (ptr **MessageDef#3**) ]
+
+
+- TypeDef (ptr **TypeDef#11**):
+  - name - "Peer"
+  - namespace_ - ""
+  - message_defs_num - 1
+  - message_defs - [ (ptr **MessageDef#4**) ]
+
+
+- TypeDef (ptr **TypeDef#12**):
+  - name - "Chat"
+  - namespace_ - ""
+  - message_defs_num - 1
+  - message_defs - [ (ptr **MessageDef#6**) ]
+
+
+- TypeDef (ptr **TypeDef#13**):
+  - name - "User"
+  - namespace_ - ""
+  - message_defs_num - 1
+  - message_defs - [ (ptr **MessageDef#8**) ]

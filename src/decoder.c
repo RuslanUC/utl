@@ -114,7 +114,10 @@ void utl_decode_field(utl_Message* message, utl_FieldDef* field, utl_DecodeBuf* 
             break;
         }
         case TLOBJECT: {
-            utl_Message* new_message = utl_Message_new((utl_MessageDef*)field->sub_message_def);
+            utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+            uint32_t tl_id = utl_decode_int32(buf);
+            // TODO: implement some kind of search by tl_id
+            utl_Message* new_message = utl_Message_new(type->message_defs[0]);
             utl_Message_setMessage(message, field, new_message);
             buf->pos += utl_decode(new_message, buf->data + buf->pos, buf->size - buf->pos);
             break;

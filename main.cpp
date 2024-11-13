@@ -8,12 +8,18 @@ extern "C" {
 
 int main() {
     arena_t arena = arena_new();
+
+    utl_TypeDef* type_def = utl_TypeDef_new(&arena);
+    type_def->name = {.size = 4, .data = (char*)"Test"};
+    type_def->namespace_ = {.size = 0, .data = nullptr};
+    type_def->message_defs_num = 1;
+    type_def->message_defs = (utl_MessageDef**)arena_alloc(&arena, sizeof(void*) * 1);
+
     utl_MessageDef* message_def = utl_MessageDef_new(&arena);
     message_def->id = 123123;
     message_def->name = {.size = 4, .data = (char*)"test"};
     message_def->namespace_ = {.size = 0, .data = nullptr};
-    message_def->type = {.size = 4, .data = (char*)"Test"};
-    message_def->typespace = {.size = 0, .data = nullptr};
+    message_def->type = type_def;
     message_def->section = TYPES;
     message_def->has_optional = false;
     message_def->layer = 177;
@@ -27,6 +33,8 @@ int main() {
     message_def->fields[1].type = STRING;
     message_def->fields[1].flag_info = 0;
     message_def->fields[1].sub_message_def = nullptr;
+
+    type_def->message_defs[0] = message_def;
 
     utl_Message* message = utl_Message_new(message_def);
     utl_Message_setInt32(message, &message_def->fields[0], 456456);

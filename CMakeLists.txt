@@ -16,6 +16,7 @@ add_library(utl STATIC
         src/static_map.c
         src/string_view.c
         src/field_def.c
+        src/type_def.c
         src/message_def.c
         src/message.c
         src/vector.c

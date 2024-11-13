@@ -5,7 +5,7 @@
 
 typedef struct utl_Vector {
     arena_t arena;
-    utl_MessageDef* message_def;
+    utl_MessageDefVector* message_def;
     size_t size;
     size_t capacity;
     void** items;
