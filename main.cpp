@@ -93,9 +93,9 @@ int main() {
     utl_Message_setInt32(message, &message_def->fields[0], 456456);
     utl_Message_setString(message, &message_def->fields[1], {.size = 3, .data = (char*)"IDK"});
     utl_Message_setMessage(message, &message_def->fields[2], sub_message);
-    std::cout << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
-    std::cout << utl_Message_getString(message, &message_def->fields[1]).data << std::endl;
-    std::cout << utl_Message_getInt64(utl_Message_getMessage(message, &message_def->fields[2]), &sub_message_def->fields[0]) << std::endl;
+    std::cout << "message.<field 0> = " << utl_Message_getInt32(message, &message_def->fields[0]) << std::endl;
+    std::cout << "message.<field 1> = " << utl_Message_getString(message, &message_def->fields[1]).data << std::endl;
+    std::cout << "message.<field 2> = " << utl_Message_getInt64(utl_Message_getMessage(message, &message_def->fields[2]), &sub_message_def->fields[0]) << std::endl;
 
     arena_t encoder_arena = arena_new();
     encoder_arena.flags |= ARENA_DONTALIGN;
@@ -105,9 +105,9 @@ int main() {
     utl_Message* decoded_message = utl_Message_new(message_def);
     size_t read_bytes = utl_decode(decoded_message, pool, encoder_arena.data+4, written_bytes); // +4 because, for now, tl id is not used when decoding
     std::cout << "Read bytes: " << read_bytes << "\n";
-    std::cout << utl_Message_getInt32(decoded_message, &message_def->fields[0]) << std::endl;
-    std::cout << utl_Message_getString(decoded_message, &message_def->fields[1]).data << std::endl;
-    std::cout << utl_Message_getInt64(utl_Message_getMessage(decoded_message, &message_def->fields[2]), &sub_message_def->fields[0]) << std::endl;
+    std::cout << "decoded_message.<field 0> = " << utl_Message_getInt32(decoded_message, &message_def->fields[0]) << std::endl;
+    std::cout << "decoded_message.<field 1> = " << utl_Message_getString(decoded_message, &message_def->fields[1]).data << std::endl;
+    std::cout << "decoded_message.<field 2> = " << utl_Message_getInt64(utl_Message_getMessage(decoded_message, &message_def->fields[2]), &sub_message_def->fields[0]) << std::endl;
 
     arena_delete(&encoder_arena);
     utl_Message_free(decoded_message);

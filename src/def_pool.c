@@ -15,6 +15,7 @@ utl_DefPool* utl_DefPool_new() {
 
 void utl_DefPool_free(utl_DefPool* pool) {
     arena_delete(&pool->arena);
+    free(pool);
 }
 
 utl_MessageDef* utl_DefPool_get_message(utl_DefPool* pool, uint32_t tl_id) {
