@@ -67,6 +67,7 @@ void utl_encode_bytes(utl_StringView value, arena_t* arena) {
 
 void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena) {
     switch (field->type) {
+        case FLAGS:
         case INT32: {
             utl_encode_int32(((utl_Int32*)value)->value, arena);
             break;
@@ -87,8 +88,11 @@ void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena) {
             utl_encode_double(((utl_Double*)value)->value, arena);
             break;
         }
-        case BOOL: {
+        case FULL_BOOL: {
             utl_encode_bool(((utl_Bool*)value)->value, arena);
+            break;
+        }
+        case BIT_BOOL: {
             break;
         }
         case BYTES:
@@ -111,6 +115,9 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
     if((arena->flags & ARENA_DONTALIGN) != ARENA_DONTALIGN) {
         return 0;
     }
+    uint32_t** flags = NULL;
+    if (message->message_def->flags_num)
+        flags = arena_alloc(arena, sizeof(uint32_t*) * message->message_def->flags_num);
 
     const size_t initial_size = arena->size;
 
@@ -119,11 +126,27 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
     const utl_FieldDef* fields = message->message_def->fields;
     for(int i = 0; i < message->message_def->fields_num; i++) {
         const utl_FieldDef field = fields[i];
-        if(message->table[field.num] == NULL) {
+        void* value = message->table[field.num];
+        if(field.type == FLAGS) {
+            flags[field.flag_info >> 5] = (uint32_t*)(arena->data + arena->size);
+            ((utl_Int32*)value)->value = 0;
+        }
+
+        if(value == NULL) {
+            // TODO: check if optional, if not - fail
             continue;
         }
-        void* value = message->table[field.num];
-        utl_encode_field(&field, value, arena);
+
+        if(field.type != FLAGS && field.flag_info & 0b11111 && !(field.type == BIT_BOOL && !((utl_Bool*)value)->value)) {
+            uint8_t flag_bit = (field.flag_info & 0b11111);
+            if(is_big_endian())
+                flag_bit = 31 - flag_bit;
+            uint32_t flag_value = 1 << flag_bit;
+            *flags[field.flag_info >> 5] |= flag_value;
+        }
+
+        if(field.type != BIT_BOOL)
+            utl_encode_field(&field, value, arena);
     }
 
     return arena->size - initial_size;

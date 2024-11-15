@@ -16,6 +16,7 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
     for(int i = 0; i < message_def->fields_num; i++) {
         const utl_FieldDef field = message_def->fields[i];
         switch (field.type) {
+            case FLAGS:
             case INT32: {
                 message->table[i] = arena_alloc(&arena, sizeof(utl_Int32));
                 break;
@@ -36,7 +37,8 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
                 message->table[i] = arena_alloc(&arena, sizeof(utl_Double));
                 break;
             }
-            case BOOL: {
+            case FULL_BOOL:
+            case BIT_BOOL: {
                 message->table[i] = arena_alloc(&arena, sizeof(utl_Bool));
                 break;
             }
@@ -67,8 +69,22 @@ void utl_Message_free(utl_Message* message) {
     arena_delete(&message->arena);
 }
 
+bool utl_Message_hasField(utl_Message* message, utl_FieldDef* field) {
+    if(field->flag_info == 0)
+        return true;
+
+    return message->table[field->num] != 0;
+}
+
+void utl_Message_clearField(utl_Message* message, utl_FieldDef* field) {
+    if(field->flag_info == 0)
+        return;
+
+    message->table[field->num] = 0;
+}
+
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value){
-    if(field->type != INT32) {
+    if(field->type != INT32 && field->type != FLAGS) {
         return;
     }
 
@@ -123,7 +139,7 @@ void utl_Message_setDouble(utl_Message* message, utl_FieldDef* field, double val
 }
 
 void utl_Message_setBool(utl_Message* message, utl_FieldDef* field, bool value){
-    if(field->type != BOOL) {
+    if(field->type != FULL_BOOL && field->type != BIT_BOOL) {
         return;
     }
 
@@ -169,7 +185,7 @@ void utl_Message_setMessage(utl_Message* message, utl_FieldDef* field, utl_Messa
 }
 
 int32_t utl_Message_getInt32(utl_Message* message, utl_FieldDef* field){
-    if(field->type != INT32) {
+    if(field->type != INT32 && field->type != FLAGS) {
         return 0;
     }
 
@@ -224,7 +240,7 @@ double utl_Message_getDouble(utl_Message* message, utl_FieldDef* field){
 }
 
 bool utl_Message_getBool(utl_Message* message, utl_FieldDef* field){
-    if(field->type != BOOL) {
+    if(field->type != FULL_BOOL && field->type != BIT_BOOL) {
         return 0;
     }
 

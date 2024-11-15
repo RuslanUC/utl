@@ -17,10 +17,11 @@ typedef struct utl_MessageDef {
     utl_StringView namespace_;
     utl_TypeDef* type;
     utl_MessageSection section;
-    bool has_optional;
     uint16_t layer;
     uint16_t fields_num;
     utl_FieldDef* fields;
+    uint8_t flags_num;
+    utl_FieldDef* flags_fields;
 } utl_MessageDef;
 
 typedef struct utl_MessageDefVector {

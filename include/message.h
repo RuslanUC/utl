@@ -10,6 +10,9 @@ typedef struct utl_Message {
 utl_Message* utl_Message_new(utl_MessageDef* message_def);
 void utl_Message_free(utl_Message* message);
 
+bool utl_Message_hasField(utl_Message* message, utl_FieldDef* field);
+void utl_Message_clearField(utl_Message* message, utl_FieldDef* field);
+
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value);
 void utl_Message_setInt64(utl_Message* message, utl_FieldDef* field, int64_t value);
 void utl_Message_setInt128(utl_Message* message, utl_FieldDef* field, char value[16]);

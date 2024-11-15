@@ -19,10 +19,11 @@ void create_message(utl_DefPool* pool) {
     sub_message_def->namespace_ = {.size = 0, .data = nullptr};
     sub_message_def->type = sub_type_def;
     sub_message_def->section = TYPES;
-    sub_message_def->has_optional = false;
     sub_message_def->layer = 177;
     sub_message_def->fields_num = 1;
     sub_message_def->fields = (utl_FieldDef*)arena_alloc(&pool->arena, sizeof(utl_FieldDef) * sub_message_def->fields_num);
+    sub_message_def->flags_num = 0;
+    sub_message_def->flags_fields = nullptr;
     sub_message_def->fields[0].num = 0;
     sub_message_def->fields[0].type = INT32;
     sub_message_def->fields[0].flag_info = 0;
@@ -35,10 +36,11 @@ void create_message(utl_DefPool* pool) {
     sub_message_def->namespace_ = {.size = 0, .data = nullptr};
     sub_message_def->type = sub_type_def;
     sub_message_def->section = TYPES;
-    sub_message_def->has_optional = false;
     sub_message_def->layer = 177;
     sub_message_def->fields_num = 1;
     sub_message_def->fields = (utl_FieldDef*)arena_alloc(&pool->arena, sizeof(utl_FieldDef) * sub_message_def->fields_num);
+    sub_message_def->flags_num = 0;
+    sub_message_def->flags_fields = nullptr;
     sub_message_def->fields[0].num = 0;
     sub_message_def->fields[0].type = INT64;
     sub_message_def->fields[0].flag_info = 0;
@@ -57,10 +59,11 @@ void create_message(utl_DefPool* pool) {
     message_def->namespace_ = {.size = 0, .data = nullptr};
     message_def->type = type_def;
     message_def->section = TYPES;
-    message_def->has_optional = false;
     message_def->layer = 177;
     message_def->fields_num = 3;
     message_def->fields = (utl_FieldDef*)arena_alloc(&pool->arena, sizeof(utl_FieldDef) * message_def->fields_num);
+    message_def->flags_num = 0;
+    message_def->flags_fields = nullptr;
     message_def->fields[0].num = 0;
     message_def->fields[0].type = INT32;
     message_def->fields[0].flag_info = 0;

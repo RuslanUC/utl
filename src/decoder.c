@@ -76,7 +76,19 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena) {
 }
 
 void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef* field, utl_DecodeBuf* buf) {
+    if(field->flag_info && field->type != FLAGS) {
+        uint8_t flag_bit = field->flag_info & 0b11111;
+        utl_FieldDef flags_field = message->message_def->flags_fields[field->flag_info >> 5];
+        uint32_t flags = utl_Message_getInt32(message, &flags_field);
+        bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
+        if(field->type == BIT_BOOL)
+            utl_Message_setBool(message, field, field_present);
+        if(!field_present)
+            return;
+    }
+
     switch (field->type) {
+        case FLAGS:
         case INT32: {
             utl_Message_setInt32(message, field, utl_decode_int32(buf));
             break;
@@ -101,8 +113,11 @@ void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
             utl_Message_setDouble(message, field, utl_decode_double(buf));
             break;
         }
-        case BOOL: {
+        case FULL_BOOL: {
             utl_Message_setBool(message, field, utl_decode_bool(buf));
+            break;
+        }
+        case BIT_BOOL: {
             break;
         }
         case BYTES: {
