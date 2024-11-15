@@ -14,7 +14,7 @@ utl_Vector* utl_Vector_new(size_t initial_size) {
 }
 
 void utl_Vector_free(utl_Vector* vector) {
-    utl_arena_delete(&vector->arena);
+    arena_delete(&vector->arena);
 }
 
 size_t utl_Vector_capacity(utl_Vector* vector) {

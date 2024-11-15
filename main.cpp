@@ -2,20 +2,18 @@
 
 extern "C" {
 #include "message.h"
+#include "def_pool.h"
 #include "encoder.h"
 #include "decoder.h"
 }
 
-int main() {
-    arena_t arena = arena_new();
-
-    utl_TypeDef* type_def = utl_TypeDef_new(&arena);
+void create_message(utl_DefPool* pool) {
+    utl_TypeDef* type_def = utl_TypeDef_new(&pool->arena);
     type_def->name = {.size = 4, .data = (char*)"Test"};
-    type_def->namespace_ = {.size = 0, .data = nullptr};
     type_def->message_defs_num = 1;
-    type_def->message_defs = (utl_MessageDef**)arena_alloc(&arena, sizeof(void*) * 1);
+    type_def->message_defs = (utl_MessageDef**)arena_alloc(&pool->arena, sizeof(void*) * 1);
 
-    utl_MessageDef* message_def = utl_MessageDef_new(&arena);
+    utl_MessageDef* message_def = utl_MessageDef_new(&pool->arena);
     message_def->id = 123123;
     message_def->name = {.size = 4, .data = (char*)"test"};
     message_def->namespace_ = {.size = 0, .data = nullptr};
@@ -24,7 +22,7 @@ int main() {
     message_def->has_optional = false;
     message_def->layer = 177;
     message_def->fields_num = 2;
-    message_def->fields = (utl_FieldDef*)arena_alloc(&arena, sizeof(utl_FieldDef) * message_def->fields_num);
+    message_def->fields = (utl_FieldDef*)arena_alloc(&pool->arena, sizeof(utl_FieldDef) * message_def->fields_num);
     message_def->fields[0].num = 0;
     message_def->fields[0].type = INT32;
     message_def->fields[0].flag_info = 0;
@@ -35,6 +33,15 @@ int main() {
     message_def->fields[1].sub_message_def = nullptr;
 
     type_def->message_defs[0] = message_def;
+
+    utl_DefPool_add_message(pool, message_def);
+}
+
+int main() {
+    auto* pool = utl_DefPool_new();
+    create_message(pool);
+
+    utl_MessageDef* message_def = utl_DefPool_get_message(pool, 123123);
 
     utl_Message* message = utl_Message_new(message_def);
     utl_Message_setInt32(message, &message_def->fields[0], 456456);
@@ -56,7 +63,7 @@ int main() {
     arena_delete(&encoder_arena);
     utl_Message_free(decoded_message);
     utl_Message_free(message);
-    arena_delete(&arena);
+    utl_DefPool_free(pool);
 
     return 0;
 }

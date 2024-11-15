@@ -7,11 +7,13 @@ typedef enum utl_MessageSection {
 
 typedef enum utl_FieldType {
     INT32 = 0,
+    //FLAGS,
     INT64,
     INT128,
     INT256,
     DOUBLE,
     BOOL, // TODO: split into FULL_BOOL and BIT_BOOL
+    //BIT_BOOL,
     BYTES,
     STRING,
     TLOBJECT,

@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 include(FetchContent)
 
 FetchContent_Declare(arena-allocator
-        GIT_REPOSITORY https://github.com/olemorud/arena-allocator.git
-        GIT_TAG 786d7213ae2c505d8b378e41c8a87e83dac06761)
+        GIT_REPOSITORY https://github.com/RuslanUC/arena-allocator.git
+        GIT_TAG 7a307225b5b3342af92767f37649653db49822ab)
 FetchContent_MakeAvailable(arena-allocator)
 
 add_library(utl STATIC
@@ -18,6 +18,7 @@ add_library(utl STATIC
         src/field_def.c
         src/type_def.c
         src/message_def.c
+        src/def_pool.c
         src/message.c
         src/vector.c
         src/encoder.c

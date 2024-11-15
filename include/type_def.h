@@ -8,8 +8,7 @@
 struct utl_MessageDef;
 
 typedef struct utl_TypeDef {
-    utl_StringView name;
-    utl_StringView namespace_;
+    utl_StringView name; // Full name
     uint16_t message_defs_num;
     struct utl_MessageDef** message_defs;
 } utl_TypeDef;

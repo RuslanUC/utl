@@ -63,7 +63,7 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 }
 
 void utl_Message_free(utl_Message* message) {
-    utl_arena_delete(&message->arena);
+    arena_delete(&message->arena);
 }
 
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value){

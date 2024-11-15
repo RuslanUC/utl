@@ -1,15 +1,20 @@
 #pragma once
 
+#include "string_view.h"
 #include "map_list.h"
 
-typedef struct utl_Map {
+typedef struct utl_StaticMap {
     arena_t arena;
     size_t buckets_num;
     utl_ListNode** buckets;
-} utl_Map;
+} utl_StaticMap;
 
-utl_Map* utl_Map_new(size_t buckets_num);
-void utl_Map_free(utl_Map* map);
-void utl_Map_insert(utl_Map* map, uint32_t key, void* value);
-void utl_Map_remove(utl_Map* map, uint32_t key);
-void* utl_Map_search(utl_Map* map, uint32_t key);
+utl_StaticMap* utl_Map_new(size_t buckets_num);
+void utl_Map_free(utl_StaticMap* map);
+void utl_Map_insert(utl_StaticMap* map, uint32_t key, void* value);
+void utl_Map_remove(utl_StaticMap* map, uint32_t key);
+void* utl_Map_search(utl_StaticMap* map, uint32_t key);
+
+void utl_Map_insert_str(utl_StaticMap* map, utl_StringView key, void* value);
+void utl_Map_remove_str(utl_StaticMap* map, utl_StringView key);
+void* utl_Map_search_str(utl_StaticMap* map, utl_StringView key);

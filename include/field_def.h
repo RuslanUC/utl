@@ -11,7 +11,7 @@ struct utl_MessageDefBase;
 
 typedef struct utl_FieldDef {
     size_t num;
-    // TODO: add name
+    utl_StringView name;
     utl_FieldType type;
     // if fields is optional, 3 higher bits represent flag_num (flags, flags2, flags3, etc.), 5 lower bits
     //   represent flag_bit (max value is 32 since flags field type is int32)
