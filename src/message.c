@@ -1,5 +1,6 @@
 #include "message.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <utils.h>
 #include <vector.h>

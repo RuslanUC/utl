@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "message.h"
+#include "def_pool.h"
 
 typedef struct utl_DecodeBuf {
     char* data;
@@ -17,4 +18,4 @@ double utl_decode_double(utl_DecodeBuf* buffer);
 bool utl_decode_bool(utl_DecodeBuf* buffer);
 utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena);
 
-size_t utl_decode(utl_Message* out_message, char* buf, size_t size);
+size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, char* buf, size_t size);

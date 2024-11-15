@@ -1,7 +1,7 @@
+#include <string.h>
+
 #include "decoder.h"
 #include "encoder.h"
-
-#include <string.h>
 
 char* utl_DecodeBuf_read(utl_DecodeBuf* buf, size_t n) {
     if(buf->pos >= buf->size)
@@ -75,7 +75,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena) {
     return result;
 }
 
-void utl_decode_field(utl_Message* message, utl_FieldDef* field, utl_DecodeBuf* buf) {
+void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef* field, utl_DecodeBuf* buf) {
     switch (field->type) {
         case INT32: {
             utl_Message_setInt32(message, field, utl_decode_int32(buf));
@@ -116,10 +116,14 @@ void utl_decode_field(utl_Message* message, utl_FieldDef* field, utl_DecodeBuf* 
         case TLOBJECT: {
             utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
             uint32_t tl_id = utl_decode_int32(buf);
-            // TODO: implement some kind of search by tl_id
-            utl_Message* new_message = utl_Message_new(type->message_defs[0]);
+            utl_MessageDef* new_def = utl_DefPool_get_message(def_pool, tl_id);
+            if(!new_def || new_def->type != type) {
+                // TODO: fail
+            }
+
+            utl_Message* new_message = utl_Message_new(new_def);
             utl_Message_setMessage(message, field, new_message);
-            buf->pos += utl_decode(new_message, buf->data + buf->pos, buf->size - buf->pos);
+            buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos);
             break;
         }
         case VECTOR: {
@@ -129,7 +133,7 @@ void utl_decode_field(utl_Message* message, utl_FieldDef* field, utl_DecodeBuf* 
     }
 }
 
-size_t utl_decode(utl_Message* message, char* buf, size_t size) {
+size_t utl_decode(utl_Message* message, utl_DefPool* def_pool, char* buf, size_t size) {
     utl_DecodeBuf buffer = {
         .data = buf,
         .pos = 0,
@@ -139,7 +143,7 @@ size_t utl_decode(utl_Message* message, char* buf, size_t size) {
     const utl_FieldDef* fields = message->message_def->fields;
     for(int i = 0; i < message->message_def->fields_num; i++) {
         utl_FieldDef field = fields[i];
-        utl_decode_field(message, &field, &buffer);
+        utl_decode_field(message, def_pool, &field, &buffer);
     }
 
     return buffer.pos;

@@ -17,8 +17,8 @@ void utl_encode_int32(int32_t value, arena_t* arena) {
     utl_encode_intX((char*)&value, arena, 4);
 }
 
-void utl_encode_int64(int32_t value, arena_t* arena) {
-    utl_encode_intX((char*)&value, arena, 4);
+void utl_encode_int64(int64_t value, arena_t* arena) {
+    utl_encode_intX((char*)&value, arena, 8);
 }
 
 void utl_encode_int128(char value[16], arena_t* arena) {
