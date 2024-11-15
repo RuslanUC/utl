@@ -11,7 +11,7 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
     arena_t arena = arena_new();
     utl_Message* message = arena_alloc(&arena, sizeof(utl_Message));
     message->message_def = message_def;
-    message->table = arena_alloc(&arena, sizeof(message_def->fields_num) * sizeof(void*));
+    message->table = arena_alloc(&arena, message_def->fields_num * sizeof(void*));
 
     for(int i = 0; i < message_def->fields_num; i++) {
         const utl_FieldDef field = message_def->fields[i];
@@ -49,11 +49,11 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
                 break;
             }
             case TLOBJECT: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Message*));
+                message->table[i] = NULL;
                 break;
             }
             case VECTOR: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Vector*));
+                message->table[i] = NULL;
                 break;
             }
         }
