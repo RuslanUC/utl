@@ -133,7 +133,7 @@ void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
             // TODO: handle case when type is NULL (object type is any, "!X" or "TLObject"), maybe simply skip type check?
 
             uint32_t tl_id = utl_decode_int32(buf);
-            utl_MessageDef* new_def = utl_DefPool_get_message(def_pool, tl_id);
+            utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
             if(!new_def || new_def->type != type) {
                 // TODO: fail
             }

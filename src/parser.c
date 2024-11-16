@@ -7,7 +7,7 @@
 #include <string.h>
 #include <bits/posix1_lim.h>
 
-void utl_parse_field_type(utl_DefPool* def_pool, char* line, size_t size, utl_FieldDef* field, bool is_vector) {
+void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_FieldDef* field, bool is_vector) {
     size_t pos = 0, last = 0;
 
     utl_FieldType field_type;
@@ -34,7 +34,7 @@ void utl_parse_field_type(utl_DefPool* def_pool, char* line, size_t size, utl_Fi
             return;
         }
 
-        utl_parse_field_type(def_pool, line + last, pos - last, (utl_FieldDef*)sub_message, true);
+        utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)sub_message, true);
         return;
     }
 
@@ -72,7 +72,7 @@ void utl_parse_field_type(utl_DefPool* def_pool, char* line, size_t size, utl_Fi
             .size = pos - last,
             .data = line + last,
         };
-        sub_message = (utl_MessageDefBase*)utl_DefPool_get_type(def_pool, type_name);
+        sub_message = (utl_MessageDefBase*)utl_DefPool_getType(def_pool, type_name);
         if(sub_message) {
             // TODO: fail
         }
@@ -136,9 +136,9 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
         ++pos;
     }
 
-    if(utl_DefPool_has_message(def_pool, message_def->id)) {
+    if(utl_DefPool_hasMessage(def_pool, message_def->id)) {
         def_pool->arena.size = original_size;
-        return utl_DefPool_get_message(def_pool, message_def->id);
+        return utl_DefPool_getMessage(def_pool, message_def->id);
     }
 
     while(pos < size && line[pos] == ' ') ++pos;
@@ -170,15 +170,15 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
     utl_StringView type_name = utl_StringView_new(&def_pool->arena, pos - last);
     memcpy(type_name.data, line + last, pos - last);
-    if(!utl_DefPool_has_type(def_pool, type_name)) {
+    if(!utl_DefPool_hasType(def_pool, type_name)) {
         utl_TypeDef* type_def = utl_TypeDef_new(&def_pool->arena);
         type_def->name = type_name;
         type_def->message_defs_num = 0;
         type_def->message_defs = NULL;
-        utl_DefPool_add_type(def_pool, type_def);
+        utl_DefPool_addType(def_pool, type_def);
     }
     // TODO: add message_def to type (or is message_defs even needed in utl_TypeDef?)
-    message_def->type = utl_DefPool_get_type(def_pool, type_name);
+    message_def->type = utl_DefPool_getType(def_pool, type_name);
 
     //char* real_line = line;
     line += fields_start;
@@ -240,9 +240,9 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
             last = pos;
             while(pos < size && line[pos] != ' ') ++pos;
 
-            utl_parse_field_type(def_pool, line + last, pos - last, field, false);
+            utl_parse_fieldType(def_pool, line + last, pos - last, field, false);
         } else if(line[pos] == ' ') {
-            utl_parse_field_type(def_pool, line + last, pos - last, field, false);
+            utl_parse_fieldType(def_pool, line + last, pos - last, field, false);
         } else {
             // Field type expected, but end of string is reached
             def_pool->arena.size = original_size;
@@ -250,7 +250,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
         }
     }
 
-    utl_DefPool_add_message(def_pool, message_def);
+    utl_DefPool_addMessage(def_pool, message_def);
     return message_def;
 }
 
@@ -298,14 +298,24 @@ void utl_parse_file(utl_DefPool* def_pool, char* file_name) {
 
     arena_t line_arena = arena_new();
 
+    utl_MessageSection section = TYPES;
     while ((read = getline_arena(&line_arena, fp)) != -1) {
         char* line = line_arena.data;
-        if(read < 6 || line[0] == '-' || line[1] == '-' || line[2] == '-' || (line[0] == '/' && line[1] == '/')) {
+        if(read < 6 || (line[0] == '/' && line[1] == '/')) {
             continue;
         }
-        if(!utl_parse_line(def_pool, line, read)) {
-            printf("Failed to parse: %s\n", line);
+        if(read >= 11 && line[0] == '-' && line[1] == '-' && line[2] == '-') {
+            section = !memcmp(line, "---types---", 11) ? TYPES : FUNCTIONS;
+            continue;
         }
+
+        utl_MessageDef* message_def = utl_parse_line(def_pool, line, read);
+        if(!message_def) {
+            printf("Failed to parse: %s\n", line);
+            continue;
+        }
+
+        message_def->section = section;
     }
 
     fclose(fp);

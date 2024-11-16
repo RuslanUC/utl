@@ -18,35 +18,35 @@ void utl_DefPool_free(utl_DefPool* pool) {
     free(pool);
 }
 
-utl_MessageDef* utl_DefPool_get_message(utl_DefPool* pool, uint32_t tl_id) {
+utl_MessageDef* utl_DefPool_getMessage(utl_DefPool* pool, uint32_t tl_id) {
     return utl_Map_search(pool->message_defs, tl_id);
 }
 
-bool utl_DefPool_has_message(utl_DefPool* pool, uint32_t tl_id) {
-    return utl_DefPool_get_message(pool, tl_id) != 0;
+bool utl_DefPool_hasMessage(utl_DefPool* pool, uint32_t tl_id) {
+    return utl_DefPool_getMessage(pool, tl_id) != 0;
 }
 
-void utl_DefPool_add_message(utl_DefPool* pool, utl_MessageDef* message) {
+void utl_DefPool_addMessage(utl_DefPool* pool, utl_MessageDef* message) {
     utl_Map_insert(pool->message_defs, message->id, message);
-    utl_DefPool_add_type(pool, message->type);
+    utl_DefPool_addType(pool, message->type);
 }
 
-void utl_DefPool_remove_message(utl_DefPool* pool, uint32_t tl_id) {
+void utl_DefPool_removeMessage(utl_DefPool* pool, uint32_t tl_id) {
     utl_Map_remove(pool->message_defs, tl_id);
 }
 
-utl_TypeDef* utl_DefPool_get_type(utl_DefPool* pool, utl_StringView name) {
+utl_TypeDef* utl_DefPool_getType(utl_DefPool* pool, utl_StringView name) {
     return utl_Map_search_str(pool->types, name);
 }
 
-bool utl_DefPool_has_type(utl_DefPool* pool, utl_StringView name) {
-    return utl_DefPool_get_type(pool, name) != 0;
+bool utl_DefPool_hasType(utl_DefPool* pool, utl_StringView name) {
+    return utl_DefPool_getType(pool, name) != 0;
 }
 
-void utl_DefPool_add_type(utl_DefPool* pool, utl_TypeDef* type) {
+void utl_DefPool_addType(utl_DefPool* pool, utl_TypeDef* type) {
     utl_Map_insert_str(pool->types, type->name, type);
 }
 
-void utl_DefPool_remove_type(utl_DefPool* pool, utl_StringView name) {
+void utl_DefPool_removeType(utl_DefPool* pool, utl_StringView name) {
     utl_Map_remove_str(pool->types, name);
 }
