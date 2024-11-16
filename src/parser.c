@@ -1,6 +1,11 @@
 #include "parser.h"
 
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <bits/posix1_lim.h>
 
 void utl_parse_field_type(utl_DefPool* def_pool, char* line, size_t size, utl_FieldDef* field, bool is_vector) {
     size_t pos = 0, last = 0;
@@ -85,6 +90,7 @@ void utl_parse_field_type(utl_DefPool* def_pool, char* line, size_t size, utl_Fi
 utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
     size_t original_size = def_pool->arena.size;
     utl_MessageDef* message_def = utl_MessageDef_new(&def_pool->arena);
+    memset(message_def, 0, sizeof(utl_MessageDef));
     int pos = 0, last = 0;
 
     while(pos < size && line[pos] != '.' && line[pos] != '#') ++pos;
@@ -232,7 +238,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
             ++pos;
             last = pos;
-            while(pos < size && line[last + pos] != ' ') ++pos;
+            while(pos < size && line[pos] != ' ') ++pos;
 
             utl_parse_field_type(def_pool, line + last, pos - last, field, false);
         } else if(line[pos] == ' ') {
@@ -246,4 +252,62 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
     utl_DefPool_add_message(def_pool, message_def);
     return message_def;
+}
+
+ssize_t getline_arena(arena_t* arena, FILE* stream) {
+    int c;
+
+    if (stream == NULL) {
+        errno = EBADF;
+        return -1;
+    }
+
+    arena_reset(arena);
+    arena->flags |= ARENA_DONTALIGN;
+
+    char* buf;
+    while ((c = getc(stream)) != EOF) {
+        if (arena->size + 1 >= SSIZE_MAX) {
+            errno = EOVERFLOW;
+            return -1;
+        }
+        buf = arena_alloc(arena, 1);
+        *buf = (char)c;
+
+        if (c == '\n') {
+            break;
+        }
+    }
+
+    if (ferror(stream) || (feof(stream) && (arena->size == 0))) {
+        return -1;
+    }
+
+    buf = arena_alloc(arena, 1);
+    *buf = '\0';
+    return arena->size;
+}
+
+void utl_parse_file(utl_DefPool* def_pool, char* file_name) {
+    FILE* fp;
+    ssize_t read;
+
+    fp = fopen(file_name, "r");
+    if(!fp)
+        return;
+
+    arena_t line_arena = arena_new();
+
+    while ((read = getline_arena(&line_arena, fp)) != -1) {
+        char* line = line_arena.data;
+        if(read < 6 || line[0] == '-' || line[1] == '-' || line[2] == '-' || (line[0] == '/' && line[1] == '/')) {
+            continue;
+        }
+        if(!utl_parse_line(def_pool, line, read)) {
+            printf("Failed to parse: %s\n", line);
+        }
+    }
+
+    fclose(fp);
+    arena_delete(&line_arena);
 }

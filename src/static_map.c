@@ -62,7 +62,7 @@ void utl_Map_insert_str(utl_StaticMap* map, utl_StringView key, void* value) {
     uint32_t hash = hashStringView(key);
 
     utl_ListNodeString* current_head = (utl_ListNodeString*)map->buckets[hash % map->buckets_num];
-    utl_ListNodeString* new_head = utl_ListNode_append_str(current_head, key, value, &map->arena);
+    utl_ListNodeString* new_head = utl_ListNode_append_str(current_head, utl_StringView_clone(&map->arena, key), value, &map->arena);
     if(current_head != new_head) {
         map->buckets[hash % map->buckets_num] = (utl_ListNode*)new_head;
     }
