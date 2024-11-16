@@ -44,9 +44,9 @@ bool utl_DefPool_has_type(utl_DefPool* pool, utl_StringView name) {
 }
 
 void utl_DefPool_add_type(utl_DefPool* pool, utl_TypeDef* type) {
-    utl_Map_insert_str(pool->message_defs, type->name, type);
+    utl_Map_insert_str(pool->types, type->name, type);
 }
 
 void utl_DefPool_remove_type(utl_DefPool* pool, utl_StringView name) {
-    utl_Map_remove_str(pool->message_defs, name);
+    utl_Map_remove_str(pool->types, name);
 }

@@ -14,7 +14,7 @@ typedef struct utl_FieldDef {
     utl_StringView name;
     utl_FieldType type;
     // if fields is optional, 3 higher bits represent flag_num (flags, flags2, flags3, etc.), 5 lower bits
-    //   represent flag_bit (max value is 32 since flags field type is int32)
+    //   represent flag_bit (max value is 31 since flags field type is int32)
     // if fields is not optional, flag_info is 0
     uint8_t flag_info;
     // Vectors and TLObjects

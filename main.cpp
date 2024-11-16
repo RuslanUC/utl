@@ -5,10 +5,18 @@ extern "C" {
 #include "def_pool.h"
 #include "encoder.h"
 #include "decoder.h"
+#include "parser.h"
 }
 
 void create_message(utl_DefPool* pool) {
-    utl_TypeDef* sub_type_def = utl_TypeDef_new(&pool->arena);
+    utl_MessageDef* md;
+
+    md = utl_parse_line(pool, "test1#06f708 flags:# idk:flags.1?int = Test123;", 47);
+    md = utl_parse_line(pool, "test2#0c0d1d yep:long = Test123;", 31);
+
+    md = utl_parse_line(pool, "test#01e0f3 some_int:int some_str:string some_test:Test123 = Test;", 65);
+
+    /*utl_TypeDef* sub_type_def = utl_TypeDef_new(&pool->arena);
     sub_type_def->name = {.size = 4, .data = (char*)"Test123"};
     sub_type_def->message_defs_num = 2;
     sub_type_def->message_defs = (utl_MessageDef**)arena_alloc(&pool->arena, sizeof(void*) * sub_type_def->message_defs_num);
@@ -79,7 +87,10 @@ void create_message(utl_DefPool* pool) {
 
     type_def->message_defs[0] = message_def;
 
-    utl_DefPool_add_message(pool, message_def);
+    utl_DefPool_add_message(pool, message_def);*/
+
+    /*auto* something = utl_parse_line(pool, "userEmpty#d3bc4b7a id:long = User;", 34);
+    std::cout << "parsed: " << something << "\n";*/
 }
 
 int main() {
