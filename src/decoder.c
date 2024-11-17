@@ -58,7 +58,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena) {
     char* buf = utl_DecodeBuf_read(buffer, 1);
     uint32_t count = (uint8_t)buf[0];
     uint8_t offset = 1;
-    if(buf[0] >= 254) {
+    if(count >= 254) {
         buf = utl_DecodeBuf_read(buffer, 3);
         count = (uint8_t)buf[0] + ((uint8_t)buf[1] << 8) + ((uint8_t)buf[2] << 16);
         offset = 0;
