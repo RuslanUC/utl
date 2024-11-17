@@ -95,6 +95,12 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
     while(pos < size && line[pos] != '.' && line[pos] != '#') ++pos;
 
+    if(pos == last) {
+        // no name/namespace
+        def_pool->arena.size = original_size;
+        return 0;
+    }
+
     if(line[pos] == '.') {
         message_def->namespace_ = utl_StringView_new(&def_pool->arena, pos - last);
         memcpy(message_def->namespace_.data, line, pos);
@@ -164,6 +170,12 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
     while(pos < size && line[pos] != ';') ++pos;
     if(line[pos] != ';') {
         // ";" expected, but end of string is reached
+        def_pool->arena.size = original_size;
+        return 0;
+    }
+
+    if(pos == last) {
+        // no type
         def_pool->arena.size = original_size;
         return 0;
     }

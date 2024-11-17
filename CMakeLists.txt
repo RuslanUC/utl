@@ -32,3 +32,19 @@ target_include_directories(utl_test PUBLIC include)
 target_link_libraries(utl_test PUBLIC utl)
 target_compile_options(utl_test PRIVATE -fpermissive -fsanitize=address)
 target_link_options(utl_test PRIVATE -fsanitize=address)
+
+
+include(FetchContent)
+FetchContent_Declare(unity
+        GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+        GIT_TAG v2.6.0)
+FetchContent_MakeAvailable(unity)
+
+enable_testing()
+
+add_executable(test_parser_exe tests/test_parser.c)
+target_include_directories(test_parser_exe PRIVATE include)
+target_link_libraries(test_parser_exe PRIVATE utl unity::framework)
+target_compile_options(test_parser_exe PRIVATE -fpermissive -fsanitize=address)
+target_link_options(test_parser_exe PRIVATE -fsanitize=address)
+add_test(test_parser test_parser_exe)
