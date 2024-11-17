@@ -165,6 +165,56 @@ void test_MessageWithFlags() {
     utl_DefPool_free(pool);
 }
 
+void test_MessageVectorField() {
+    utl_DefPool* pool = utl_DefPool_new();
+
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<int> = Test;", 37);
+
+    TEST_ASSERT_NOT_NULL(message_def);
+    TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
+    TEST_ASSERT_EQUAL(1, message_def->fields_num);
+
+    TEST_ASSERT_EQUAL(0, message_def->fields[0].num);
+    TEST_ASSERT_EQUAL(VECTOR, message_def->fields[0].type);
+    TEST_ASSERT_EQUAL(0, message_def->fields[0].flag_info);
+    TEST_ASSERT_EQUAL(INT32, ((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->type);
+    TEST_ASSERT_NULL(((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->sub_message_def);
+
+
+    utl_DefPool_free(pool);
+}
+
+void test_MessageVectorFieldNested3d() {
+    utl_DefPool* pool = utl_DefPool_new();
+
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<vector<vector<int>>> = Test;", 53);
+
+    TEST_ASSERT_NOT_NULL(message_def);
+    TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
+    TEST_ASSERT_EQUAL(1, message_def->fields_num);
+
+    TEST_ASSERT_EQUAL(0, message_def->fields[0].num);
+    TEST_ASSERT_EQUAL(VECTOR, message_def->fields[0].type);
+    TEST_ASSERT_EQUAL(0, message_def->fields[0].flag_info);
+
+    utl_MessageDefVector* vector_1st = (utl_MessageDefVector*)message_def->fields[0].sub_message_def;
+    TEST_ASSERT_NOT_NULL(vector_1st);
+    TEST_ASSERT_EQUAL(VECTOR, vector_1st->type);
+    TEST_ASSERT_NOT_NULL(vector_1st->sub_message_def);
+
+    utl_MessageDefVector* vector_2nd = (utl_MessageDefVector*)vector_1st->sub_message_def;
+    TEST_ASSERT_NOT_NULL(vector_2nd);
+    TEST_ASSERT_EQUAL(VECTOR, vector_2nd->type);
+    TEST_ASSERT_NOT_NULL(vector_2nd->sub_message_def);
+
+    utl_MessageDefVector* vector_3rd = (utl_MessageDefVector*)vector_2nd->sub_message_def;
+    TEST_ASSERT_NOT_NULL(vector_3rd);
+    TEST_ASSERT_EQUAL(INT32, vector_3rd->type);
+    TEST_ASSERT_NULL(vector_3rd->sub_message_def);
+
+    utl_DefPool_free(pool);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -178,6 +228,8 @@ int main(void) {
     RUN_TEST(test_MessageEmpty_MustReturnNULL);
     RUN_TEST(test_MessageWithFields);
     RUN_TEST(test_MessageWithFlags);
+    RUN_TEST(test_MessageVectorField);
+    RUN_TEST(test_MessageVectorFieldNested3d);
 
     return UNITY_END();
 }

@@ -113,7 +113,7 @@ void utl_Message_setInt128(utl_Message* message, utl_FieldDef* field, char value
     if(message->table[field->num] == NULL) {
         message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int128));
     }
-    memcpy(&((utl_Int128*)message->table[field->num])->value, &value, 16);
+    memcpy(&((utl_Int128*)message->table[field->num])->value, value, 16);
 }
 
 void utl_Message_setInt256(utl_Message* message, utl_FieldDef* field, char value[32]){
@@ -124,7 +124,7 @@ void utl_Message_setInt256(utl_Message* message, utl_FieldDef* field, char value
     if(message->table[field->num] == NULL) {
         message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int256));
     }
-    memcpy(&((utl_Int256*)message->table[field->num])->value, &value, 32);
+    memcpy(&((utl_Int256*)message->table[field->num])->value, value, 32);
 }
 
 void utl_Message_setDouble(utl_Message* message, utl_FieldDef* field, double value){
