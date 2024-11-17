@@ -180,7 +180,6 @@ void test_MessageVectorField() {
     TEST_ASSERT_EQUAL(INT32, ((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->type);
     TEST_ASSERT_NULL(((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->sub_message_def);
 
-
     utl_DefPool_free(pool);
 }
 
@@ -215,7 +214,7 @@ void test_MessageVectorFieldNested3d() {
     utl_DefPool_free(pool);
 }
 
-int main(void) {
+int main() {
     UNITY_BEGIN();
 
     RUN_TEST(test_MessageWithoutFields);

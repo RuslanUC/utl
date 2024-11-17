@@ -36,12 +36,3 @@ typedef struct utl_String {
     size_t max_size;
     utl_StringView value;
 } utl_String;
-
-typedef struct utl_Container {
-    uint32_t tl_id; // TODO: is it needed?
-    // In case of Vector - size is a number of elements, value is a (capacity + array of pointers to utl_* structs),
-    //   at value - sizeof(void*), there is arena, used to create vector.
-    // If case of TLObject - size is a size of a TLObject, value is a pointer to utl_Message.
-    size_t size;
-    void* value;
-} utl_Container;
