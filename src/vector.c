@@ -3,9 +3,10 @@
 #include <string.h>
 #include <utils.h>
 
-utl_Vector* utl_Vector_new(size_t initial_size) {
+utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, size_t initial_size) {
     arena_t arena = arena_new();
     utl_Vector* vector = arena_alloc(&arena, sizeof(utl_Vector));
+    vector->message_def = vector_def;
     vector->size = 0;
     vector->capacity = initial_size;
     vector->items = arena_alloc(&arena, sizeof(void*) * initial_size);

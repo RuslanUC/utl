@@ -1,6 +1,7 @@
 #include "encoder.h"
 
 #include <string.h>
+#include <vector.h>
 
 void utl_encode_intX(char* value, arena_t* arena, uint8_t bytes_size) {
     char* buf = arena_alloc(arena, bytes_size);
@@ -65,8 +66,10 @@ void utl_encode_bytes(utl_StringView value, arena_t* arena) {
     }
 }
 
-void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena) {
-    switch (field->type) {
+void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena, bool is_vector) {
+    utl_FieldType field_type = is_vector ? ((utl_MessageDefVector*)field)->type : field->type;
+
+    switch (field_type) {
         case FLAGS:
         case INT32: {
             utl_encode_int32(((utl_Int32*)value)->value, arena);
@@ -105,7 +108,12 @@ void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena) {
             break;
         }
         case VECTOR: {
-            // TODO: write vector
+            utl_Vector* vector = (utl_Vector*)value;
+            utl_encode_int32(VECTOR_CONSTR, arena);
+            utl_encode_int32(utl_Vector_size(vector), arena);
+            for(size_t i = 0; i < utl_Vector_size(vector); i++) {
+                utl_encode_field((utl_FieldDef*)vector->message_def, utl_Vector_value(vector, i), arena, true);
+            }
             break;
         }
     }
@@ -146,7 +154,7 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
         }
 
         if(field.type != BIT_BOOL)
-            utl_encode_field(&field, value, arena);
+            utl_encode_field(&field, value, arena, false);
     }
 
     return arena->size - initial_size;

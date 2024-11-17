@@ -184,6 +184,14 @@ void utl_Message_setMessage(utl_Message* message, utl_FieldDef* field, utl_Messa
     message->table[field->num] = value;
 }
 
+void utl_Message_setVector(utl_Message* message, utl_FieldDef* field, utl_Vector* value){
+    if(field->type != VECTOR) {
+        return;
+    }
+
+    message->table[field->num] = value;
+}
+
 int32_t utl_Message_getInt32(utl_Message* message, utl_FieldDef* field){
     if(field->type != INT32 && field->type != FLAGS) {
         return 0;
@@ -274,6 +282,14 @@ utl_StringView utl_Message_getString(utl_Message* message, utl_FieldDef* field){
 
 utl_Message* utl_Message_getMessage(utl_Message* message, utl_FieldDef* field){
     if(field->type != TLOBJECT) {
+        return 0;
+    }
+
+    return message->table[field->num];
+}
+
+utl_Vector* utl_Message_getVector(utl_Message* message, utl_FieldDef* field){
+    if(field->type != VECTOR) {
         return 0;
     }
 

@@ -75,6 +75,91 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena) {
     return result;
 }
 
+void utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDefVector* field, utl_DecodeBuf* buf, size_t size) {
+    for(size_t i = 0; i < size; i++) {
+        void* value = NULL;
+
+        switch (field->type) {
+            case FLAGS:
+            case INT32: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Int32));
+                ((utl_Int32*)value)->value = utl_decode_int32(buf);
+                break;
+            }
+            case INT64: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Int64));
+                ((utl_Int64*)value)->value = utl_decode_int64(buf);
+                break;
+            }
+            case INT128: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Int128));
+                utl_decode_int128(((utl_Int128*)value)->value, buf);
+                break;
+            }
+            case INT256: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Int256));
+                utl_decode_int128(((utl_Int256*)value)->value, buf);
+                break;
+            }
+            case DOUBLE: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Double));
+                ((utl_Double*)value)->value = utl_decode_double(buf);
+                break;
+            }
+            case FULL_BOOL: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Bool));
+                ((utl_Bool*)value)->value = utl_decode_bool(buf);
+                break;
+            }
+            case BIT_BOOL: {
+                break;
+            }
+            case BYTES: {
+                value = arena_alloc(&vector->arena, sizeof(utl_Bytes));
+                ((utl_Bytes*)value)->value = utl_decode_bytes(buf, &vector->arena);
+                ((utl_Bytes*)value)->max_size = ((utl_Bytes*)value)->value.size;
+                break;
+            }
+            case STRING: {
+                value = arena_alloc(&vector->arena, sizeof(utl_String));
+                ((utl_String*)value)->value = utl_decode_bytes(buf, &vector->arena);
+                ((utl_String*)value)->max_size = ((utl_String*)value)->value.size;
+                break;
+            }
+            case TLOBJECT: {
+                utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+                // TODO: handle case when type is NULL (object type is any, "!X" or "TLObject"), maybe simply skip type check?
+
+                uint32_t tl_id = utl_decode_int32(buf);
+                utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
+                if (!new_def || new_def->type != type) {
+                    // TODO: fail
+                }
+
+                utl_Message* new_message = utl_Message_new(new_def);
+                value = new_message;
+                buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos);
+                break;
+            }
+            case VECTOR: {
+                if (utl_decode_int32(buf) != VECTOR_CONSTR) {
+                    // TODO: fail
+                }
+                size_t new_size = utl_decode_int32(buf);
+                utl_Vector* new_vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, new_size);
+                value = new_vector;
+                utl_decode_vector(new_vector, def_pool, (utl_MessageDefVector*)field->sub_message_def, buf, new_size);
+                break;
+            }
+        }
+
+        if(value == NULL)
+            continue; // TODO: fail?
+
+        utl_Vector_append(vector, value);
+    }
+}
+
 void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef* field, utl_DecodeBuf* buf) {
     if(field->flag_info && field->type != FLAGS) {
         uint8_t flag_bit = field->flag_info & 0b11111;
@@ -144,7 +229,13 @@ void utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
             break;
         }
         case VECTOR: {
-            // TODO: read vector
+            if(utl_decode_int32(buf) != VECTOR_CONSTR) {
+                // TODO: fail
+            }
+            size_t size = utl_decode_int32(buf);
+            utl_Vector* vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, size);
+            utl_Message_setVector(message, field, vector);
+            utl_decode_vector(vector, def_pool, (utl_MessageDefVector*)field->sub_message_def, buf, size);
             break;
         }
     }

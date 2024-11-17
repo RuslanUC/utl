@@ -288,16 +288,14 @@ ssize_t getline_arena(arena_t* arena, FILE* stream) {
     return arena->size;
 }
 
-void utl_parse_file(utl_DefPool* def_pool, char* file_name) {
-    FILE* fp;
-    ssize_t read;
-
-    fp = fopen(file_name, "r");
+void utl_parse_file(utl_DefPool* def_pool, const char* file_name) {
+    FILE* fp = fopen(file_name, "r");
     if(!fp)
         return;
 
     arena_t line_arena = arena_new();
 
+    ssize_t read;
     utl_MessageSection section = TYPES;
     while ((read = getline_arena(&line_arena, fp)) != -1) {
         char* line = line_arena.data;
