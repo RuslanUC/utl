@@ -183,6 +183,54 @@ void test_MessageWithFlagsDecode() {
     utl_DefPool_free(pool);
 }
 
+void test_MessageWithBitBoolEncode() {
+    utl_DefPool* pool = utl_DefPool_new();
+    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68);
+    TEST_ASSERT_NOT_NULL(message_def);
+
+    utl_Message* message = utl_Message_new(message_def);
+    utl_Message_setBool(message, &message_def->fields[1], false);
+
+    arena_t encoder_arena = arena_new();
+    encoder_arena.flags |= ARENA_DONTALIGN;
+    size_t written_bytes = utl_encode(message, &encoder_arena);
+    TEST_ASSERT_EQUAL(8, written_bytes);
+    char expected1[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x0, 0x0, 0x0, 0x0};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, encoder_arena.data+8, 8);
+
+    arena_reset(&encoder_arena);
+    utl_Message_setBool(message, &message_def->fields[1], true);
+    written_bytes = utl_encode(message, &encoder_arena);
+    TEST_ASSERT_EQUAL(8, written_bytes);
+    char expected2[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x01, 0x0, 0x0, 0x0};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, encoder_arena.data+8, 8);
+
+    utl_Message_free(message);
+    arena_delete(&encoder_arena);
+    utl_DefPool_free(pool);
+}
+
+void test_MessageWithBitBoolDecode() {
+    utl_DefPool* pool = utl_DefPool_new();
+    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68);
+    TEST_ASSERT_NOT_NULL(message_def);
+
+    char bytes1[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x0, 0x0, 0x0, 0x0};
+    utl_Message* message = utl_Message_new(message_def);
+    utl_decode(message, pool, bytes1+4, 8-4);
+
+    TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
+    TEST_ASSERT_FALSE(utl_Message_getBool(message, &message_def->fields[1]));
+
+    char bytes2[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x01, 0x0, 0x0, 0x0};
+    utl_decode(message, pool, bytes2+4, 8-4);
+    TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
+    TEST_ASSERT_TRUE(utl_Message_getBool(message, &message_def->fields[1]));
+
+    utl_Message_free(message);
+    utl_DefPool_free(pool);
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -194,6 +242,8 @@ int main() {
     RUN_TEST(test_MessageWithStringDecode);
     RUN_TEST(test_MessageWithFlagsEncode);
     RUN_TEST(test_MessageWithFlagsDecode);
+    RUN_TEST(test_MessageWithBitBoolEncode);
+    RUN_TEST(test_MessageWithBitBoolDecode);
 
     return UNITY_END();
 }
