@@ -131,6 +131,58 @@ void test_MessageWithStringDecode() {
     utl_DefPool_free(pool);
 }
 
+void test_MessageWithFlagsEncode() {
+    utl_DefPool* pool = utl_DefPool_new();
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98);
+    TEST_ASSERT_NOT_NULL(message_def);
+
+    utl_Message* message = utl_Message_new(message_def);
+    utl_Message_setDouble(message, &message_def->fields[1], 42.24);
+    utl_Message_setDouble(message, &message_def->fields[2], 24.42);
+
+    arena_t encoder_arena = arena_new();
+    encoder_arena.flags |= ARENA_DONTALIGN;
+    size_t written_bytes = utl_encode(message, &encoder_arena);
+    TEST_ASSERT_EQUAL(24, written_bytes);
+    char expected1[24] = {0xaf, 0x2f, 0x22, 0x48, 0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, encoder_arena.data+8, 24);
+
+    arena_reset(&encoder_arena);
+    utl_Message_setInt32(message, &message_def->fields[3], 456123);
+    written_bytes = utl_encode(message, &encoder_arena);
+    TEST_ASSERT_EQUAL(28, written_bytes);
+    char expected2[28] = {0xaf, 0x2f, 0x22, 0x48, 0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, encoder_arena.data+8, 28);
+
+    utl_Message_free(message);
+    arena_delete(&encoder_arena);
+    utl_DefPool_free(pool);
+}
+
+void test_MessageWithFlagsDecode() {
+    utl_DefPool* pool = utl_DefPool_new();
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98);
+    TEST_ASSERT_NOT_NULL(message_def);
+
+    char bytes1[24] = {0xaf, 0x2f, 0x22, 0x48, 0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40};
+    utl_Message* message = utl_Message_new(message_def);
+    utl_decode(message, pool, bytes1+4, 24-4);
+
+    TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_Message_getDouble(message, &message_def->fields[1]));
+    TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_Message_getDouble(message, &message_def->fields[2]));
+    TEST_ASSERT_FALSE(utl_Message_hasField(message, &message_def->fields[3]));
+
+    char bytes2[28] = {0xaf, 0x2f, 0x22, 0x48, 0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00};
+    utl_decode(message, pool, bytes2+4, 28-4);
+    TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_Message_getDouble(message, &message_def->fields[1]));
+    TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_Message_getDouble(message, &message_def->fields[2]));
+    TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[3]));
+    TEST_ASSERT_EQUAL(456123, utl_Message_getInt32(message, &message_def->fields[3]));
+
+    utl_Message_free(message);
+    utl_DefPool_free(pool);
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -140,6 +192,8 @@ int main() {
     RUN_TEST(test_MessageSimpleDecode);
     RUN_TEST(test_MessageWithStringEncode);
     RUN_TEST(test_MessageWithStringDecode);
+    RUN_TEST(test_MessageWithFlagsEncode);
+    RUN_TEST(test_MessageWithFlagsDecode);
 
     return UNITY_END();
 }

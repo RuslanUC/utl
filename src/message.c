@@ -15,6 +15,8 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 
     for(int i = 0; i < message_def->fields_num; i++) {
         const utl_FieldDef field = message_def->fields[i];
+        if(field.flag_info != 0 && field.type != FLAGS)
+            continue;
         switch (field.type) {
             case FLAGS:
             case INT32: {

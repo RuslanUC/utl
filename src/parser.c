@@ -260,6 +260,19 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
             def_pool->arena.size = original_size;
             return 0;
         }
+
+        if(field->type == FLAGS)
+            message_def->flags_num++;
+    }
+
+    if(message_def->flags_num) {
+        message_def->flags_fields = (utl_FieldDef*)arena_alloc(&def_pool->arena, sizeof(utl_FieldDef) * message_def->flags_num);
+        size_t flags_i = 0;
+        for(int i = 0; i < message_def->fields_num && flags_i < message_def->flags_num; i++) {
+            if(message_def->fields[i].type != FLAGS)
+                continue;
+            message_def->flags_fields[flags_i++] = message_def->fields[i];
+        }
     }
 
     utl_DefPool_addMessage(def_pool, message_def);

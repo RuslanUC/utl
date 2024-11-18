@@ -136,7 +136,7 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
         const utl_FieldDef field = fields[i];
         void* value = message->table[field.num];
         if(field.type == FLAGS) {
-            flags[field.flag_info >> 5] = (uint32_t*)(arena->data + arena->size);
+            flags[(field.flag_info >> 5) - 1] = (uint32_t*)(arena->data + arena->size);
             ((utl_Int32*)value)->value = 0;
         }
 
@@ -145,12 +145,12 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
             continue;
         }
 
-        if(field.type != FLAGS && field.flag_info & 0b11111 && !(field.type == BIT_BOOL && !((utl_Bool*)value)->value)) {
+        if(field.type != FLAGS && field.flag_info && !(field.type == BIT_BOOL && !((utl_Bool*)value)->value)) {
             uint8_t flag_bit = (field.flag_info & 0b11111);
             if(is_big_endian())
                 flag_bit = 31 - flag_bit;
             uint32_t flag_value = 1 << flag_bit;
-            *flags[field.flag_info >> 5] |= flag_value;
+            *flags[(field.flag_info >> 5) - 1] |= flag_value;
         }
 
         if(field.type != BIT_BOOL)
