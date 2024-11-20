@@ -1,10 +1,10 @@
 #pragma once
 
-#include <type_def.h>
+#include "type_def.h"
 
 #include "static_map.h"
 
-#define START_POOL_SIZE 1024
+#define START_POOL_SIZE DEFAULT_MAP_SIZE
 
 typedef struct utl_DefPool {
     arena_t arena;

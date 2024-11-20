@@ -3,10 +3,16 @@
 #include "string_view.h"
 #include "map_list.h"
 
+#define DEFAULT_MAP_SIZE 1024
+
 typedef struct utl_StaticMap {
     arena_t arena;
     size_t buckets_num;
+#ifndef UTL_MAP_ON_HEAP
+    utl_ListNode* buckets[DEFAULT_MAP_SIZE];
+#else
     utl_ListNode** buckets;
+#endif
 } utl_StaticMap;
 
 utl_StaticMap* utl_Map_new(size_t buckets_num);
