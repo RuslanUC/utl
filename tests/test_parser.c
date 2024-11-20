@@ -10,8 +10,10 @@ void tearDown() {
 void test_MessageWithoutFields() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = Test;", 21);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = Test;", 21, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_NOT_NULL(message_def);
     TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
     TEST_ASSERT_EQUAL(0, message_def->fields_num);
@@ -26,7 +28,10 @@ void test_MessageWithoutFields() {
 void test_MessageWithoutId_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test12345678 = Test;", 20);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test12345678 = Test;", 20, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -35,7 +40,10 @@ void test_MessageWithoutId_MustReturnNULL() {
 void test_MessageIdInvalidHex_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#g2345678 = Test;", 21);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#g2345678 = Test;", 21, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -44,7 +52,10 @@ void test_MessageIdInvalidHex_MustReturnNULL() {
 void test_MessageWithoutName_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "#12345678 = Test;", 17);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "#12345678 = Test;", 17, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -53,7 +64,10 @@ void test_MessageWithoutName_MustReturnNULL() {
 void test_MessageWithoutEqualsSign_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 Test;", 19);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 Test;", 19, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -62,7 +76,10 @@ void test_MessageWithoutEqualsSign_MustReturnNULL() {
 void test_MessageWithoutType_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = ;", 17);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = ;", 17, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -71,7 +88,10 @@ void test_MessageWithoutType_MustReturnNULL() {
 void test_MessageWithoutSemicolon_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = Test", 20);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 = Test", 20, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -80,7 +100,10 @@ void test_MessageWithoutSemicolon_MustReturnNULL() {
 void test_MessageEmpty_MustReturnNULL() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "", 0);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "", 0, &status);
+
+    TEST_ASSERT_FALSE(status.ok);
     TEST_ASSERT_NULL(message_def);
 
     utl_DefPool_free(pool);
@@ -89,8 +112,10 @@ void test_MessageEmpty_MustReturnNULL() {
 void test_MessageWithFields() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 a:int b:long c:int128 d:int256 e:double f:string g:bytes h:Bool = Test;", 85);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 a:int b:long c:int128 d:int256 e:double f:string g:bytes h:Bool = Test;", 85, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_NOT_NULL(message_def);
     TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
     TEST_ASSERT_EQUAL(8, message_def->fields_num);
@@ -132,8 +157,10 @@ void test_MessageWithFields() {
 void test_MessageWithFlags() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 flags:# a:flags.0?int b:flags.15?long flags2:# c:flags2.3?int128 h:flags2.4?true = Test;", 102);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 flags:# a:flags.0?int b:flags.15?long flags2:# c:flags2.3?int128 h:flags2.4?true = Test;", 102, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_NOT_NULL(message_def);
     TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
     TEST_ASSERT_EQUAL(6, message_def->fields_num);
@@ -168,8 +195,10 @@ void test_MessageWithFlags() {
 void test_MessageVectorField() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<int> = Test;", 37);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<int> = Test;", 37, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_NOT_NULL(message_def);
     TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
     TEST_ASSERT_EQUAL(1, message_def->fields_num);
@@ -186,8 +215,10 @@ void test_MessageVectorField() {
 void test_MessageVectorFieldNested3d() {
     utl_DefPool* pool = utl_DefPool_new();
 
-    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<vector<vector<int>>> = Test;", 53);
+    utl_Status status;
+    utl_MessageDef* message_def = utl_parse_line(pool, "test#12345678 vec:vector<vector<vector<int>>> = Test;", 53, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_NOT_NULL(message_def);
     TEST_ASSERT_EQUAL_HEX16(0x12345678, message_def->id);
     TEST_ASSERT_EQUAL(1, message_def->fields_num);

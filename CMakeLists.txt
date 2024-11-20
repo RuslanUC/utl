@@ -11,6 +11,7 @@ FetchContent_Declare(arena-allocator
 FetchContent_MakeAvailable(arena-allocator)
 
 add_library(utl STATIC
+        src/status.c
         src/utils.c
         src/map_list.c
         src/static_map.c

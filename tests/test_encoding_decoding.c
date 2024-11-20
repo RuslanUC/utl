@@ -11,7 +11,7 @@ void tearDown() {
 
 void test_MessageWithoutFields() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerEmpty#7f3b18ea = InputPeer;", 36);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerEmpty#7f3b18ea = InputPeer;", 36, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -29,7 +29,7 @@ void test_MessageWithoutFields() {
 
 void test_EncodeWithArenaAlignment_MustNotEncode() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerEmpty#7f3b18ea = InputPeer;", 36);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerEmpty#7f3b18ea = InputPeer;", 36, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -44,7 +44,7 @@ void test_EncodeWithArenaAlignment_MustNotEncode() {
 
 void test_MessageSimpleEncode() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 65);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 65, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -64,14 +64,16 @@ void test_MessageSimpleEncode() {
 }
 
 void test_MessageSimpleDecode() {
+    utl_Status status;
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 65);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 65, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     char bytes[20] = {0x4c, 0xa5, 0xe8, 0xdd, 0x83, 0x1a, 0x99, 0xbe, 0x1c, 0x00, 0x00, 0x00, 0xa9, 0xf4, 0xc8, 0xf4, 0xe5, 0x00, 0x00, 0x00};
     utl_Message* message = utl_Message_new(message_def);
-    utl_decode(message, pool, bytes+4, 20-4);
+    utl_decode(message, pool, bytes+4, 20-4, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_EQUAL(123456789123, utl_Message_getInt64(message, &message_def->fields[0]));
     TEST_ASSERT_EQUAL(987654321321, utl_Message_getInt64(message, &message_def->fields[1]));
 
@@ -90,7 +92,7 @@ static const utl_StringView test_big_string = {
 
 void test_MessageWithStringEncode() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;", 81);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;", 81, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -112,14 +114,16 @@ void test_MessageWithStringEncode() {
 }
 
 void test_MessageWithStringDecode() {
+    utl_Status status;
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;", 81);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;", 81, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     char bytes[316] = {0x7f, 0xf2, 0x2f, 0xf5, 0x83, 0x1a, 0x99, 0xbe, 0x1c, 0x0, 0x0, 0x0, 0xf3, 0xe0, 0x1, 0x0, 0x15, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0, 0x0, 0xfe, 0xd, 0x1, 0x0, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0, 0x0, 0x0};
     utl_Message* message = utl_Message_new(message_def);
-    utl_decode(message, pool, bytes+4, 316-4);
+    utl_decode(message, pool, bytes+4, 316-4, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_EQUAL_INT64(123456789123, utl_Message_getInt64(message, &message_def->fields[0]));
     TEST_ASSERT_EQUAL_INT32(123123, utl_Message_getInt32(message, &message_def->fields[1]));
     TEST_ASSERT_EQUAL(test_small_string.size, utl_Message_getString(message, &message_def->fields[2]).size);
@@ -133,7 +137,7 @@ void test_MessageWithStringDecode() {
 
 void test_MessageWithFlagsEncode() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -160,20 +164,23 @@ void test_MessageWithFlagsEncode() {
 }
 
 void test_MessageWithFlagsDecode() {
+    utl_Status status;
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98);
+    utl_MessageDef* message_def = utl_parse_line(pool, "inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 98, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     char bytes1[24] = {0xaf, 0x2f, 0x22, 0x48, 0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40};
     utl_Message* message = utl_Message_new(message_def);
-    utl_decode(message, pool, bytes1+4, 24-4);
+    utl_decode(message, pool, bytes1+4, 24-4, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_Message_getDouble(message, &message_def->fields[1]));
     TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_Message_getDouble(message, &message_def->fields[2]));
     TEST_ASSERT_FALSE(utl_Message_hasField(message, &message_def->fields[3]));
 
     char bytes2[28] = {0xaf, 0x2f, 0x22, 0x48, 0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00};
-    utl_decode(message, pool, bytes2+4, 28-4);
+    utl_decode(message, pool, bytes2+4, 28-4, &status);
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_Message_getDouble(message, &message_def->fields[1]));
     TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_Message_getDouble(message, &message_def->fields[2]));
     TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[3]));
@@ -185,7 +192,7 @@ void test_MessageWithFlagsDecode() {
 
 void test_MessageWithBitBoolEncode() {
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68);
+    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
@@ -211,19 +218,22 @@ void test_MessageWithBitBoolEncode() {
 }
 
 void test_MessageWithBitBoolDecode() {
+    utl_Status status;
     utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68);
+    utl_MessageDef* message_def = utl_parse_line(pool, "userStatusRecently#7b197dc8 flags:# by_me:flags.0?true = UserStatus;", 68, NULL);
     TEST_ASSERT_NOT_NULL(message_def);
 
     char bytes1[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x0, 0x0, 0x0, 0x0};
     utl_Message* message = utl_Message_new(message_def);
-    utl_decode(message, pool, bytes1+4, 8-4);
+    utl_decode(message, pool, bytes1+4, 8-4, &status);
 
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
     TEST_ASSERT_FALSE(utl_Message_getBool(message, &message_def->fields[1]));
 
     char bytes2[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x01, 0x0, 0x0, 0x0};
-    utl_decode(message, pool, bytes2+4, 8-4);
+    utl_decode(message, pool, bytes2+4, 8-4, &status);
+    TEST_ASSERT_TRUE(status.ok);
     TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
     TEST_ASSERT_TRUE(utl_Message_getBool(message, &message_def->fields[1]));
 
@@ -244,6 +254,7 @@ int main() {
     RUN_TEST(test_MessageWithFlagsDecode);
     RUN_TEST(test_MessageWithBitBoolEncode);
     RUN_TEST(test_MessageWithBitBoolDecode);
+    // TODO: tests with vectors and nested objects
 
     return UNITY_END();
 }

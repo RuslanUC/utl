@@ -87,7 +87,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
     }
 }
 
-utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
+utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, utl_Status* status) {
     size_t original_size = def_pool->arena.size;
     utl_MessageDef* message_def = utl_MessageDef_new(&def_pool->arena);
     memset(message_def, 0, sizeof(utl_MessageDef));
@@ -97,6 +97,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
     if(pos == last) {
         // no name/namespace
+        if(status) {
+            status->ok = false;
+            strncpy(status->message, "Expected name or namespace", UTL_STATUS_MAX_MESSAGE_SIZE);
+        }
         def_pool->arena.size = original_size;
         return 0;
     }
@@ -112,6 +116,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
         if(line[pos] != '#') {
             // tl id (after namespace) not found, probably end of string is reached
+            if(status) {
+                status->ok = false;
+                strncpy(status->message, "Expected tl id", UTL_STATUS_MAX_MESSAGE_SIZE);
+            }
             def_pool->arena.size = original_size;
             return 0;
         }
@@ -123,6 +131,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
         memcpy(message_def->name.data, line + last, pos - last);
     } else {
         // neither namespace nor tl id found, probably end of string is reached
+        if(status) {
+            status->ok = false;
+            strncpy(status->message, "Expected namespace or tl id", UTL_STATUS_MAX_MESSAGE_SIZE);
+        }
         def_pool->arena.size = original_size;
         return 0;
     }
@@ -136,6 +148,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
             message_def->id = (message_def->id << 4) | ((line[pos] - 'a' + 10) & 0xF);
         } else {
             // invalid hex character
+            if(status) {
+                status->ok = false;
+                strncpy(status->message, "Invalid tl id, not hex", UTL_STATUS_MAX_MESSAGE_SIZE);
+            }
             def_pool->arena.size = original_size;
             return 0;
         }
@@ -159,6 +175,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
 
     if(line[pos] != '=') {
         // type (after "=") expected, but end of string is reached
+        if(status) {
+            status->ok = false;
+            strncpy(status->message, "Expected type", UTL_STATUS_MAX_MESSAGE_SIZE);
+        }
         def_pool->arena.size = original_size;
         return 0;
     }
@@ -170,12 +190,20 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
     while(pos < size && line[pos] != ';') ++pos;
     if(line[pos] != ';') {
         // ";" expected, but end of string is reached
+        if(status) {
+            status->ok = false;
+            strncpy(status->message, "Expected \";\"", UTL_STATUS_MAX_MESSAGE_SIZE);
+        }
         def_pool->arena.size = original_size;
         return 0;
     }
 
     if(pos == last) {
         // no type
+        if(status) {
+            status->ok = false;
+            strncpy(status->message, "Expected type", UTL_STATUS_MAX_MESSAGE_SIZE);
+        }
         def_pool->arena.size = original_size;
         return 0;
     }
@@ -192,7 +220,6 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
     // TODO: add message_def to type (or is message_defs even needed in utl_TypeDef?)
     message_def->type = utl_DefPool_getType(def_pool, type_name);
 
-    //char* real_line = line;
     line += fields_start;
     size = fields_end - fields_start;
     pos = 0;
@@ -220,6 +247,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
             uint8_t count = pos - last;
             if(count < 7 || (line[last + 5] != '.' && line[last + 6] != '.')) {
                 // "flags.X" expected, but end of string is reached
+                if(status) {
+                    status->ok = false;
+                    strncpy(status->message, "Field is optional, but doesn't have valid flagsX.X", UTL_STATUS_MAX_MESSAGE_SIZE);
+                }
                 def_pool->arena.size = original_size;
                 return 0;
             }
@@ -235,6 +266,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
                 flag_num = line[last + 5] - '0';
                 flag_bit_offset = 7;
             } else {
+                if(status) {
+                    status->ok = false;
+                    strncpy(status->message, "Invalid flagsX.X", UTL_STATUS_MAX_MESSAGE_SIZE);
+                }
                 def_pool->arena.size = original_size;
                 return 0;
             }
@@ -257,6 +292,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
             utl_parse_fieldType(def_pool, line + last, pos - last, field, false);
         } else {
             // Field type expected, but end of string is reached
+            if(status) {
+                status->ok = false;
+                strncpy(status->message, "Field expected", UTL_STATUS_MAX_MESSAGE_SIZE);
+            }
             def_pool->arena.size = original_size;
             return 0;
         }
@@ -273,6 +312,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size) {
                 continue;
             message_def->flags_fields[flags_i++] = message_def->fields[i];
         }
+    }
+
+    if(status) {
+        status->ok = true;
     }
 
     utl_DefPool_addMessage(def_pool, message_def);
@@ -332,7 +375,7 @@ void utl_parse_file(utl_DefPool* def_pool, const char* file_name) {
             continue;
         }
 
-        utl_MessageDef* message_def = utl_parse_line(def_pool, line, read);
+        utl_MessageDef* message_def = utl_parse_line(def_pool, line, read, NULL);
         if(!message_def) {
             printf("Failed to parse: %s\n", line);
             continue;
