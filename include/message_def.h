@@ -22,7 +22,7 @@ typedef struct utl_MessageDef {
     utl_FieldDef* fields;
     uint8_t flags_num;
     // TODO: maybe make it utl_FieldDef**, so it will point to existing field
-    utl_FieldDef* flags_fields;
+    utl_FieldDef** flags_fields;
 } utl_MessageDef;
 
 typedef struct utl_MessageDefVector {

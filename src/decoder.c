@@ -220,8 +220,8 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
 bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
     if(field->flag_info && field->type != FLAGS) {
         uint8_t flag_bit = field->flag_info & 0b11111;
-        utl_FieldDef flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
-        uint32_t flags = utl_Message_getInt32(message, &flags_field);
+        utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+        uint32_t flags = utl_Message_getInt32(message, flags_field);
         bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
         if(field->type == BIT_BOOL)
             utl_Message_setBool(message, field, field_present);

@@ -213,11 +213,8 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
     if(!utl_DefPool_hasType(def_pool, type_name)) {
         utl_TypeDef* type_def = utl_TypeDef_new(&def_pool->arena);
         type_def->name = type_name;
-        type_def->message_defs_num = 0;
-        type_def->message_defs = NULL;
         utl_DefPool_addType(def_pool, type_def);
     }
-    // TODO: add message_def to type (or is message_defs even needed in utl_TypeDef?)
     message_def->type = utl_DefPool_getType(def_pool, type_name);
 
     line += fields_start;
@@ -305,12 +302,12 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
     }
 
     if(message_def->flags_num) {
-        message_def->flags_fields = (utl_FieldDef*)arena_alloc(&def_pool->arena, sizeof(utl_FieldDef) * message_def->flags_num);
+        message_def->flags_fields = (utl_FieldDef**)arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->flags_num);
         size_t flags_i = 0;
         for(int i = 0; i < message_def->fields_num && flags_i < message_def->flags_num; i++) {
             if(message_def->fields[i].type != FLAGS)
                 continue;
-            message_def->flags_fields[flags_i++] = message_def->fields[i];
+            message_def->flags_fields[flags_i++] = &message_def->fields[i];
         }
     }
 
