@@ -35,11 +35,53 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    return Py_BuildValue("K", (uint64_t)message_def);
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.Message subclass when it will added
 }
 
-PyMethodDef Py_DefPool_methods[] = {
+static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
+    char* str;
+    size_t str_len;
+
+    if (!PyArg_ParseTuple(args, "s#", &str, &str_len)) {
+        return NULL;
+    }
+
+    utl_StringView name = {
+        .size = str_len,
+        .data = str,
+    };
+    return PyBool_FromLong(utl_DefPool_hasType(self->pool, name));
+}
+
+static PyObject* Py_DefPool_has_constructor(Py_DefPool* self, PyObject* args) {
+    uint32_t tl_id;
+
+    if (!PyArg_ParseTuple(args, "I", &tl_id)) {
+        return NULL;
+    }
+
+    return PyBool_FromLong(utl_DefPool_hasMessage(self->pool, tl_id));
+}
+
+static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
+    uint32_t tl_id;
+
+    if (!PyArg_ParseTuple(args, "I", &tl_id)) {
+        return NULL;
+    }
+
+    utl_MessageDef* message_def = utl_DefPool_getMessage(self->pool, tl_id);
+    if(!message_def)
+        return Py_BuildValue("");
+
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.Message subclass when it will added
+}
+
+static PyMethodDef Py_DefPool_methods[] = {
     {"parse", (PyCFunction)Py_DefPool_parse, METH_VARARGS, 0,},
+    {"has_type", (PyCFunction)Py_DefPool_has_type, METH_VARARGS, 0,},
+    {"has_constructor", (PyCFunction)Py_DefPool_has_constructor, METH_VARARGS, 0,},
+    {"get_constructor", (PyCFunction)Py_DefPool_get_constructor, METH_VARARGS, 0,},
     {NULL}
 };
 
