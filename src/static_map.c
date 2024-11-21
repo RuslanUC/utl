@@ -8,10 +8,8 @@ utl_StaticMap* utl_Map_new(size_t buckets_num) {
     utl_StaticMap* map = arena_alloc(&arena, sizeof(utl_StaticMap));
     map->arena = arena;
     map->buckets_num = buckets_num;
-#ifdef UTL_MAP_ON_HEAP
     map->buckets = arena_alloc(&map->arena, sizeof(utl_ListNode*) * buckets_num);
-#endif
-    memset(map->buckets, 0, sizeof(utl_ListNode*) * buckets_num);
+    memset(map->buckets, 0, sizeof(utl_ListNode*) * map->buckets_num);
 
     return map;
 }
