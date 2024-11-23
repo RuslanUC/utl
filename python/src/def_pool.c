@@ -1,4 +1,6 @@
+#include "pyutl.h"
 #include "py_def_pool.h"
+#include "tlobject.h"
 
 static void Py_DefPool_dealloc(PyObject* self) {
     utl_DefPool_free(((Py_DefPool*)self)->pool);
@@ -35,7 +37,9 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when it will added
+    //return Py_TLObject_createType(message_def);
+
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when python types cache will be added
 }
 
 static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
@@ -74,7 +78,7 @@ static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
     if(!message_def)
         return Py_BuildValue("");
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when it will added
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when python types cache will be added
 }
 
 static PyMethodDef Py_DefPool_methods[] = {

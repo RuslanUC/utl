@@ -1,4 +1,6 @@
-
+import os
+print(os.getpid())
+input()
 
 import _pyutl
 
