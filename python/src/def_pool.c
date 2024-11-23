@@ -12,7 +12,7 @@ static PyObject* Py_DefPool_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), Py
     return self;
 }
 
-static int Py_DefPool_init(PyObject* self, PyObject* args, PyObject* kwds) {
+static int Py_DefPool_init(PyObject* self, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
     return 0;
 }
 
@@ -35,7 +35,7 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.Message subclass when it will added
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when it will added
 }
 
 static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
@@ -74,7 +74,7 @@ static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
     if(!message_def)
         return Py_BuildValue("");
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.Message subclass when it will added
+    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when it will added
 }
 
 static PyMethodDef Py_DefPool_methods[] = {
@@ -85,44 +85,19 @@ static PyMethodDef Py_DefPool_methods[] = {
     {NULL}
 };
 
-PyTypeObject pyutl_DefPoolType = {
-    PyObject_HEAD_INIT(NULL)
+static PyType_Slot Py_DefPool_slots[] = {
+    {Py_tp_dealloc, Py_DefPool_dealloc},
+    {Py_tp_hash, PyObject_HashNotImplemented},
+    {Py_tp_methods, Py_DefPool_methods},
+    {Py_tp_new, Py_DefPool_new},
+    {Py_tp_init, Py_DefPool_init},
+    {0, NULL}
+};
+
+PyType_Spec pyutl_DefPoolType_spec = {
     "_pyutl.DefPool",
     sizeof(Py_DefPool),
     0,
-    (destructor)Py_DefPool_dealloc,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    Py_DefPool_methods,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    (initproc)Py_DefPool_init,
-    0,
-    Py_DefPool_new,
-    0,
+    Py_TPFLAGS_DEFAULT,
+    Py_DefPool_slots,
 };

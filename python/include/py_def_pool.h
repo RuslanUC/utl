@@ -9,4 +9,4 @@ typedef struct Py_DefPool {
     utl_DefPool* pool;
 } Py_DefPool;
 
-extern PyTypeObject pyutl_DefPoolType;
+extern PyType_Spec pyutl_DefPoolType_spec;

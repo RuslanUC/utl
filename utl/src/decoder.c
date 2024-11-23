@@ -166,15 +166,21 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                 break;
             }
             case TLOBJECT: {
-                utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
-                // TODO: handle case when type is NULL (object type is any, "!X" or "TLObject"), maybe simply skip type check?
-
                 uint32_t tl_id = utl_decode_int32(buf);
                 utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
-                if (!new_def || new_def->type != type) {
+                if (!new_def) {
                     if(status) {
                         status->ok = false;
                         strncpy(status->message, "Unknown object id", UTL_STATUS_MAX_MESSAGE_SIZE);
+                    }
+                    return false;
+                }
+
+                utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+                if (type && new_def->type != type) {
+                    if(status) {
+                        status->ok = false;
+                        strncpy(status->message, "Invalid object id", UTL_STATUS_MAX_MESSAGE_SIZE);
                     }
                     return false;
                 }
@@ -289,15 +295,21 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
             break;
         }
         case TLOBJECT: {
-            utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
-            // TODO: handle case when type is NULL (object type is any, "!X" or "TLObject"), maybe simply skip type check?
-
             uint32_t tl_id = utl_decode_int32(buf);
             utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
-            if(!new_def || new_def->type != type) {
+            if (!new_def) {
                 if(status) {
                     status->ok = false;
                     strncpy(status->message, "Unknown object id", UTL_STATUS_MAX_MESSAGE_SIZE);
+                }
+                return false;
+            }
+
+            utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+            if (type && new_def->type != type) {
+                if(status) {
+                    status->ok = false;
+                    strncpy(status->message, "Invalid object id", UTL_STATUS_MAX_MESSAGE_SIZE);
                 }
                 return false;
             }

@@ -10,19 +10,25 @@ PyModuleDef _pyutl_module = {
     0,
     -1,
     method_table,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
 };
 
 PyMODINIT_FUNC PyInit__pyutl(void) {
-    if (PyType_Ready(&pyutl_DefPoolType) < 0)
-        return 0;
-
     PyObject* m = PyModule_Create(&_pyutl_module);
-    Py_INCREF(&pyutl_DefPoolType);
-    PyModule_AddObject(m, "DefPool", (PyObject *)&pyutl_DefPoolType);
+    if(!m) {
+        return 0;
+    }
+
+    PyObject* pyutl_DefPoolType = PyType_FromSpec(&pyutl_DefPoolType_spec);
+    if(!m) {
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if(PyModule_AddObject(m, "DefPool", pyutl_DefPoolType)) {
+        Py_DECREF(pyutl_DefPoolType);
+        Py_DECREF(m);
+        return 0;
+    }
 
     return m;
 }
