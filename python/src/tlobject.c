@@ -1,5 +1,6 @@
 #include "pyutl.h"
 #include "tlobject.h"
+#include "encoder.h"
 
 static void Py_TLObject_dealloc(PyObject* self) {
     utl_Message_free(((Py_TLObject*)self)->message);
@@ -206,7 +207,10 @@ PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     utl_StringView field_name = { .data = buf, .size = len };
     utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
     if(!field) {
-        return Py_None;
+        PyObject* ret = PyObject_GenericGetAttr((PyObject*)self, attr);
+        if (ret) return ret;
+        //PyErr_SetString(PyExc_AttributeError, "object has no attribute");
+        return NULL;
     }
 
     if(!utl_Message_hasField(self->message, field)) {
@@ -253,13 +257,20 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, PyObject* args) {
     return Py_None;  // TODO
 }
 
-static PyObject* Py_TLObject_write(PyObject* self, PyObject* args) {
-    return Py_None; // TODO
+static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
+    arena_t encoder_arena = arena_new();
+    encoder_arena.flags |= ARENA_DONTALIGN;
+    size_t written_bytes = utl_encode(self->message, &encoder_arena);
+
+    PyObject* result = PyBytes_FromStringAndSize(encoder_arena.data + sizeof(uint32_t*) * self->message->message_def->flags_num, written_bytes);
+    arena_delete(&encoder_arena);
+
+    return result;
 }
 
 static PyMethodDef Py_TLObject_methods[] = {
     {"read", (PyCFunction)Py_TLObject_read, METH_VARARGS | METH_CLASS, 0,},
-    {"write", (PyCFunction)Py_TLObject_write, METH_VARARGS, 0,},
+    {"write", (PyCFunction)Py_TLObject_write, METH_NOARGS, 0,},
     {NULL}
 };
 
