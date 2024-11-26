@@ -1,6 +1,7 @@
 #include "pyutl.h"
 #include "tlobject.h"
 #include "encoder.h"
+#include "decoder.h"
 
 static void Py_TLObject_dealloc(PyObject* self) {
     utl_Message_free(((Py_TLObject*)self)->message);
@@ -253,8 +254,29 @@ int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
     return result;
 }*/
 
-static PyObject* Py_TLObject_read(PyTypeObject* cls, PyObject* args) {
-    return Py_None;  // TODO
+static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
+    char* buf;
+    size_t buf_len;
+    if (!PyArg_ParseTuple(args, "s#", &buf, &buf_len)) {
+        return NULL;
+    }
+
+    PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
+    if(!result) {
+        // cls = ... // TODO: get by tl id if class is TLObject
+    }
+
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
+
+    utl_Status status;
+    utl_decode(obj->message, state->default_c_def_pool, buf, buf_len, &status);
+    if(!status.ok) {
+        PyErr_SetString(PyExc_ValueError, status.message);
+        return NULL;
+    }
+
+    return (PyObject*)obj;  // TODO
 }
 
 static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
@@ -269,7 +291,7 @@ static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
 }
 
 static PyMethodDef Py_TLObject_methods[] = {
-    {"read", (PyCFunction)Py_TLObject_read, METH_VARARGS | METH_CLASS, 0,},
+    {"read_bytes", (PyCFunction)Py_TLObject_read_bytes, METH_VARARGS | METH_CLASS, 0,},
     {"write", (PyCFunction)Py_TLObject_write, METH_NOARGS, 0,},
     {NULL}
 };
