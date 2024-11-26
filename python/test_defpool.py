@@ -31,7 +31,11 @@ def test_create_object() -> None:
     assert cls
 
     obj = cls(lat=123.456, long=456.123)
-    print(obj)
+    assert obj.lat == 123.456
+    assert obj.long == 456.123
+    assert obj.accuracy_radius is None
 
     obj.long = 123.789
     obj.accuracy_radius = 111
+    assert obj.long == 123.789
+    assert obj.accuracy_radius == 111

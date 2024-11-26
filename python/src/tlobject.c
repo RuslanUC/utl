@@ -6,6 +6,51 @@ static void Py_TLObject_dealloc(PyObject* self) {
     self->ob_type->tp_free(self);
 }
 
+static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
+    switch (field->type) {
+        case FLAGS:
+        case INT32: {
+            return PyLong_FromLong(utl_Message_getInt32(self->message, field));
+        }
+        case INT64: {
+            return PyLong_FromLong(utl_Message_getInt64(self->message, field));
+        }
+        case INT128: {
+            char* bytes = utl_Message_getInt128(self->message, field);
+            return _PyLong_FromByteArray((uint8_t*)bytes, 16, true, true);
+        }
+        case INT256: {
+            char* bytes = utl_Message_getInt256(self->message, field);
+            return _PyLong_FromByteArray((uint8_t*)bytes, 32, true, true);
+        }
+        case DOUBLE: {
+            return PyFloat_FromDouble(utl_Message_getDouble(self->message, field));
+        }
+        case FULL_BOOL:
+        case BIT_BOOL: {
+            return utl_Message_getBool(self->message, field) ? Py_True : Py_False;
+        }
+        case BYTES: {
+            utl_StringView bytes = utl_Message_getBytes(self->message, field);
+            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
+        }
+        case STRING: {
+            utl_StringView bytes = utl_Message_getString(self->message, field);
+            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+        }
+        case TLOBJECT: {
+            PyErr_SetString(PyExc_NotImplementedError, "Objects nesting is not implemented yet.");
+            return Py_None;
+        }
+        case VECTOR: {
+            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented yet.");
+            return Py_None;
+        }
+    }
+
+    return Py_None;
+}
+
 static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject* item) {
     switch (field->type) {
         case FLAGS:
@@ -145,8 +190,30 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
     return 0;
 }
 
-PyObject* Py_TLObject_getattro(PyObject* self, PyUnicodeObject* attr) {
-    return Py_None;  // TODO
+PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
+    if(!cached) {
+        return Py_None;
+    }
+
+    ssize_t len;
+    char *buf = (char*)PyUnicode_AsUTF8AndSize(attr, &len);
+    if(!buf) {
+        return Py_None;
+    }
+
+    utl_StringView field_name = { .data = buf, .size = len };
+    utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
+    if(!field) {
+        return Py_None;
+    }
+
+    if(!utl_Message_hasField(self->message, field)) {
+        return Py_None;
+    }
+
+    return Py_TLObject_getitem(self, field);
 }
 
 int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
