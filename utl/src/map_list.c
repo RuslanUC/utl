@@ -59,3 +59,10 @@ UTL_LIST_REMOVE_IMPL(, utl_ListNodeUint32, uint32_t, element->key == key)
 
 UTL_LIST_APPEND_IMPL(_str, utl_ListNodeString, utl_StringView, tmp->key = utl_StringView_clone(arena, key), head->key.size == key.size && !memcmp(head->key.data, key.data, key.size))
 UTL_LIST_REMOVE_IMPL(_str, utl_ListNodeString, utl_StringView, element->key.size == key.size && !memcmp(element->key.data, key.data, key.size))
+
+UTL_LIST_APPEND_IMPL(_uint64, utl_ListNodeUint64, uint64_t, tmp->key = key, head->key == key)
+UTL_LIST_REMOVE_IMPL(_uint64, utl_ListNodeUint64, uint64_t, element->key == key)
+
+
+#undef UTL_LIST_APPEND_IMPL
+#undef UTL_LIST_REMOVE_IMPL

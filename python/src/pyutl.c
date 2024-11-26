@@ -62,6 +62,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
         return 0;
     }
     state->default_c_def_pool = ((Py_DefPool*)state->default_def_pool)->pool;
+    state->messages_cache = utl_Map_new_on_arena(state->default_c_def_pool->message_defs->buckets_num, &state->default_c_def_pool->arena);
 
     return m;
 }

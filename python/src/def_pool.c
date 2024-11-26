@@ -37,9 +37,22 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    //return Py_TLObject_createType(message_def);
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
+    if(!cached_def) {
+        PyObject* type = Py_TLObject_createType(message_def);
+        cached_def = arena_alloc(&state->default_c_def_pool->arena, sizeof(pyutl_MessageDef));
+        cached_def->python_cls = (PyTypeObject*)type;
+        cached_def->fields = utl_Map_new_on_arena(message_def->fields_num / 2, &state->default_c_def_pool->arena);
+        for(size_t i = 0; i < message_def->fields_num; ++i) {
+            utl_FieldDef* field = &message_def->fields[i];
+            utl_Map_insert_str(cached_def->fields, field->name, field);
+        }
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when python types cache will be added
+        utl_Map_insert_uint64(state->messages_cache, (uint64_t)message_def, cached_def);
+    }
+
+    return (PyObject*)cached_def->python_cls;
 }
 
 static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
@@ -76,9 +89,15 @@ static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
 
     utl_MessageDef* message_def = utl_DefPool_getMessage(self->pool, tl_id);
     if(!message_def)
-        return Py_BuildValue("");
+        return Py_None;
 
-    return Py_BuildValue("K", (uint64_t)message_def); // TODO: return _pyutl.TLObject subclass when python types cache will be added
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
+    if(!cached) {
+        return Py_None;
+    }
+
+    return (PyObject*)cached->python_cls;
 }
 
 static PyMethodDef Py_DefPool_methods[] = {
