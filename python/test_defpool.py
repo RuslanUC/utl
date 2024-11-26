@@ -1,6 +1,6 @@
 import os
-print(os.getpid())
-input()
+print(f"\nPid: {os.getpid()}")
+input("Press enter to continue...")
 
 import _pyutl
 

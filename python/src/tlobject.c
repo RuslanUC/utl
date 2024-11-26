@@ -341,7 +341,7 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
 
     PyType_Spec spec = {
         name,
-        sizeof(Py_TLObject), // TODO: is structure inherited from tp_base?
+        0,
         0,
         Py_TPFLAGS_DEFAULT,
         slots,
