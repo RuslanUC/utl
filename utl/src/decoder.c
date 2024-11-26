@@ -23,6 +23,15 @@ bool check_not_eof(utl_DecodeBuf* buf, utl_Status* status, size_t need_bytes) {
 
 void utl_decode_intX(char* value, utl_DecodeBuf* buffer, uint8_t bytes_size) {
     const char* buf = utl_DecodeBuf_read(buffer, bytes_size);
+#ifndef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
+#ifdef __BIG_ENDIAN__
+    for(int i = 0; i < bytes_size; i++) {
+        value[i] = buf[bytes_size-i-1];
+    }
+#else
+    memcpy(value, buf, bytes_size);
+#endif
+#else
     if(is_big_endian()) {
         for(int i = 0; i < bytes_size; i++) {
             value[i] = buf[bytes_size-i-1];
@@ -30,6 +39,7 @@ void utl_decode_intX(char* value, utl_DecodeBuf* buffer, uint8_t bytes_size) {
     } else {
         memcpy(value, buf, bytes_size);
     }
+#endif
 }
 
 int32_t utl_decode_int32(utl_DecodeBuf* buffer) {

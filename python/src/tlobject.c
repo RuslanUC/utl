@@ -196,22 +196,19 @@ PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
     if(!cached) {
-        return Py_None;
+        return NULL;
     }
 
     ssize_t len;
     char *buf = (char*)PyUnicode_AsUTF8AndSize(attr, &len);
     if(!buf) {
-        return Py_None;
+        return NULL;
     }
 
     utl_StringView field_name = { .data = buf, .size = len };
     utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
     if(!field) {
-        PyObject* ret = PyObject_GenericGetAttr((PyObject*)self, attr);
-        if (ret) return ret;
-        //PyErr_SetString(PyExc_AttributeError, "object has no attribute");
-        return NULL;
+        return PyObject_GenericGetAttr((PyObject*)self, attr);
     }
 
     if(!utl_Message_hasField(self->message, field)) {
@@ -276,7 +273,7 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
         return NULL;
     }
 
-    return (PyObject*)obj;  // TODO
+    return (PyObject*)obj;
 }
 
 static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
