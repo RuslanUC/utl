@@ -4,14 +4,16 @@
 #include "string_view.h"
 #include "arena.h"
 
-#define UTL_LIST_STRUCT(TYPE, KEY_TYPE) typedef struct utl_ListNode##TYPE { \
-        struct utl_ListNode##TYPE* prev; \
-        struct utl_ListNode##TYPE* next; \
-        KEY_TYPE key; \
-        void* value; \
-    } utl_ListNode##TYPE;
+typedef struct utl_ListNode {
+    struct utl_ListNode* prev;
+    struct utl_ListNode* next;
+    void* value;
+} utl_ListNode;
 
-typedef struct utl_ListNode {} utl_ListNode;
+#define UTL_LIST_STRUCT(TYPE, KEY_TYPE) typedef struct utl_ListNode##TYPE { \
+        utl_ListNode base; \
+        KEY_TYPE key; \
+    } utl_ListNode##TYPE;
 
 UTL_LIST_STRUCT(Uint32, uint32_t)
 UTL_LIST_STRUCT(String, utl_StringView)

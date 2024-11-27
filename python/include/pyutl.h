@@ -3,6 +3,7 @@
 #include <Python.h>
 #include "def_pool.h"
 #include "message_def.h"
+#include "ptr_map.h"
 
 typedef struct pyutl_MessageDef {
     PyTypeObject* python_cls;
@@ -16,6 +17,7 @@ typedef struct pyutl_ModuleState {
     PyTypeObject* tlobject_type;
 
     utl_StaticMap* messages_cache;
+    utl_PtrMap* objects_cache;
 } pyutl_ModuleState;
 
 PyMODINIT_FUNC PyInit__pyutl(void);

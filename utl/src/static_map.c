@@ -57,10 +57,10 @@ void* utl_Map_search(utl_StaticMap* map, uint32_t key) {
     void* found = NULL;
     while(head != NULL) {
         if(head->key == key) {
-            found = head->value;
+            found = head->base.value;
             break;
         }
-        head = head->next;
+        head = (utl_ListNodeUint32*)head->base.next;
     }
 
     return found;
@@ -103,10 +103,10 @@ void* utl_Map_search_str(utl_StaticMap* map, utl_StringView key) {
     void* found = NULL;
     while(head != NULL) {
         if(head->key.size == key.size && !memcmp(head->key.data, key.data, key.size)) {
-            found = head->value;
+            found = head->base.value;
             break;
         }
-        head = head->next;
+        head = (utl_ListNodeString*)head->base.next;
     }
 
     return found;
@@ -134,10 +134,10 @@ void* utl_Map_search_uint64(utl_StaticMap* map, uint64_t key) {
     void* found = NULL;
     while(head != NULL) {
         if(head->key == key) {
-            found = head->value;
+            found = head->base.value;
             break;
         }
-        head = head->next;
+        head = (utl_ListNodeUint64*)head->base.next;
     }
 
     return found;

@@ -3,11 +3,6 @@
 #include "encoder.h"
 #include "decoder.h"
 
-static void Py_TLObject_dealloc(PyObject* self) {
-    utl_Message_free(((Py_TLObject*)self)->message);
-    self->ob_type->tp_free(self);
-}
-
 static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
     switch (field->type) {
         case FLAGS:
@@ -151,6 +146,14 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
     return true;
 }
 
+static void Py_TLObject_dealloc(PyObject* self) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    utl_PtrMap_remove(state->objects_cache, ((Py_TLObject*)self)->message);
+
+    utl_Message_free(((Py_TLObject*)self)->message);
+    self->ob_type->tp_free(self);
+}
+
 static PyObject* Py_TLObject_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
@@ -161,6 +164,9 @@ static PyObject* Py_TLObject_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), P
     PyObject* self = cls->tp_alloc(cls, 0);
     utl_MessageDef* def = PyCapsule_GetPointer(result, NULL);
     ((Py_TLObject*)self)->message = utl_Message_new(def);
+
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    utl_PtrMap_insert(state->objects_cache, ((Py_TLObject*)self)->message, self);
 
     return self;
 }

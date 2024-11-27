@@ -7,6 +7,7 @@ find_package(Python3 3.10 COMPONENTS Interpreter Development.Module REQUIRED)
 
 add_library(pyutl SHARED
         src/def_pool.c
+        src/ptr_map.c
         src/tlobject.c
         src/pyutl.c)
 target_include_directories(pyutl PUBLIC include ${Python3_INCLUDE_DIRS})

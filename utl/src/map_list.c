@@ -5,29 +5,29 @@
         if(head == NULL) { \
             LIST_TYPE* result = arena_alloc(arena, sizeof(LIST_TYPE)); \
             LIST_TYPE* tmp = result;\
-            result->next = result->prev = NULL; \
+            result->base.next = result->base.prev = NULL; \
             KEY_SET; \
-            result->value = value; \
+            result->base.value = value; \
             return result; \
         } \
         LIST_TYPE* real_head = head; \
-        while(head->next != NULL) { \
+        while(head->base.next != NULL) { \
             if(KEY_CMP) { \
-                head->value = value; \
+                head->base.value = value; \
                 return real_head; \
             } \
-            head = head->next; \
+            head = (LIST_TYPE*)head->base.next; \
         } \
         if(KEY_CMP) { \
-            head->value = value; \
+            head->base.value = value; \
         } else { \
             LIST_TYPE* new_node = arena_alloc(arena, sizeof(LIST_TYPE)); \
             LIST_TYPE* tmp = new_node; \
-            new_node->next = NULL; \
-            new_node->prev = head; \
+            new_node->base.next = NULL; \
+            new_node->base.prev = (utl_ListNode*)head; \
             KEY_SET; \
-            new_node->value = value; \
-            head->next = new_node; \
+            new_node->base.value = value; \
+            head->base.next = (utl_ListNode*)new_node; \
         } \
         return real_head; \
     }
@@ -38,19 +38,19 @@
         } \
         LIST_TYPE* element = head; \
         if(KEY_CMP) { \
-            return head->next; \
+            return (LIST_TYPE*)head->base.next; \
         } \
-        while(element->next != NULL) { \
+        while(element->base.next != NULL) { \
             if(KEY_CMP) { \
                 break; \
             } \
-            element = element->next; \
+            element = (LIST_TYPE*)element->base.next; \
         } \
         if(!(KEY_CMP)) { \
             return head; \
         } \
-        element->prev->next = element->next; \
-        element->next->prev = element->prev; \
+        element->base.prev->next = element->base.next; \
+        element->base.next->prev = element->base.prev; \
         return head; \
     }
 
