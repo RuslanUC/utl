@@ -1,5 +1,6 @@
 #include "ptr_map.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,7 +62,8 @@ utl_ListNodePtr* utl_ListNode_remove_ptr(utl_ListNodePtr* head, void* key) {
     }
 
     element->base.prev->next = element->base.next;
-    element->base.next->prev = element->base.prev;
+    if(element->base.next)
+        element->base.next->prev = element->base.prev;
 
     free(element);
 

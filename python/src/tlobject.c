@@ -36,11 +36,25 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
             return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
         }
         case TLOBJECT: {
-            PyErr_SetString(PyExc_NotImplementedError, "Objects nesting is not implemented yet.");
-            return Py_None;
+            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            utl_Message* message = utl_Message_getMessage(self->message, field);
+
+            PyObject* obj = utl_PtrMap_search(state->objects_cache, message);
+            if(!obj) {
+                pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message->message_def);
+                if(!cached_def) {
+                    PyErr_SetString(PyExc_TypeError, "object type is not found");
+                }
+
+                obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
+                Py_TLObject_init_message((Py_TLObject*)obj, NULL, message);
+            }
+
+            Py_INCREF(obj);
+            return obj;
         }
         case VECTOR: {
-            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented yet.");
+            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
             return Py_None;
         }
     }
@@ -135,11 +149,23 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             break;
         }
         case TLOBJECT: {
-            PyErr_SetString(PyExc_NotImplementedError, "Objects nesting is not implemented yet.");
-            return false;
+            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            if(!PyObject_TypeCheck(item, state->tlobject_type)) {
+                PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
+                return false;
+            }
+            utl_Message* message = ((Py_TLObject*)item)->message;
+            if(field->sub_message_def != NULL && (utl_TypeDef*)field->sub_message_def != message->message_def->type) {
+                PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
+                return false;
+            }
+
+            utl_Message_setMessage(self->message, field, message);
+            Py_INCREF(item);
+            break;
         }
         case VECTOR: {
-            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented yet.");
+            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
             return false;
         }
     }
@@ -154,6 +180,17 @@ static void Py_TLObject_dealloc(PyObject* self) {
     self->ob_type->tp_free(self);
 }
 
+static void Py_TLObject_init_message(Py_TLObject* self, utl_MessageDef* def, utl_Message* message) {
+    if(message != NULL) {
+        self->message = message;
+    } else {
+        self->message = utl_Message_new(def);
+    }
+
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    utl_PtrMap_insert(state->objects_cache, self->message, self);
+}
+
 static PyObject* Py_TLObject_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
@@ -163,10 +200,7 @@ static PyObject* Py_TLObject_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), P
 
     PyObject* self = cls->tp_alloc(cls, 0);
     utl_MessageDef* def = PyCapsule_GetPointer(result, NULL);
-    ((Py_TLObject*)self)->message = utl_Message_new(def);
-
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    utl_PtrMap_insert(state->objects_cache, ((Py_TLObject*)self)->message, self);
+    Py_TLObject_init_message((Py_TLObject*)self, def, NULL);
 
     return self;
 }

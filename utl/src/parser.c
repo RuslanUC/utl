@@ -160,6 +160,9 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
 
     if(utl_DefPool_hasMessage(def_pool, message_def->id)) {
         def_pool->arena.size = original_size;
+        if(status) {
+            status->ok = true;
+        }
         return utl_DefPool_getMessage(def_pool, message_def->id);
     }
 
