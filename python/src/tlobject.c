@@ -477,16 +477,7 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
 
     PyType_Slot slots[] = {
         {Py_tp_base, state->tlobject_type},
-        {Py_tp_dealloc, Py_TLObject_dealloc},
-        {Py_tp_hash, PyObject_HashNotImplemented},
-        {Py_tp_methods, Py_TLObject_methods},
         {Py_tp_new, Py_TLObject_new},
-        {Py_tp_init, Py_TLObject_init},
-        {Py_tp_getattro, Py_TLObject_getattro},
-        {Py_tp_setattro, Py_TLObject_setattro},
-        {Py_tp_repr, Py_TLObject_repr},
-        {Py_tp_str, Py_TLObject_repr},
-        {Py_tp_richcompare, Py_TLObject_compare},
         {0, NULL}
     };
 
