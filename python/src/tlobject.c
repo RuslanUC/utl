@@ -44,6 +44,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
                 pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message->message_def);
                 if(!cached_def) {
                     PyErr_SetString(PyExc_TypeError, "object type is not found");
+                    return NULL;
                 }
 
                 obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
@@ -55,7 +56,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
         }
         case VECTOR: {
             PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
-            return Py_None;
+            return NULL;
         }
     }
 
@@ -298,12 +299,37 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
         return NULL;
     }
 
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
-        // cls = ... // TODO: get by tl id if class is TLObject
+        if(buf_len < 4) {
+            PyErr_SetString(PyExc_ValueError, "need at least 4 bytes");
+            return NULL;
+        }
+        utl_DecodeBuf dbuf = {
+            .data = buf,
+            .pos = 0,
+            .size = 4,
+        };
+        uint32_t tl_id = utl_decode_int32(&dbuf);
+        utl_MessageDef* def = utl_DefPool_getMessage(state->default_c_def_pool, tl_id);
+        if (!def) {
+            PyErr_SetString(PyExc_TypeError, "Unknown object id");
+            return NULL;
+        }
+
+        pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)def);
+        if(!cached_def) {
+            PyErr_SetString(PyExc_TypeError, "object type is not found");
+            return NULL;
+        }
+
+        cls = cached_def->python_cls;
+        buf += 4;
+        buf_len -= 4;
     }
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
     Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
 
     utl_Status status;

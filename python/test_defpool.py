@@ -82,6 +82,16 @@ def test_decode_object() -> None:
     assert obj.long == 24.42
     assert obj.accuracy_radius == 456123
 
+    obj = _pyutl.TLObject.read_bytes(bytes([0xaf, 0x2f, 0x22, 0x48, 0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40]))
+    assert obj.lat == 42.24
+    assert obj.long == 24.42
+    assert obj.accuracy_radius is None
+
+    obj = _pyutl.TLObject.read_bytes(bytes([0xaf, 0x2f, 0x22, 0x48, 0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00]))
+    assert obj.lat == 42.24
+    assert obj.long == 24.42
+    assert obj.accuracy_radius == 456123
+
 
 @pytest.mark.skipif(SKIP_TESTS >= 5, reason="")
 def test_nested_message() -> None:
@@ -104,6 +114,12 @@ def test_nested_message() -> None:
     assert obj.write() == serialized
 
     obj2 = inputUserFromMessage.read_bytes(serialized[4:])
+    assert obj2.msg_id == obj.msg_id
+    assert obj2.user_id == obj.user_id
+    assert obj2.peer.user_id == obj.peer.user_id
+    assert obj2.peer.access_hash == obj.peer.access_hash
+
+    obj2 = _pyutl.TLObject.read_bytes(serialized)
     assert obj2.msg_id == obj.msg_id
     assert obj2.user_id == obj.user_id
     assert obj2.peer.user_id == obj.peer.user_id
