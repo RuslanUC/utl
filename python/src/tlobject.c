@@ -281,16 +281,79 @@ int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
     return Py_TLObject_setitem(self, field, value) ? 0 : -1;
 }
 
-/*PyObject* Py_TLObject_repr(Py_TLObject* self) {
+PyObject* Py_TLObject_repr(Py_TLObject* self) {
     arena_t repr_arena = arena_new();
     repr_arena.flags |= ARENA_DONTALIGN;
+    char* tmp;
 
-    // TODO
+    utl_MessageDef* def = self->message->message_def;
 
-    PyObject* result = PyUnicode_FromStringAndSize(buf, size);
+    if(def->namespace_.size) {
+        tmp = arena_alloc(&repr_arena, def->namespace_.size);
+        memcpy(tmp, def->namespace_.data, def->namespace_.size);
+        tmp = arena_alloc(&repr_arena, 1);
+        *tmp = '.';
+    }
+
+    tmp = arena_alloc(&repr_arena, def->name.size);
+    memcpy(tmp, def->name.data, def->name.size);
+    tmp = arena_alloc(&repr_arena, 1);
+    *tmp = '(';
+
+    for(size_t i = 0; i < def->fields_num; i++) {
+        utl_FieldDef field = def->fields[i];
+        tmp = arena_alloc(&repr_arena, field.name.size);
+        memcpy(tmp, field.name.data, field.name.size);
+        tmp = arena_alloc(&repr_arena, 1);
+        *tmp = '=';
+
+        PyObject* value;
+        if(!utl_Message_hasField(self->message, &field)) {
+            value = Py_None;
+        } else {
+            value = Py_TLObject_getitem(self, &field);
+        }
+
+        PyObject* repr = PyObject_Repr(value);
+        if(repr) {
+            ssize_t len;
+            const char *buf = PyUnicode_AsUTF8AndSize(repr, &len);
+            if(buf) {
+                tmp = arena_alloc(&repr_arena, len);
+                memcpy(tmp, buf, len);
+            } else {
+                Py_XDECREF(repr);
+                repr = NULL;
+            }
+        }
+
+        if(!repr) {
+            tmp = arena_alloc(&repr_arena, 6);
+            tmp[0] = '<';
+            tmp[1] = 'N';
+            tmp[2] = 'U';
+            tmp[3] = 'L';
+            tmp[4] = 'L';
+            tmp[5] = '>';
+        }
+
+        Py_XDECREF(value);
+        Py_XDECREF(repr);
+
+        if(i != def->fields_num - 1) {
+            tmp = arena_alloc(&repr_arena, 2);
+            tmp[0] = ',';
+            tmp[1] = ' ';
+        }
+    }
+
+    tmp = arena_alloc(&repr_arena, 1);
+    *tmp = ')';
+
+    PyObject* result = PyUnicode_FromStringAndSize(repr_arena.data, repr_arena.size);
     arena_delete(&repr_arena);
     return result;
-}*/
+}
 
 static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
     char* buf;
@@ -367,6 +430,8 @@ static PyType_Slot Py_TLObject_slots[] = {
     {Py_tp_init, Py_TLObject_init},
     {Py_tp_getattro, Py_TLObject_getattro},
     {Py_tp_setattro, Py_TLObject_setattro},
+    {Py_tp_repr, Py_TLObject_repr},
+    {Py_tp_str, Py_TLObject_repr},
     {0, NULL}
 };
 
@@ -399,6 +464,8 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
         {Py_tp_init, Py_TLObject_init},
         {Py_tp_getattro, Py_TLObject_getattro},
         {Py_tp_setattro, Py_TLObject_setattro},
+        {Py_tp_repr, Py_TLObject_repr},
+        {Py_tp_str, Py_TLObject_repr},
         {0, NULL}
     };
 
