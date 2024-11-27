@@ -85,6 +85,88 @@ void utl_Message_clearField(utl_Message* message, utl_FieldDef* field) {
     message->table[field->num] = 0;
 }
 
+bool utl_Message_equals(utl_Message* a, utl_Message* b) {
+    if(a == b) {
+        return true;
+    }
+    if(a->message_def != b->message_def) {
+        return false;
+    }
+
+    for(int i = 0; i < a->message_def->fields_num; i++) {
+        utl_FieldDef field = a->message_def->fields[i];
+        if(field.type == FLAGS) {
+            continue;
+        }
+        if(field.flag_info != 0) {
+            const bool has_a = utl_Message_hasField(a, &field);
+            const bool has_b = utl_Message_hasField(a, &field);
+
+            return !(has_a ^ has_b);
+        }
+
+        switch (field.type) {
+            case FLAGS:
+            case INT32: {
+                if(utl_Message_getInt32(a, &field) != utl_Message_getInt32(b, &field))
+                    return false;
+                break;
+            }
+            case INT64: {
+                if(utl_Message_getInt64(a, &field) != utl_Message_getInt64(b, &field))
+                    return false;
+                break;
+            }
+            case INT128: {
+                char* ia = utl_Message_getInt128(a, &field);
+                char* ib = utl_Message_getInt128(b, &field);
+                if(!memcmp(ia, ib, 16))
+                    return false;
+                break;
+            }
+            case INT256: {
+                char* ia = utl_Message_getInt256(a, &field);
+                char* ib = utl_Message_getInt256(b, &field);
+                if(!memcmp(ia, ib, 32))
+                    return false;
+                break;
+            }
+            case DOUBLE: {
+                if(utl_Message_getDouble(a, &field) != utl_Message_getDouble(b, &field))
+                    return false;
+                break;
+            }
+            case FULL_BOOL:
+            case BIT_BOOL: {
+                if(utl_Message_getBool(a, &field) != utl_Message_getBool(b, &field))
+                    return false;
+                break;
+            }
+            case BYTES: {
+                if(!utl_StringView_equals(utl_Message_getBytes(a, &field), utl_Message_getBytes(b, &field)))
+                    return false;
+                break;
+            }
+            case STRING: {
+                if(!utl_StringView_equals(utl_Message_getString(a, &field), utl_Message_getString(b, &field)))
+                    return false;
+                break;
+            }
+            case TLOBJECT: {
+                if(!utl_Message_equals(utl_Message_getMessage(a, &field), utl_Message_getMessage(b, &field)))
+                    return false;
+                break;
+            }
+            case VECTOR: {
+                // TODO: add utl_Vector_equals
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value){
     if(field->type != INT32 && field->type != FLAGS) {
         return;

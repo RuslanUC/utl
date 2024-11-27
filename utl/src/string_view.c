@@ -30,3 +30,14 @@ utl_StringView utl_StringView_new_malloc(size_t size)  {
 
     return string;
 }
+
+bool utl_StringView_equals(utl_StringView a, utl_StringView b) {
+    if(a.data == b.data) {
+        return true;
+    }
+    if(a.size != b.size) {
+        return false;
+    }
+
+    return !memcmp(a.data, b.data, a.size);
+}

@@ -124,3 +124,36 @@ def test_nested_message() -> None:
     assert obj2.user_id == obj.user_id
     assert obj2.peer.user_id == obj.peer.user_id
     assert obj2.peer.access_hash == obj.peer.access_hash
+
+
+@pytest.mark.skipif(SKIP_TESTS >= 6, reason="")
+def test_equals() -> None:
+    pool = _pyutl.default_def_pool
+    assert pool
+
+    inputPeerUser = pool.parse("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;")
+    assert inputPeerUser
+
+    inputUserFromMessage = pool.parse("inputUserFromMessage#1da448e2 peer:InputPeer msg_id:int user_id:long = InputUser;")
+    assert inputUserFromMessage
+
+    obj = inputUserFromMessage(peer=inputPeerUser(user_id=123, access_hash=456), msg_id=789, user_id=123123)
+    assert obj.msg_id == 789
+    assert obj.user_id == 123123
+    assert obj.peer.user_id == 123
+    assert obj.peer.access_hash == 456
+
+    obj2 = _pyutl.TLObject.read_bytes(obj.write())
+    assert obj2.msg_id == obj.msg_id
+    assert obj2.user_id == obj.user_id
+    assert obj2.peer.user_id == obj.peer.user_id
+    assert obj2.peer.access_hash == obj.peer.access_hash
+
+    assert obj2 == obj
+    assert obj2.peer == obj.peer
+    assert obj2 != obj.peer
+    assert obj2.peer != obj
+    assert obj2 is not obj
+    assert obj2.peer is not obj.peer
+    assert obj2 is not obj.peer
+    assert obj2.peer is not obj

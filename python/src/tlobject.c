@@ -233,7 +233,7 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
     return 0;
 }
 
-PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
+static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
     if(!cached) {
@@ -259,7 +259,7 @@ PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     return Py_TLObject_getitem(self, field);
 }
 
-int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
+static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
     if(!cached) {
@@ -281,7 +281,7 @@ int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
     return Py_TLObject_setitem(self, field, value) ? 0 : -1;
 }
 
-PyObject* Py_TLObject_repr(Py_TLObject* self) {
+static PyObject* Py_TLObject_repr(Py_TLObject* self) {
     arena_t repr_arena = arena_new();
     repr_arena.flags |= ARENA_DONTALIGN;
     char* tmp;
@@ -353,6 +353,25 @@ PyObject* Py_TLObject_repr(Py_TLObject* self) {
     PyObject* result = PyUnicode_FromStringAndSize(repr_arena.data, repr_arena.size);
     arena_delete(&repr_arena);
     return result;
+}
+
+static PyObject* Py_TLObject_compare(Py_TLObject* self, PyObject* other_, int op) {
+    if(op != Py_EQ && op != Py_NE) {
+        return Py_NotImplemented;
+    }
+
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    if(!PyObject_TypeCheck(other_, state->tlobject_type)) {
+        return Py_False;
+    }
+
+    Py_TLObject* other = (Py_TLObject*)other_;
+    bool eq = utl_Message_equals(self->message, other->message);
+    if(op == Py_NE) {
+        eq = !eq;
+    }
+
+    return eq ? Py_True : Py_False;
 }
 
 static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
@@ -432,6 +451,7 @@ static PyType_Slot Py_TLObject_slots[] = {
     {Py_tp_setattro, Py_TLObject_setattro},
     {Py_tp_repr, Py_TLObject_repr},
     {Py_tp_str, Py_TLObject_repr},
+    {Py_tp_richcompare, Py_TLObject_compare},
     {0, NULL}
 };
 
@@ -466,6 +486,7 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
         {Py_tp_setattro, Py_TLObject_setattro},
         {Py_tp_repr, Py_TLObject_repr},
         {Py_tp_str, Py_TLObject_repr},
+        {Py_tp_richcompare, Py_TLObject_compare},
         {0, NULL}
     };
 

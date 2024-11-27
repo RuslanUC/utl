@@ -14,6 +14,8 @@ void utl_Message_free(utl_Message* message);
 bool utl_Message_hasField(utl_Message* message, utl_FieldDef* field);
 void utl_Message_clearField(utl_Message* message, utl_FieldDef* field);
 
+bool utl_Message_equals(utl_Message* a, utl_Message* b);
+
 void utl_Message_setInt32(utl_Message* message, utl_FieldDef* field, int32_t value);
 void utl_Message_setInt64(utl_Message* message, utl_FieldDef* field, int64_t value);
 void utl_Message_setInt128(utl_Message* message, utl_FieldDef* field, char value[16]);
