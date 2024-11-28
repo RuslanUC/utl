@@ -15,6 +15,7 @@ typedef struct pyutl_ModuleState {
     utl_DefPool* default_c_def_pool;
     PyObject* default_def_pool;
     PyTypeObject* tlobject_type;
+    PyTypeObject* tlvector_type;
 
     utl_StaticMap* messages_cache;
     utl_PtrMap* objects_cache;

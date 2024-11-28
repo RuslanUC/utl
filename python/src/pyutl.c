@@ -1,6 +1,7 @@
 #include "pyutl.h"
 #include "py_def_pool.h"
 #include "tlobject.h"
+#include "tlvector.h"
 
 PyMethodDef method_table[] = {
     {NULL, NULL, 0, NULL}
@@ -21,49 +22,56 @@ pyutl_ModuleState* pyutl_ModuleState_get() {
 }
 
 PyMODINIT_FUNC PyInit__pyutl(void) {
+    PyObject* pyutl_DefPoolType = NULL;
+    PyObject* pyutl_TLObjectType = NULL;
+    PyObject* pyutl_TLVectorType = NULL;
+
     PyObject* m = PyModule_Create(&_pyutl_module);
     if(!m) {
-        return 0;
+        goto failed;
     }
     pyutl_ModuleState* state = PyModule_GetState(m);
 
-    PyObject* pyutl_DefPoolType = PyType_FromSpec(&pyutl_DefPoolType_spec);
+    pyutl_DefPoolType = PyType_FromSpec(&pyutl_DefPoolType_spec);
     if(!pyutl_DefPoolType) {
-        Py_DECREF(m);
-        return 0;
+        goto failed;
     }
-    PyObject* pyutl_TLObjectType = PyType_FromSpec(&pyutl_TLObjectType_spec);
+    pyutl_TLObjectType = PyType_FromSpec(&pyutl_TLObjectType_spec);
     if(!pyutl_TLObjectType) {
-        Py_DECREF(pyutl_DefPoolType);
-        Py_DECREF(m);
-        return 0;
+        goto failed;
+    }
+    pyutl_TLVectorType = PyType_FromSpec(&pyutl_TLVectorType_spec);
+    if(!pyutl_TLVectorType) {
+        goto failed;
     }
 
     if(PyModule_AddObject(m, "DefPool", pyutl_DefPoolType)) {
-        Py_DECREF(pyutl_DefPoolType);
-        Py_DECREF(pyutl_TLObjectType);
-        Py_DECREF(m);
-        return 0;
+        goto failed;
     }
     if(PyModule_AddObject(m, "TLObject", pyutl_TLObjectType)) {
-        Py_DECREF(pyutl_DefPoolType);
-        Py_DECREF(pyutl_TLObjectType);
-        Py_DECREF(m);
-        return 0;
+        goto failed;
+    }
+    if(PyModule_AddObject(m, "TLVector", pyutl_TLVectorType)) {
+        goto failed;
     }
 
     state->def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
     state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
+    state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
     state->default_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
     if(!state->default_def_pool || PyModule_AddObject(m, "default_def_pool", state->default_def_pool)) {
-        Py_DECREF(pyutl_DefPoolType);
-        Py_DECREF(pyutl_TLObjectType);
-        Py_DECREF(m);
-        return 0;
+        goto failed;
     }
     state->default_c_def_pool = ((Py_DefPool*)state->default_def_pool)->pool;
     state->messages_cache = utl_Map_new_on_arena(state->default_c_def_pool->message_defs->buckets_num, &state->default_c_def_pool->arena);
     state->objects_cache = utl_PtrMap_new(128);
 
     return m;
+
+failed:
+    Py_XDECREF(pyutl_DefPoolType);
+    Py_XDECREF(pyutl_TLObjectType);
+    Py_XDECREF(pyutl_TLVectorType);
+    Py_XDECREF(m);
+    return NULL;
 }

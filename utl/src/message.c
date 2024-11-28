@@ -158,7 +158,8 @@ bool utl_Message_equals(utl_Message* a, utl_Message* b) {
                 break;
             }
             case VECTOR: {
-                // TODO: add utl_Vector_equals
+                if(!utl_Vector_equals(utl_Message_getVector(a, &field), utl_Message_getVector(b, &field)))
+                    return false;
                 break;
             }
         }

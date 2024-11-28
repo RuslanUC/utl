@@ -18,3 +18,4 @@ void utl_Vector_append(utl_Vector* vector, void* element);
 void utl_Vector_setValue(utl_Vector* vector, size_t index, void* element);
 void* utl_Vector_value(utl_Vector* vector, size_t index);
 size_t utl_Vector_size(utl_Vector* vector);
+bool utl_Vector_equals(utl_Vector* a, utl_Vector* b);

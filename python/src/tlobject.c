@@ -1,5 +1,6 @@
 #include "pyutl.h"
 #include "tlobject.h"
+#include "tlvector.h"
 #include "encoder.h"
 #include "decoder.h"
 
@@ -55,8 +56,23 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
             return obj;
         }
         case VECTOR: {
-            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
-            return NULL;
+            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            utl_Vector* vector = utl_Message_getVector(self->message, field);
+
+            PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
+            if(!obj) {
+                pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)vector->message_def);
+                if(!cached_def) {
+                    PyErr_SetString(PyExc_TypeError, "object type is not found");
+                    return NULL;
+                }
+
+                obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
+                Py_TLVector_init_message((Py_TLVector*)obj, vector);
+            }
+
+            Py_INCREF(obj);
+            return obj;
         }
     }
 
@@ -166,6 +182,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             break;
         }
         case VECTOR: {
+            // TODO: convert list to TLVector
             PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
             return false;
         }
@@ -445,7 +462,6 @@ static PyType_Slot Py_TLObject_slots[] = {
     {Py_tp_dealloc, Py_TLObject_dealloc},
     {Py_tp_hash, PyObject_HashNotImplemented},
     {Py_tp_methods, Py_TLObject_methods},
-    {Py_tp_new, Py_TLObject_new},
     {Py_tp_init, Py_TLObject_init},
     {Py_tp_getattro, Py_TLObject_getattro},
     {Py_tp_setattro, Py_TLObject_setattro},
@@ -459,7 +475,7 @@ PyType_Spec pyutl_TLObjectType_spec = {
     "_pyutl.TLObject",
     sizeof(Py_TLObject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_IS_ABSTRACT,
     Py_TLObject_slots,
 };
 

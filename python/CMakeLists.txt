@@ -9,6 +9,7 @@ add_library(pyutl SHARED
         src/def_pool.c
         src/ptr_map.c
         src/tlobject.c
+        src/tlvector.c
         src/pyutl.c)
 target_include_directories(pyutl PUBLIC include ${Python3_INCLUDE_DIRS})
 target_link_libraries(pyutl PUBLIC utl ${Python3_LIBRARIES})
