@@ -61,13 +61,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
             if(!obj) {
-                pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)vector->message_def);
-                if(!cached_def) {
-                    PyErr_SetString(PyExc_TypeError, "object type is not found");
-                    return NULL;
-                }
-
-                obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
+                obj = state->tlobject_type->tp_alloc(state->tlobject_type, 0);
                 Py_TLVector_init_message((Py_TLVector*)obj, vector);
             }
 
@@ -177,14 +171,34 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
                 return false;
             }
 
+            // TODO: decref old message?
             utl_Message_setMessage(self->message, field, message);
             Py_INCREF(item);
             break;
         }
         case VECTOR: {
-            // TODO: convert list to TLVector
-            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
-            return false;
+            if(!PyList_Check(item)) {
+                PyErr_SetString(PyExc_TypeError, "expected object of type \"list\"");
+                return false;
+            }
+
+            utl_Vector* old_vector = utl_Message_getVector(self->message, field);
+            size_t len = PyList_Size(item);
+            utl_Vector* vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, len);
+            utl_Message_setVector(self->message, field, vector);
+
+            for(size_t i = 0; i < len; i++) {
+                void* element = Py_TLVector_item_to_utl(vector, PyList_GetItem(item, i));
+                if(!element) {
+                    utl_Message_setVector(self->message, field, old_vector);
+                    utl_Vector_free(vector);
+                    return false;
+                }
+                utl_Vector_append(vector, element);
+            }
+
+            // TODO: decref old vector?
+            break;
         }
     }
     return true;
@@ -198,7 +212,7 @@ static void Py_TLObject_dealloc(PyObject* self) {
     self->ob_type->tp_free(self);
 }
 
-static void Py_TLObject_init_message(Py_TLObject* self, utl_MessageDef* def, utl_Message* message) {
+void Py_TLObject_init_message(Py_TLObject* self, utl_MessageDef* def, utl_Message* message) {
     if(message != NULL) {
         self->message = message;
     } else {

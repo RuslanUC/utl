@@ -157,3 +157,16 @@ def test_equals() -> None:
     assert obj2.peer is not obj.peer
     assert obj2 is not obj.peer
     assert obj2.peer is not obj
+
+
+@pytest.mark.skipif(SKIP_TESTS >= 7, reason="")
+def test_vector() -> None:
+    pool = _pyutl.default_def_pool
+    assert pool
+
+    photoSizeProgressive = pool.parse("photoSizeProgressive#fa3efb95 type:string w:int h:int sizes:Vector<int> = PhotoSize;")
+    assert photoSizeProgressive
+
+    obj = photoSizeProgressive(type="test", w=123, h=456, sizes=[1, 2, 3, 4, 5])
+    assert obj.sizes[0] == 1
+    assert obj.sizes[4] == 5

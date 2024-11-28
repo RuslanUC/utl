@@ -79,17 +79,17 @@ static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
     return Py_None;
 }
 
-static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
+void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
     void* result = NULL;
 
-    switch (self->vector->message_def->type) {
+    switch (vector->message_def->type) {
         case FLAGS:
         case INT32: {
             if(!PyLong_Check(item)) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Int32));
+            result = arena_alloc(&vector->arena, sizeof(utl_Int32));
             ((utl_Int32*)result)->value = PyLong_AsLong(item);
             break;
         }
@@ -98,7 +98,7 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Int64));
+            result = arena_alloc(&vector->arena, sizeof(utl_Int64));
             ((utl_Int64*)result)->value = PyLong_AsLong(item);
             break;
         }
@@ -107,7 +107,7 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Int128));
+            result = arena_alloc(&vector->arena, sizeof(utl_Int128));
             _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int128*)result)->value, 16, true, true);
             break;
         }
@@ -116,7 +116,7 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Int256));
+            result = arena_alloc(&vector->arena, sizeof(utl_Int256));
             _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int256*)result)->value, 16, true, true);
             break;
         }
@@ -125,7 +125,7 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"float\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Double));
+            result = arena_alloc(&vector->arena, sizeof(utl_Double));
             ((utl_Double*)result)->value = PyFloat_AsDouble(item);
             break;
         }
@@ -135,7 +135,7 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"bool\"");
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Bool));
+            result = arena_alloc(&vector->arena, sizeof(utl_Bool));
             ((utl_Bool*)result)->value = item = Py_True;
             break;
         }
@@ -149,8 +149,8 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
             if(PyBytes_AsStringAndSize(item, &buf, &len)) {
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Bytes));
-            ((utl_Bytes*)result)->value = utl_StringView_new(&self->vector->arena, len);
+            result = arena_alloc(&vector->arena, sizeof(utl_Bytes));
+            ((utl_Bytes*)result)->value = utl_StringView_new(&vector->arena, len);
             memcpy(((utl_Bytes*)result)->value.data, buf, len);
             break;
         }
@@ -164,8 +164,8 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
             if(!buf) {
                 return NULL;
             }
-            result = arena_alloc(&self->vector->arena, sizeof(utl_Bytes));
-            ((utl_Bytes*)result)->value = utl_StringView_new(&self->vector->arena, len);
+            result = arena_alloc(&vector->arena, sizeof(utl_Bytes));
+            ((utl_Bytes*)result)->value = utl_StringView_new(&vector->arena, len);
             memcpy(((utl_Bytes*)result)->value.data, buf, len);
             break;
         }
@@ -176,19 +176,36 @@ static void* Py_TLVector_item_to_utl(Py_TLVector* self, PyObject* item) {
                 return NULL;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
-            if(self->vector->message_def->sub_message_def != NULL && (utl_TypeDef*)self->vector->message_def->sub_message_def != message->message_def->type) {
+            if(vector->message_def->sub_message_def != NULL && (utl_TypeDef*)vector->message_def->sub_message_def != message->message_def->type) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
                 return NULL;
             }
 
+            // TODO: decref old message?
             result = message;
             Py_INCREF(item);
             break;
         }
         case VECTOR: {
-            // TODO: convert list to TLVector
-            PyErr_SetString(PyExc_NotImplementedError, "Vectors are not implemented in python yet.");
-            return NULL;
+            if(!PyList_Check(item)) {
+                PyErr_SetString(PyExc_TypeError, "expected object of type \"list\"");
+                return false;
+            }
+
+            size_t len = PyList_Size(item);
+            utl_Vector* new_vector = utl_Vector_new((utl_MessageDefVector*)vector->message_def->sub_message_def, len);
+
+            for(size_t i = 0; i < len; i++) {
+                void* element = Py_TLVector_item_to_utl(new_vector, PyList_GetItem(item, i));
+                if(!element) {
+                    utl_Vector_free(new_vector);
+                    return false;
+                }
+                utl_Vector_append(new_vector, element);
+            }
+
+            result = new_vector;
+            break;
         }
     }
 
@@ -203,7 +220,7 @@ static void Py_TLVector_dealloc(PyObject* self) {
     self->ob_type->tp_free(self);
 }
 
-static void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
+void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
     self->vector = vector;
 
     pyutl_ModuleState* state = pyutl_ModuleState_get();
@@ -240,7 +257,7 @@ static int Py_TLVector_sq_setitem(Py_TLVector* self, ssize_t index, PyObject* va
         return -1;
     }
 
-    void* item = Py_TLVector_item_to_utl(self, value);
+    void* item = Py_TLVector_item_to_utl(self->vector, value);
     if(!item) {
         // TODO: set error
         return -1;

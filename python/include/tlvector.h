@@ -11,5 +11,6 @@ typedef struct Py_TLVector {
 
 extern PyType_Spec pyutl_TLVectorType_spec;
 
-static void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* message);
+void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item);
+void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* message);
 PyObject* Py_TLVector_createType(utl_MessageDefVector* message_def);
