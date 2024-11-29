@@ -340,7 +340,16 @@ static PyObject* Py_TLVector_compare(Py_TLVector* self, PyObject* other_, int op
 }
 
 static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
-    // TODO
+    PyObject* obj;
+    if (!PyArg_ParseTuple(args, "O", &obj)) {
+        return NULL;
+    }
+
+    void* item = Py_TLVector_item_to_utl(self->vector, obj);
+    if(!item) {
+        return NULL;
+    }
+    utl_Vector_append(self->vector, item);
 
     return Py_None;
 }
