@@ -61,7 +61,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
             if(!obj) {
-                obj = state->tlobject_type->tp_alloc(state->tlobject_type, 0);
+                obj = state->tlvector_type->tp_alloc(state->tlvector_type, 0);
                 Py_TLVector_init_message((Py_TLVector*)obj, vector);
             }
 
@@ -156,7 +156,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             }
             utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
             memcpy(bytes.data, buf, len);
-            utl_Message_setBytes(self->message, field, bytes);
+            utl_Message_setString(self->message, field, bytes);
             break;
         }
         case TLOBJECT: {

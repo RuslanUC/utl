@@ -25,6 +25,9 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     PyObject* pyutl_DefPoolType = NULL;
     PyObject* pyutl_TLObjectType = NULL;
     PyObject* pyutl_TLVectorType = NULL;
+    PyObject* collections = NULL;
+    PyObject* seq = NULL;
+    PyObject* seq_ret = NULL;
 
     PyObject* m = PyModule_Create(&_pyutl_module);
     if(!m) {
@@ -55,6 +58,22 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
         goto failed;
     }
 
+    collections = PyImport_ImportModule("collections.abc");
+    if(!collections) {
+        goto failed;
+    }
+    seq = PyObject_GetAttrString(collections, "MutableSequence");
+    if(!seq) {
+        goto failed;
+    }
+    seq_ret = PyObject_CallMethod(seq, "register", "O", pyutl_TLVectorType);
+    if(!seq_ret) {
+        goto failed;
+    }
+    Py_XDECREF(collections);
+    Py_XDECREF(seq);
+    Py_XDECREF(seq_ret);
+
     state->def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
     state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
     state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
@@ -69,6 +88,9 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     return m;
 
 failed:
+    Py_XDECREF(collections);
+    Py_XDECREF(seq);
+    Py_XDECREF(seq_ret);
     Py_XDECREF(pyutl_DefPoolType);
     Py_XDECREF(pyutl_TLObjectType);
     Py_XDECREF(pyutl_TLVectorType);
