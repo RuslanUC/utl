@@ -77,7 +77,7 @@ bool utl_Vector_equals(utl_Vector* a, utl_Vector* b) {
     if(a->message_def != NULL && a->message_def->type != b->message_def->type) {
         return false;
     }
-    if(a->message_def != NULL && a->message_def->sub_message_def != b->message_def->sub_message_def) {
+    if(a->message_def != NULL && a->message_def->type == TLOBJECT && a->message_def->sub.type_def != b->message_def->sub.type_def) {
         return false;
     }
 

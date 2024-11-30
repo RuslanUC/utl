@@ -176,7 +176,7 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return NULL;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
-            if(vector->message_def->sub_message_def != NULL && (utl_TypeDef*)vector->message_def->sub_message_def != message->message_def->type) {
+            if(vector->message_def->sub.type_def != NULL && (utl_TypeDef*)vector->message_def->sub.type_def != message->message_def->type) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
                 return NULL;
             }
@@ -193,7 +193,7 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
             }
 
             size_t len = PyList_Size(item);
-            utl_Vector* new_vector = utl_Vector_new((utl_MessageDefVector*)vector->message_def->sub_message_def, len);
+            utl_Vector* new_vector = utl_Vector_new(vector->message_def->sub.vector_def, len);
 
             for(size_t i = 0; i < len; i++) {
                 void* element = Py_TLVector_item_to_utl(new_vector, PyList_GetItem(item, i));

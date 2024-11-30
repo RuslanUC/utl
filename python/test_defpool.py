@@ -13,7 +13,7 @@ SKIP_TESTS = 0
 
 @pytest.mark.skipif(SKIP_TESTS >= 1, reason="")
 def test_parse() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     cls = pool.parse("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
@@ -32,7 +32,7 @@ def test_parse() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 2, reason="")
 def test_create_object() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     cls = pool.parse("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
@@ -51,7 +51,7 @@ def test_create_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 3, reason="")
 def test_encode_object() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     cls = pool.parse("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
@@ -66,7 +66,7 @@ def test_encode_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 4, reason="")
 def test_decode_object() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     cls = pool.parse("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
@@ -95,7 +95,7 @@ def test_decode_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 5, reason="")
 def test_nested_message() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     inputPeerUser = pool.parse("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;")
@@ -128,7 +128,7 @@ def test_nested_message() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 6, reason="")
 def test_equals() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     inputPeerUser = pool.parse("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;")
@@ -161,7 +161,7 @@ def test_equals() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 7, reason="")
 def test_vector() -> None:
-    pool = _pyutl.default_def_pool
+    pool = _pyutl.def_pool
     assert pool
 
     photoSizeProgressive = pool.parse("photoSizeProgressive#fa3efb95 type:string w:int h:int sizes:Vector<int> = PhotoSize;")

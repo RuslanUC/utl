@@ -8,7 +8,7 @@
 struct utl_MessageDef;
 
 typedef struct utl_TypeDef {
-    utl_StringView name; // Full name
+    utl_StringView name; // Full name (e.g. namespace.Name)
 } utl_TypeDef;
 
 utl_TypeDef* utl_TypeDef_new(arena_t* arena);

@@ -206,8 +206,8 @@ void test_MessageVectorField() {
     TEST_ASSERT_EQUAL(0, message_def->fields[0].num);
     TEST_ASSERT_EQUAL(VECTOR, message_def->fields[0].type);
     TEST_ASSERT_EQUAL(0, message_def->fields[0].flag_info);
-    TEST_ASSERT_EQUAL(INT32, ((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->type);
-    TEST_ASSERT_NULL(((utl_MessageDefVector*)message_def->fields[0].sub_message_def)->sub_message_def);
+    TEST_ASSERT_EQUAL(INT32, message_def->fields[0].sub.vector_def->type);
+    TEST_ASSERT_NULL(message_def->fields[0].sub.vector_def->sub.type_def);
 
     utl_DefPool_free(pool);
 }
@@ -227,20 +227,20 @@ void test_MessageVectorFieldNested3d() {
     TEST_ASSERT_EQUAL(VECTOR, message_def->fields[0].type);
     TEST_ASSERT_EQUAL(0, message_def->fields[0].flag_info);
 
-    utl_MessageDefVector* vector_1st = (utl_MessageDefVector*)message_def->fields[0].sub_message_def;
+    utl_MessageDefVector* vector_1st = message_def->fields[0].sub.vector_def;
     TEST_ASSERT_NOT_NULL(vector_1st);
     TEST_ASSERT_EQUAL(VECTOR, vector_1st->type);
-    TEST_ASSERT_NOT_NULL(vector_1st->sub_message_def);
+    TEST_ASSERT_NOT_NULL(vector_1st->sub.vector_def);
 
-    utl_MessageDefVector* vector_2nd = (utl_MessageDefVector*)vector_1st->sub_message_def;
+    utl_MessageDefVector* vector_2nd = vector_1st->sub.vector_def;
     TEST_ASSERT_NOT_NULL(vector_2nd);
     TEST_ASSERT_EQUAL(VECTOR, vector_2nd->type);
-    TEST_ASSERT_NOT_NULL(vector_2nd->sub_message_def);
+    TEST_ASSERT_NOT_NULL(vector_2nd->sub.vector_def);
 
-    utl_MessageDefVector* vector_3rd = (utl_MessageDefVector*)vector_2nd->sub_message_def;
+    utl_MessageDefVector* vector_3rd = vector_2nd->sub.vector_def;
     TEST_ASSERT_NOT_NULL(vector_3rd);
     TEST_ASSERT_EQUAL(INT32, vector_3rd->type);
-    TEST_ASSERT_NULL(vector_3rd->sub_message_def);
+    TEST_ASSERT_NULL(vector_3rd->sub.vector_def);
 
     utl_DefPool_free(pool);
 }

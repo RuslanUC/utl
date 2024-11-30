@@ -3,11 +3,8 @@
 #include <arena.h>
 #include <stdint.h>
 
-#include "arena.h"
 #include "string_view.h"
 #include "enums.h"
-
-struct utl_MessageDefBase;
 
 typedef struct utl_FieldDef {
     size_t num;
@@ -18,7 +15,10 @@ typedef struct utl_FieldDef {
     // if fields is not optional, flag_info is 0
     uint8_t flag_info;
     // Vectors and TLObjects
-    struct utl_MessageDefBase* sub_message_def;  // utl_TypeDef, utl_MessageDefVector or NULL
+    union {
+        struct utl_TypeDef* type_def;
+        struct utl_MessageDefVector* vector_def;
+    } sub;
 } utl_FieldDef;
 
 utl_FieldDef* utl_FieldDef_new(arena_t* arena);

@@ -48,9 +48,6 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
         goto failed;
     }
 
-    if(PyModule_AddObject(m, "DefPool", pyutl_DefPoolType)) {
-        goto failed;
-    }
     if(PyModule_AddObject(m, "TLObject", pyutl_TLObjectType)) {
         goto failed;
     }
@@ -78,7 +75,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
     state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
     state->default_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
-    if(!state->default_def_pool || PyModule_AddObject(m, "default_def_pool", state->default_def_pool)) {
+    if(!state->default_def_pool || PyModule_AddObject(m, "def_pool", state->default_def_pool)) {
         goto failed;
     }
     state->default_c_def_pool = ((Py_DefPool*)state->default_def_pool)->pool;

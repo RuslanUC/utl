@@ -11,18 +11,17 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
     size_t pos = 0, last = 0;
 
     utl_FieldType field_type;
-    utl_MessageDefBase* sub_message = NULL;
 
     while(pos < size && line[pos] != '<') ++pos;
     if(line[pos] == '<') {
         // probably vector
-        sub_message = (utl_MessageDefBase*)utl_MessageDefVector_new(&def_pool->arena);
+        utl_MessageDefVector* vector_def = utl_MessageDefVector_new(&def_pool->arena);
         if(is_vector) {
             ((utl_MessageDefVector*)field)->type = VECTOR;
-            ((utl_MessageDefVector*)field)->sub_message_def = sub_message;
+            ((utl_MessageDefVector*)field)->sub.vector_def = vector_def;
         } else {
             field->type = VECTOR;
-            field->sub_message_def = sub_message;
+            field->sub.vector_def = vector_def;
         }
 
         ++pos;
@@ -34,9 +33,11 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
             return;
         }
 
-        utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)sub_message, true);
+        utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)vector_def, true);
         return;
     }
+
+    utl_TypeDef* sub_type = NULL;
 
     size_t type_len = pos - last;
     if(type_len == 1 && !memcmp(line + last, "#", 1)) {
@@ -72,18 +73,18 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
             .size = pos - last,
             .data = line + last,
         };
-        sub_message = (utl_MessageDefBase*)utl_DefPool_getType(def_pool, type_name);
-        if(sub_message) {
+        sub_type = utl_DefPool_getType(def_pool, type_name);
+        if(!sub_type) {
             // TODO: fail
         }
     }
 
     if(is_vector) {
         ((utl_MessageDefVector*)field)->type = field_type;
-        ((utl_MessageDefVector*)field)->sub_message_def = sub_message;
+        ((utl_MessageDefVector*)field)->sub.type_def = sub_type;
     } else {
         field->type = field_type;
-        field->sub_message_def = sub_message;
+        field->sub.type_def = sub_type;
     }
 }
 

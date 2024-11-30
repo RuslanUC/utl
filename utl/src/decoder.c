@@ -186,7 +186,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                     return false;
                 }
 
-                utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+                utl_TypeDef* type = field->sub.type_def;
                 if (type && new_def->type != type) {
                     if(status) {
                         status->ok = false;
@@ -211,9 +211,9 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                     return false;
                 }
                 size_t new_size = utl_decode_int32(buf);
-                utl_Vector* new_vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, new_size);
+                utl_Vector* new_vector = utl_Vector_new(field->sub.vector_def, new_size);
                 value = new_vector;
-                if(!utl_decode_vector(new_vector, def_pool, (utl_MessageDefVector*)field->sub_message_def, buf, new_size, status))
+                if(!utl_decode_vector(new_vector, def_pool, field->sub.vector_def, buf, new_size, status))
                     return false;
                 break;
             }
@@ -315,7 +315,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
                 return false;
             }
 
-            utl_TypeDef* type = (utl_TypeDef*)field->sub_message_def;
+            utl_TypeDef* type = field->sub.type_def;
             if (type && new_def->type != type) {
                 if(status) {
                     status->ok = false;
@@ -340,9 +340,9 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
                 return false;
             }
             size_t size = utl_decode_int32(buf);
-            utl_Vector* vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, size);
+            utl_Vector* vector = utl_Vector_new(field->sub.vector_def, size);
             utl_Message_setVector(message, field, vector);
-            if(!utl_decode_vector(vector, def_pool, (utl_MessageDefVector*)field->sub_message_def, buf, size, status))
+            if(!utl_decode_vector(vector, def_pool, field->sub.vector_def, buf, size, status))
                 return false;
             break;
         }

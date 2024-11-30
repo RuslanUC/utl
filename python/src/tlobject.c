@@ -166,7 +166,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
                 return false;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
-            if(field->sub_message_def != NULL && (utl_TypeDef*)field->sub_message_def != message->message_def->type) {
+            if(field->sub.type_def != NULL && field->sub.type_def != message->message_def->type) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
                 return false;
             }
@@ -187,7 +187,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
 
             utl_Vector* old_vector = utl_Message_getVector(self->message, field);
             size_t len = PyList_Size(item);
-            utl_Vector* vector = utl_Vector_new((utl_MessageDefVector*)field->sub_message_def, len);
+            utl_Vector* vector = utl_Vector_new(field->sub.vector_def, len);
             utl_Message_setVector(self->message, field, vector);
 
             for(size_t i = 0; i < len; i++) {
