@@ -171,7 +171,10 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
                 return false;
             }
 
-            // TODO: decref old message?
+            utl_Message* old_message = utl_Message_getMessage(self->message, field);
+            PyObject* old_obj = utl_PtrMap_search(state->objects_cache, old_message);
+            Py_XDECREF(old_obj);
+
             utl_Message_setMessage(self->message, field, message);
             Py_INCREF(item);
             break;
@@ -197,18 +200,60 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
                 utl_Vector_append(vector, element);
             }
 
-            // TODO: decref old vector?
+            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            PyObject* old_obj = utl_PtrMap_search(state->objects_cache, old_vector);
+            Py_XDECREF(old_obj);
+
             break;
         }
     }
     return true;
 }
 
+void Py_TLObject_dealloc_recursive(utl_Message* message) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+
+    for(size_t i = 0; i < message->message_def->fields_num; i++) {
+        utl_FieldDef field = message->message_def->fields[i];
+        if(field.type == TLOBJECT) {
+            utl_Message* f_message = utl_Message_getMessage(message, &field);
+            if(!f_message) {
+                continue;
+            }
+
+            PyObject* obj = utl_PtrMap_search(state->objects_cache, f_message);
+            if(obj) {
+                Py_DECREF(obj);
+            } else {
+                Py_TLObject_dealloc_recursive(f_message);
+            }
+
+            utl_Message_setMessage(message, &field, NULL);
+        } else if(field.type == VECTOR) {
+            utl_Vector* f_vec = utl_Message_getVector(message, &field);
+            if(!f_vec) {
+                continue;
+            }
+
+            PyObject* obj = utl_PtrMap_search(state->objects_cache, f_vec);
+            if(obj) {
+                Py_DECREF(obj);
+            } else {
+                Py_TLVector_dealloc_recursive(f_vec);
+            }
+
+            utl_Message_setVector(message, &field, NULL);
+        }
+    }
+
+    utl_Message_free(message);
+}
+
 static void Py_TLObject_dealloc(PyObject* self) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_remove(state->objects_cache, ((Py_TLObject*)self)->message);
 
-    utl_Message_free(((Py_TLObject*)self)->message);
+    Py_TLObject_dealloc_recursive(((Py_TLObject*)self)->message);
     self->ob_type->tp_free(self);
 }
 

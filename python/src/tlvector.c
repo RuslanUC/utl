@@ -212,9 +212,44 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
     return result;
 }
 
+void Py_TLVector_dealloc_recursive(utl_Vector* vector) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+
+    utl_FieldType type = vector->message_def->type;
+    if(type != TLOBJECT && type != VECTOR) {
+        goto vec_free;
+    }
+
+    size_t size = utl_Vector_size(vector);
+    for(size_t i = 0; i < size; i++) {
+        void* element = utl_Vector_value(vector, i);
+        if(!element) {
+            continue;
+        }
+
+        PyObject* obj = utl_PtrMap_search(state->objects_cache, element);
+        if(obj) {
+            Py_DECREF(obj);
+        } else {
+            if(type == TLOBJECT) {
+                Py_TLObject_dealloc_recursive(element);
+            } else if(type == VECTOR) {
+                Py_TLVector_dealloc_recursive(element);
+            }
+        }
+
+        utl_Vector_setValue(vector, i, NULL);
+    }
+
+vec_free:
+    utl_Vector_free(vector);
+}
+
 static void Py_TLVector_dealloc(PyObject* self) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_remove(state->objects_cache, ((Py_TLVector*)self)->vector);
+
+    // TODO: dealloc not-used fields (e.g. objects and vectors without python object)
 
     utl_Vector_free(((Py_TLVector*)self)->vector);
     self->ob_type->tp_free(self);
@@ -228,11 +263,7 @@ void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
 }
 
 static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
-    PyErr_SetString(PyExc_RuntimeError,
-               "Type TLVector cannot be created directly.");
-
-    /*PyObject* self = cls->tp_alloc(cls, 0);
-    Py_TLVector_init_message((Py_TLVector*)self, NULL);*/
+    PyErr_SetString(PyExc_RuntimeError, "Type TLVector cannot be created directly.");
 
     return NULL;
 }
