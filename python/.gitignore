@@ -1,1 +1,3 @@
-_pyutl.*
+_pyutl.*.so
+_pyutl.*.dll
+_pyutl.*.dylib
