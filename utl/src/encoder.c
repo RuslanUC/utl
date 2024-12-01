@@ -121,7 +121,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena, bo
             break;
         }
         case VECTOR: {
-            utl_Vector* vector = (utl_Vector*)value;
+            utl_Vector* vector = value;
             utl_encode_int32(VECTOR_CONSTR, arena);
             utl_encode_int32(utl_Vector_size(vector), arena);
             for(size_t i = 0; i < utl_Vector_size(vector); i++) {

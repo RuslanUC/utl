@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 
 import pytest
 
@@ -178,7 +179,8 @@ def test_vector() -> None:
     serialized = b'\x95\xfb>\xfa\x04test\x00\x00\x00{\x00\x00\x00\xc8\x01\x00\x00\x15\xc4\xb5\x1c\x06\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\t\x00\x00\x00\x04\x00\x00\x00\x05\x00\x00\x00\x06\x00\x00\x00'
     assert obj.write() == serialized
 
-    obj2 = photoSizeProgressive.read_bytes(serialized[4:])
+    bio = BytesIO(serialized[4:])
+    obj2 = photoSizeProgressive.read(bio)
     assert obj2.type == obj.type
     assert obj2.w == obj.w
     assert obj2.h == obj.h
@@ -186,4 +188,6 @@ def test_vector() -> None:
     assert obj2.sizes[4] == obj.sizes[4]
     assert obj2.sizes == obj.sizes
     assert obj2.sizes is not obj.sizes
+    assert bio.tell() == len(bio.getvalue())
+    assert bio.read() == b""
 

@@ -52,6 +52,17 @@ void utl_Vector_setValue(utl_Vector* vector, size_t index, void* element) {
     vector->items[index] = element;
 }
 
+void utl_Vector_remove(utl_Vector* vector, size_t index) {
+    if(index >= vector->size) {
+        return;
+    }
+
+    --vector->size;
+
+    size_t offset = index * sizeof(void*);
+    memcpy(vector->items + offset, vector->items + offset + sizeof(void*), (vector->size - index) * sizeof(void*));
+}
+
 void* utl_Vector_value(utl_Vector* vector, size_t index) {
     if(index >= vector->size) {
         return 0;

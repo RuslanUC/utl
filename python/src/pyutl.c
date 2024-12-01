@@ -28,12 +28,15 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     PyObject* collections = NULL;
     PyObject* seq = NULL;
     PyObject* seq_ret = NULL;
+    PyObject* io = NULL;
 
     PyObject* m = PyModule_Create(&_pyutl_module);
     if(!m) {
         goto failed;
     }
+
     pyutl_ModuleState* state = PyModule_GetState(m);
+    state->bytesio_type = NULL;
 
     pyutl_DefPoolType = PyType_FromSpec(&pyutl_DefPoolType_spec);
     if(!pyutl_DefPoolType) {
@@ -52,6 +55,15 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
         goto failed;
     }
     if(PyModule_AddObject(m, "TLVector", pyutl_TLVectorType)) {
+        goto failed;
+    }
+
+    io = PyImport_ImportModule("io");
+    if(!io) {
+        goto failed;
+    }
+    state->bytesio_type = PyObject_GetAttrString(io, "BytesIO");
+    if(!state->bytesio_type) {
         goto failed;
     }
 
@@ -74,17 +86,19 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     state->def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
     state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
     state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
-    state->default_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
-    if(!state->default_def_pool || PyModule_AddObject(m, "def_pool", state->default_def_pool)) {
+    state->py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
+    if(!state->py_def_pool || PyModule_AddObject(m, "def_pool", state->py_def_pool)) {
         goto failed;
     }
-    state->default_c_def_pool = ((Py_DefPool*)state->default_def_pool)->pool;
-    state->messages_cache = utl_Map_new_on_arena(state->default_c_def_pool->message_defs->buckets_num, &state->default_c_def_pool->arena);
+    state->c_def_pool = ((Py_DefPool*)state->py_def_pool)->pool;
+    state->messages_cache = utl_Map_new_on_arena(state->c_def_pool->message_defs->buckets_num, &state->c_def_pool->arena);
     state->objects_cache = utl_PtrMap_new(128);
 
     return m;
 
 failed:
+    Py_XDECREF(state->bytesio_type);
+    Py_XDECREF(io);
     Py_XDECREF(collections);
     Py_XDECREF(seq);
     Py_XDECREF(seq_ret);

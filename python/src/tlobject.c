@@ -450,13 +450,7 @@ static PyObject* Py_TLObject_compare(Py_TLObject* self, PyObject* other_, int op
     return eq ? Py_True : Py_False;
 }
 
-static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
-    char* buf;
-    size_t buf_len;
-    if (!PyArg_ParseTuple(args, "s#", &buf, &buf_len)) {
-        return NULL;
-    }
-
+static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, size_t* bytes_read) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
 
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
@@ -471,7 +465,7 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
             .size = 4,
         };
         uint32_t tl_id = utl_decode_int32(&dbuf);
-        utl_MessageDef* def = utl_DefPool_getMessage(state->default_c_def_pool, tl_id);
+        utl_MessageDef* def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
             return NULL;
@@ -491,13 +485,57 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
     Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
 
     utl_Status status;
-    utl_decode(obj->message, state->default_c_def_pool, buf, buf_len, &status);
+    size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
     if(!status.ok) {
         PyErr_SetString(PyExc_ValueError, status.message);
         return NULL;
     }
+    if(bytes_read) {
+        *bytes_read = read;
+    }
 
     return (PyObject*)obj;
+}
+
+static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+
+    PyObject* bio;
+    if (!PyArg_ParseTuple(args, "O!", state->bytesio_type, &bio)) {
+        return NULL;
+    }
+
+    PyObject* memoryview = PyObject_CallMethod(bio, "getbuffer", NULL);
+    if(!memoryview) {
+        return NULL;
+    }
+
+    Py_buffer* view = PyMemoryView_GET_BUFFER(memoryview);
+    if(!view) {
+        Py_XDECREF(memoryview);
+        return NULL;
+    }
+
+    size_t read = 0;
+    PyObject* result = Py_TLObject_read(cls, view->buf, view->len, &read);
+
+    Py_XDECREF(memoryview);
+
+    if(result) {
+        Py_XDECREF(PyObject_CallMethod(bio, "seek", "ki", read, 1)); // SEEK_CUR
+    }
+
+    return result;
+}
+
+static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
+    char* buf;
+    size_t buf_len;
+    if (!PyArg_ParseTuple(args, "s#", &buf, &buf_len)) {
+        return NULL;
+    }
+
+    return Py_TLObject_read(cls, buf, buf_len, NULL);
 }
 
 static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
@@ -512,6 +550,7 @@ static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
 }
 
 static PyMethodDef Py_TLObject_methods[] = {
+    {"read", (PyCFunction)Py_TLObject_read_bytesio, METH_VARARGS | METH_CLASS, 0,},
     {"read_bytes", (PyCFunction)Py_TLObject_read_bytes, METH_VARARGS | METH_CLASS, 0,},
     {"write", (PyCFunction)Py_TLObject_write, METH_NOARGS, 0,},
     {NULL}
@@ -540,7 +579,7 @@ PyType_Spec pyutl_TLObjectType_spec = {
 
 PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
-    arena_t* arena = &state->default_c_def_pool->arena;
+    arena_t* arena = &state->c_def_pool->arena;
     size_t real_size = arena->size;
 
     char* name = arena_alloc(

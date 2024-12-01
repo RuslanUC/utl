@@ -12,10 +12,11 @@ typedef struct pyutl_MessageDef {
 
 typedef struct pyutl_ModuleState {
     PyTypeObject* def_pool_type;
-    utl_DefPool* default_c_def_pool;
-    PyObject* default_def_pool;
     PyTypeObject* tlobject_type;
     PyTypeObject* tlvector_type;
+    PyObject* bytesio_type;
+    utl_DefPool* c_def_pool;
+    PyObject* py_def_pool;
 
     utl_StaticMap* messages_cache;
     utl_PtrMap* objects_cache;

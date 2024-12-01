@@ -38,7 +38,7 @@ static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
         }
         case TLOBJECT: {
             pyutl_ModuleState* state = pyutl_ModuleState_get();
-            utl_Message* message = (utl_Message*)value;
+            utl_Message* message = value;
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, message);
             if(!obj) {
@@ -57,7 +57,7 @@ static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
         }
         case VECTOR: {
             pyutl_ModuleState* state = pyutl_ModuleState_get();
-            utl_Vector* vector = (utl_Vector*)value;
+            utl_Vector* vector = value;
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
             if(!obj) {
@@ -176,12 +176,11 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return NULL;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
-            if(vector->message_def->sub.type_def != NULL && (utl_TypeDef*)vector->message_def->sub.type_def != message->message_def->type) {
+            if(vector->message_def->sub.type_def != NULL && vector->message_def->sub.type_def != message->message_def->type) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
                 return NULL;
             }
 
-            // TODO: decref old message?
             result = message;
             Py_INCREF(item);
             break;
@@ -249,9 +248,7 @@ static void Py_TLVector_dealloc(PyObject* self) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_remove(state->objects_cache, ((Py_TLVector*)self)->vector);
 
-    // TODO: dealloc not-used fields (e.g. objects and vectors without python object)
-
-    utl_Vector_free(((Py_TLVector*)self)->vector);
+    Py_TLVector_dealloc_recursive(((Py_TLVector*)self)->vector);
     self->ob_type->tp_free(self);
 }
 
@@ -270,7 +267,7 @@ static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUS
 
 static PyObject* Py_TLVector_sq_item(Py_TLVector* self, ssize_t index) {
     if(index >= utl_Vector_size(self->vector)) {
-        // TODO: set error
+        PyErr_SetString(PyExc_IndexError, "list index out of range");
         return NULL;
     }
 
@@ -279,21 +276,22 @@ static PyObject* Py_TLVector_sq_item(Py_TLVector* self, ssize_t index) {
 
 static int Py_TLVector_sq_setitem(Py_TLVector* self, ssize_t index, PyObject* value) {
     if(value == NULL) {
-        // TODO: remove element
+        // TODO: dealloc/decref value
+        utl_Vector_remove(self->vector, index);
         return 0;
     }
 
     if(index >= utl_Vector_size(self->vector)) {
-        // TODO: set error
+        PyErr_SetString(PyExc_IndexError, "list index out of range");
         return -1;
     }
 
     void* item = Py_TLVector_item_to_utl(self->vector, value);
     if(!item) {
-        // TODO: set error
         return -1;
     }
 
+    // TODO: dealloc/decref old value
     utl_Vector_setValue(self->vector, index, item);
     return 0;
 }
@@ -385,8 +383,20 @@ static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
     return Py_None;
 }
 
+static PyObject* Py_TLVector_remove(Py_TLVector* self, PyObject* args) {
+    uint32_t index;
+    if (!PyArg_ParseTuple(args, "I", &index)) {
+        return NULL;
+    }
+
+    // TODO: dealloc/decref value
+    utl_Vector_remove(self->vector, index);
+    return Py_None;
+}
+
 static PyMethodDef Py_TLVector_methods[] = {
     {"append", (PyCFunction)Py_TLVector_append, METH_VARARGS, 0,},
+    {"remove", (PyCFunction)Py_TLVector_remove, METH_VARARGS, 0,},
     {NULL}
 };
 
