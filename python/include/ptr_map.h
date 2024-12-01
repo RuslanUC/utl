@@ -15,7 +15,7 @@ typedef struct utl_PtrMap {
 } utl_PtrMap;
 
 utl_PtrMap* utl_PtrMap_new(size_t buckets_num);
-void utl_PtrMap_free(utl_PtrMap* map);
+void utl_PtrMap_free(const utl_PtrMap* map);
 void utl_PtrMap_insert(utl_PtrMap* map, void* key, void* value);
 void utl_PtrMap_remove(utl_PtrMap* map, void* key);
-void* utl_PtrMap_search(utl_PtrMap* map, void* key);
+void* utl_PtrMap_search(const utl_PtrMap* map, void* key);

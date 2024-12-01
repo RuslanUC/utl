@@ -19,13 +19,13 @@ utl_StaticMap* utl_Map_new(size_t buckets_num);
 utl_StaticMap* utl_Map_new_on_arena(size_t buckets_num, arena_t* arena);
 void utl_Map_free(utl_StaticMap* map);
 void utl_Map_insert(utl_StaticMap* map, uint32_t key, void* value);
-void utl_Map_remove(utl_StaticMap* map, uint32_t key);
-void* utl_Map_search(utl_StaticMap* map, uint32_t key);
+void utl_Map_remove(const utl_StaticMap* map, uint32_t key);
+void* utl_Map_search(const utl_StaticMap* map, uint32_t key);
 
 void utl_Map_insert_str(utl_StaticMap* map, utl_StringView key, void* value);
-void utl_Map_remove_str(utl_StaticMap* map, utl_StringView key);
-void* utl_Map_search_str(utl_StaticMap* map, utl_StringView key);
+void utl_Map_remove_str(const utl_StaticMap* map, utl_StringView key);
+void* utl_Map_search_str(const utl_StaticMap* map, utl_StringView key);
 
 void utl_Map_insert_uint64(utl_StaticMap* map, uint64_t key, void* value);
-void utl_Map_remove_uint64(utl_StaticMap* map, uint64_t key);
-void* utl_Map_search_uint64(utl_StaticMap* map, uint64_t key);
+void utl_Map_remove_uint64(const utl_StaticMap* map, uint64_t key);
+void* utl_Map_search_uint64(const utl_StaticMap* map, uint64_t key);

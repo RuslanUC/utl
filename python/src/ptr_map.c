@@ -38,7 +38,7 @@ ret_real_head:
     return real_head;
 }
 
-utl_ListNodePtr* utl_ListNode_remove_ptr(utl_ListNodePtr* head, void* key) {
+utl_ListNodePtr* utl_ListNode_remove_ptr(utl_ListNodePtr* head, const void* key) {
     if(head == NULL) {
         return NULL;
     }
@@ -70,17 +70,17 @@ utl_ListNodePtr* utl_ListNode_remove_ptr(utl_ListNodePtr* head, void* key) {
     return head;
 }
 
-utl_PtrMap* utl_PtrMap_new(size_t initial_buckets_num) {
+utl_PtrMap* utl_PtrMap_new(const size_t buckets_num) {
     utl_PtrMap* map = malloc(sizeof(utl_PtrMap));
     map->size = 0;
-    map->buckets_num = initial_buckets_num;
-    map->buckets = malloc(sizeof(utl_ListNodePtr*) * initial_buckets_num);
+    map->buckets_num = buckets_num;
+    map->buckets = malloc(sizeof(utl_ListNodePtr*) * buckets_num);
     memset(map->buckets, 0, sizeof(utl_ListNodePtr*) * map->buckets_num);
 
     return map;
 }
 
-void utl_PtrMap_free(utl_PtrMap* map) {
+void utl_PtrMap_free(const utl_PtrMap* map) {
     for(size_t i = 0; i < map->buckets_num; i++) {
         utl_ListNode* head = (utl_ListNode*)map->buckets[i];
 
@@ -137,7 +137,7 @@ void utl_PtrMap_remove(utl_PtrMap* map, void* key) {
     }
 }
 
-void* utl_PtrMap_search(utl_PtrMap* map, void* key) {
+void* utl_PtrMap_search(const utl_PtrMap* map, void* key) {
     const utl_ListNodePtr* head = map->buckets[(size_t)key % map->buckets_num];
 
     void* found = NULL;

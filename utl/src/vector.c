@@ -4,7 +4,7 @@
 #include <string.h>
 #include <utils.h>
 
-utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, size_t initial_size) {
+utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initial_size) {
     arena_t arena = arena_new();
     utl_Vector* vector = arena_alloc(&arena, sizeof(utl_Vector));
     vector->message_def = vector_def;
@@ -19,7 +19,7 @@ void utl_Vector_free(utl_Vector* vector) {
     arena_delete(&vector->arena);
 }
 
-size_t utl_Vector_capacity(utl_Vector* vector) {
+size_t utl_Vector_capacity(const utl_Vector* vector) {
     return vector->capacity;
 }
 
@@ -27,11 +27,11 @@ arena_t* utl_Vector_arena(utl_Vector* vector) {
     return &vector->arena;
 }
 
-void utl_Vector_resize(utl_Vector* vector, bool force) {
-    size_t capacity = utl_Vector_capacity(vector);
+void utl_Vector_resize(utl_Vector* vector, const bool force) {
+    const size_t capacity = utl_Vector_capacity(vector);
 
     if(force || vector->size >= capacity) {
-        void* old_items = vector->items;
+        const void* old_items = vector->items;
         vector->capacity = capacity * 1.25 + 1;
         vector->items = arena_alloc(&vector->arena, sizeof(void*) * vector->capacity);
         memcpy(vector->items, old_items, sizeof(void*) * vector->size);
@@ -44,7 +44,7 @@ void utl_Vector_append(utl_Vector* vector, void* element) {
     vector->items[vector->size++] = element;
 }
 
-void utl_Vector_setValue(utl_Vector* vector, size_t index, void* element) {
+void utl_Vector_setValue(const utl_Vector* vector, const size_t index, void* element) {
     if(index >= vector->size) {
         return;
     }
@@ -52,18 +52,18 @@ void utl_Vector_setValue(utl_Vector* vector, size_t index, void* element) {
     vector->items[index] = element;
 }
 
-void utl_Vector_remove(utl_Vector* vector, size_t index) {
+void utl_Vector_remove(utl_Vector* vector, const size_t index) {
     if(index >= vector->size) {
         return;
     }
 
     --vector->size;
 
-    size_t offset = index * sizeof(void*);
+    const size_t offset = index * sizeof(void*);
     memcpy(vector->items + offset, vector->items + offset + sizeof(void*), (vector->size - index) * sizeof(void*));
 }
 
-void* utl_Vector_value(utl_Vector* vector, size_t index) {
+void* utl_Vector_value(const utl_Vector* vector, const size_t index) {
     if(index >= vector->size) {
         return 0;
     }
@@ -71,11 +71,11 @@ void* utl_Vector_value(utl_Vector* vector, size_t index) {
     return vector->items[index];
 }
 
-size_t utl_Vector_size(utl_Vector* vector) {
+size_t utl_Vector_size(const utl_Vector* vector) {
     return vector->size;
 }
 
-bool utl_Vector_equals(utl_Vector* a, utl_Vector* b) {
+bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
     if(a == b) {
         return true;
     }
@@ -109,15 +109,15 @@ bool utl_Vector_equals(utl_Vector* a, utl_Vector* b) {
                 break;
             }
             case INT128: {
-                char* ia = ((utl_Int128*)value_a)->value;
-                char* ib = ((utl_Int128*)value_b)->value;
+                const char* ia = ((utl_Int128*)value_a)->value;
+                const char* ib = ((utl_Int128*)value_b)->value;
                 if(!memcmp(ia, ib, 16))
                     return false;
                 break;
             }
             case INT256: {
-                char* ia = ((utl_Int256*)value_a)->value;
-                char* ib = ((utl_Int256*)value_b)->value;
+                const char* ia = ((utl_Int256*)value_a)->value;
+                const char* ib = ((utl_Int256*)value_b)->value;
                 if(!memcmp(ia, ib, 32))
                     return false;
                 break;

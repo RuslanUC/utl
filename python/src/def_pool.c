@@ -14,11 +14,7 @@ static PyObject* Py_DefPool_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), Py
     return self;
 }
 
-static int Py_DefPool_init(PyObject* self, PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
-    return 0;
-}
-
-static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
+static PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
@@ -37,7 +33,7 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
     if(!cached_def) {
         PyObject* type = Py_TLObject_createType(message_def);
@@ -55,7 +51,7 @@ static PyObject* Py_DefPool_parse(Py_DefPool* self, PyObject* args) {
     return (PyObject*)cached_def->python_cls;
 }
 
-static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
+static PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
@@ -63,14 +59,14 @@ static PyObject* Py_DefPool_has_type(Py_DefPool* self, PyObject* args) {
         return NULL;
     }
 
-    utl_StringView name = {
+    const utl_StringView name = {
         .size = str_len,
         .data = str,
     };
     return PyBool_FromLong(utl_DefPool_hasType(self->pool, name));
 }
 
-static PyObject* Py_DefPool_has_constructor(Py_DefPool* self, PyObject* args) {
+static PyObject* Py_DefPool_has_constructor(const Py_DefPool* self, PyObject* args) {
     uint32_t tl_id;
 
     if (!PyArg_ParseTuple(args, "I", &tl_id)) {
@@ -80,7 +76,7 @@ static PyObject* Py_DefPool_has_constructor(Py_DefPool* self, PyObject* args) {
     return PyBool_FromLong(utl_DefPool_hasMessage(self->pool, tl_id));
 }
 
-static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
+static PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
     uint32_t tl_id;
 
     if (!PyArg_ParseTuple(args, "I", &tl_id)) {
@@ -91,7 +87,7 @@ static PyObject* Py_DefPool_get_constructor(Py_DefPool* self, PyObject* args) {
     if(!message_def)
         return Py_None;
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
     if(!cached) {
         return Py_None;
@@ -113,7 +109,6 @@ static PyType_Slot Py_DefPool_slots[] = {
     {Py_tp_hash, PyObject_HashNotImplemented},
     {Py_tp_methods, Py_DefPool_methods},
     {Py_tp_new, Py_DefPool_new},
-    {Py_tp_init, Py_DefPool_init},
     {0, NULL}
 };
 

@@ -13,5 +13,5 @@ extern PyType_Spec pyutl_TLVectorType_spec;
 
 void Py_TLVector_dealloc_recursive(utl_Vector* vector);
 void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item);
-void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* message);
+void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector);
 PyObject* Py_TLVector_createType(utl_MessageDefVector* message_def);

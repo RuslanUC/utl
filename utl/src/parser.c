@@ -7,7 +7,7 @@
 #include <string.h>
 #include <bits/posix1_lim.h>
 
-void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_FieldDef* field, bool is_vector) {
+void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, utl_FieldDef* field, const bool is_vector) {
     size_t pos = 0, last = 0;
 
     utl_FieldType field_type;
@@ -39,39 +39,40 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
 
     utl_TypeDef* sub_type = NULL;
 
-    size_t type_len = pos - last;
-    if(type_len == 1 && !memcmp(line + last, "#", 1)) {
+    const size_t type_len = pos - last;
+    char* type_str = line + last;
+    if(type_len == 1 && !memcmp(type_str, "#", 1)) {
         field_type = FLAGS;
         if(field->name.size > 5) {
             field->flag_info = (field->name.data[5] - '0') << 5;
         } else {
             field->flag_info = 1 << 5;
         }
-    } else if(type_len == 3 && !memcmp(line + last, "int", 3)) {
+    } else if(type_len == 3 && !memcmp(type_str, "int", 3)) {
         field_type = INT32;
-    } else if(type_len == 4 && !memcmp(line + last, "long", 4)) {
+    } else if(type_len == 4 && !memcmp(type_str, "long", 4)) {
         field_type = INT64;
-    } else if(type_len == 6 && !memcmp(line + last, "int128", 6)) {
+    } else if(type_len == 6 && !memcmp(type_str, "int128", 6)) {
         field_type = INT128;
-    } else if(type_len == 6 && !memcmp(line + last, "int256", 6)) {
+    } else if(type_len == 6 && !memcmp(type_str, "int256", 6)) {
         field_type = INT256;
-    } else if(type_len == 6 && !memcmp(line + last, "double", 6)) {
+    } else if(type_len == 6 && !memcmp(type_str, "double", 6)) {
         field_type = DOUBLE;
-    } else if(type_len == 5 && !memcmp(line + last, "bytes", 5)) {
+    } else if(type_len == 5 && !memcmp(type_str, "bytes", 5)) {
         field_type = BYTES;
-    } else if(type_len == 6 && !memcmp(line + last, "string", 6)) {
+    } else if(type_len == 6 && !memcmp(type_str, "string", 6)) {
         field_type = STRING;
-    } else if(type_len == 4 && !memcmp(line + last, "Bool", 4)) {
+    } else if(type_len == 4 && !memcmp(type_str, "Bool", 4)) {
         field_type = FULL_BOOL;
-    } else if(type_len == 4 && !memcmp(line + last, "true", 4)) {
+    } else if(type_len == 4 && !memcmp(type_str, "true", 4)) {
         field_type = BIT_BOOL;
-    } else if((type_len == 2 && !memcmp(line + last, "!X", 2)) || type_len == 8 && !memcmp(line + last, "TLObject", 8)) {
+    } else if((type_len == 2 && !memcmp(type_str, "!X", 2)) || type_len == 8 && !memcmp(type_str, "TLObject", 8)) {
         field_type = TLOBJECT;
     } else {
         field_type = TLOBJECT;
-        utl_StringView type_name = {
+        const utl_StringView type_name = {
             .size = pos - last,
-            .data = line + last,
+            .data = type_str,
         };
         sub_type = utl_DefPool_getType(def_pool, type_name);
         if(!sub_type) {
@@ -89,7 +90,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, size_t size, utl_Fie
 }
 
 utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, utl_Status* status) {
-    size_t original_size = def_pool->arena.size;
+    const size_t original_size = def_pool->arena.size;
     utl_MessageDef* message_def = utl_MessageDef_new(&def_pool->arena);
     memset(message_def, 0, sizeof(utl_MessageDef));
     int pos = 0, last = 0;
@@ -169,13 +170,13 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
 
     while(pos < size && line[pos] == ' ') ++pos;
 
-    size_t fields_start = pos;
+    const size_t fields_start = pos;
     while(pos < size && line[pos] != '=') {
         if(line[pos] == ':')
             message_def->fields_num++;
         ++pos;
     }
-    size_t fields_end = pos - 1;
+    const size_t fields_end = pos - 1;
 
     if(line[pos] != '=') {
         // type (after "=") expected, but end of string is reached
@@ -212,7 +213,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         return 0;
     }
 
-    utl_StringView type_name = utl_StringView_new(&def_pool->arena, pos - last);
+    const utl_StringView type_name = utl_StringView_new(&def_pool->arena, pos - last);
     memcpy(type_name.data, line + last, pos - last);
     if(!utl_DefPool_hasType(def_pool, type_name)) {
         utl_TypeDef* type_def = utl_TypeDef_new(&def_pool->arena);
@@ -245,7 +246,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         while(pos < size && line[pos] != ' ' && line[pos] != '?') ++pos;
 
         if(line[pos] == '?') {
-            uint8_t count = pos - last;
+            const uint8_t count = pos - last;
             if(count < 7 || (line[last + 5] != '.' && line[last + 6] != '.')) {
                 // "flags.X" expected, but end of string is reached
                 if(status) {

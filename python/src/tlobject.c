@@ -4,7 +4,7 @@
 #include "encoder.h"
 #include "decoder.h"
 
-static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
+static PyObject* Py_TLObject_getitem(const Py_TLObject* self, const utl_FieldDef* field) {
     switch (field->type) {
         case FLAGS:
         case INT32: {
@@ -29,15 +29,15 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
             return utl_Message_getBool(self->message, field) ? Py_True : Py_False;
         }
         case BYTES: {
-            utl_StringView bytes = utl_Message_getBytes(self->message, field);
+            const utl_StringView bytes = utl_Message_getBytes(self->message, field);
             return PyBytes_FromStringAndSize(bytes.data, bytes.size);
         }
         case STRING: {
-            utl_StringView bytes = utl_Message_getString(self->message, field);
+            const utl_StringView bytes = utl_Message_getString(self->message, field);
             return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
         }
         case TLOBJECT: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             utl_Message* message = utl_Message_getMessage(self->message, field);
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, message);
@@ -56,7 +56,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
             return obj;
         }
         case VECTOR: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             utl_Vector* vector = utl_Message_getVector(self->message, field);
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
@@ -73,7 +73,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, utl_FieldDef* field) {
     return Py_None;
 }
 
-static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject* item) {
+static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* field, PyObject* item) {
     switch (field->type) {
         case FLAGS:
         case INT32: {
@@ -139,7 +139,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             if(PyBytes_AsStringAndSize(item, &buf, &len)) {
                 return false;
             }
-            utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
+            const utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
             memcpy(bytes.data, buf, len);
             utl_Message_setBytes(self->message, field, bytes);
             break;
@@ -154,13 +154,13 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             if(!buf) {
                 return false;
             }
-            utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
+            const utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
             memcpy(bytes.data, buf, len);
             utl_Message_setString(self->message, field, bytes);
             break;
         }
         case TLOBJECT: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             if(!PyObject_TypeCheck(item, state->tlobject_type)) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
                 return false;
@@ -186,7 +186,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
             }
 
             utl_Vector* old_vector = utl_Message_getVector(self->message, field);
-            size_t len = PyList_Size(item);
+            const size_t len = PyList_Size(item);
             utl_Vector* vector = utl_Vector_new(field->sub.vector_def, len);
             utl_Message_setVector(self->message, field, vector);
 
@@ -200,7 +200,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
                 utl_Vector_append(vector, element);
             }
 
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             PyObject* old_obj = utl_PtrMap_search(state->objects_cache, old_vector);
             Py_XDECREF(old_obj);
 
@@ -211,7 +211,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, utl_FieldDef* field, PyObject
 }
 
 void Py_TLObject_dealloc_recursive(utl_Message* message) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
 
     for(size_t i = 0; i < message->message_def->fields_num; i++) {
         utl_FieldDef field = message->message_def->fields[i];
@@ -250,7 +250,7 @@ void Py_TLObject_dealloc_recursive(utl_Message* message) {
 }
 
 static void Py_TLObject_dealloc(PyObject* self) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_remove(state->objects_cache, ((Py_TLObject*)self)->message);
 
     Py_TLObject_dealloc_recursive(((Py_TLObject*)self)->message);
@@ -264,7 +264,7 @@ void Py_TLObject_init_message(Py_TLObject* self, utl_MessageDef* def, utl_Messag
         self->message = utl_Message_new(def);
     }
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_insert(state->objects_cache, self->message, self);
 }
 
@@ -282,7 +282,7 @@ static PyObject* Py_TLObject_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), P
     return self;
 }
 
-static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObject* kwargs) {
+static int Py_TLObject_init(const Py_TLObject* self, PyObject* Py_UNUSED(args), PyObject* kwargs) {
     for(size_t i = 0; i < self->message->message_def->fields_num; ++i) {
         utl_FieldDef field = self->message->message_def->fields[i];
         if(field.type == FLAGS) {
@@ -310,7 +310,7 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
 }
 
 static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
     if(!cached) {
         return NULL;
@@ -322,7 +322,7 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
         return NULL;
     }
 
-    utl_StringView field_name = { .data = buf, .size = len };
+    const utl_StringView field_name = { .data = buf, .size = len };
     utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
     if(!field) {
         return PyObject_GenericGetAttr((PyObject*)self, attr);
@@ -335,8 +335,8 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     return Py_TLObject_getitem(self, field);
 }
 
-static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* value) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+static int Py_TLObject_setattro(const Py_TLObject* self, PyObject* attr, PyObject* value) {
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
     if(!cached) {
         return -1;
@@ -348,7 +348,7 @@ static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* val
         return -1;
     }
 
-    utl_StringView field_name = { .data = buf, .size = len };
+    const utl_StringView field_name = { .data = buf, .size = len };
     utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
     if(!field) {
         return -1;
@@ -357,12 +357,12 @@ static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* val
     return Py_TLObject_setitem(self, field, value) ? 0 : -1;
 }
 
-static PyObject* Py_TLObject_repr(Py_TLObject* self) {
+static PyObject* Py_TLObject_repr(const Py_TLObject* self) {
     arena_t repr_arena = arena_new();
     repr_arena.flags |= ARENA_DONTALIGN;
     char* tmp;
 
-    utl_MessageDef* def = self->message->message_def;
+    const utl_MessageDef* def = self->message->message_def;
 
     if(def->namespace_.size) {
         tmp = arena_alloc(&repr_arena, def->namespace_.size);
@@ -431,17 +431,17 @@ static PyObject* Py_TLObject_repr(Py_TLObject* self) {
     return result;
 }
 
-static PyObject* Py_TLObject_compare(Py_TLObject* self, PyObject* other_, int op) {
+static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, const int op) {
     if(op != Py_EQ && op != Py_NE) {
         return Py_NotImplemented;
     }
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     if(!PyObject_TypeCheck(other_, state->tlobject_type)) {
         return Py_False;
     }
 
-    Py_TLObject* other = (Py_TLObject*)other_;
+    const Py_TLObject* other = (Py_TLObject*)other_;
     bool eq = utl_Message_equals(self->message, other->message);
     if(op == Py_NE) {
         eq = !eq;
@@ -451,7 +451,7 @@ static PyObject* Py_TLObject_compare(Py_TLObject* self, PyObject* other_, int op
 }
 
 static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, size_t* bytes_read) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
 
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
@@ -464,7 +464,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, 
             .pos = 0,
             .size = 4,
         };
-        uint32_t tl_id = utl_decode_int32(&dbuf);
+        const uint32_t tl_id = utl_decode_int32(&dbuf);
         utl_MessageDef* def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
@@ -485,7 +485,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, 
     Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
 
     utl_Status status;
-    size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
+    const size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
     if(!status.ok) {
         PyErr_SetString(PyExc_ValueError, status.message);
         return NULL;
@@ -498,7 +498,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, 
 }
 
 static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
 
     PyObject* bio;
     if (!PyArg_ParseTuple(args, "O!", state->bytesio_type, &bio)) {
@@ -538,10 +538,10 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
     return Py_TLObject_read(cls, buf, buf_len, NULL);
 }
 
-static PyObject* Py_TLObject_write(Py_TLObject* self, PyObject* args) {
+static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(args)) {
     arena_t encoder_arena = arena_new();
     encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(self->message, &encoder_arena);
+    const size_t written_bytes = utl_encode(self->message, &encoder_arena);
 
     PyObject* result = PyBytes_FromStringAndSize(encoder_arena.data + sizeof(uint32_t*) * self->message->message_def->flags_num, written_bytes);
     arena_delete(&encoder_arena);
@@ -578,9 +578,9 @@ PyType_Spec pyutl_TLObjectType_spec = {
 };
 
 PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     arena_t* arena = &state->c_def_pool->arena;
-    size_t real_size = arena->size;
+    const size_t real_size = arena->size;
 
     char* name = arena_alloc(
         arena, 11 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size);

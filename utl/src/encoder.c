@@ -2,7 +2,7 @@
 
 #include <string.h>
 #include <vector.h>
-#ifndef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
+#ifdef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
 #include "endianness.h"
 #endif
 
@@ -54,7 +54,7 @@ void utl_encode_bool(const bool value, arena_t* arena) {
     memcpy(buf, value ? BOOL_TRUE : BOOL_FALSE, 4);
 }
 
-void utl_encode_bytes(utl_StringView value, arena_t* arena) {
+void utl_encode_bytes(const utl_StringView value, arena_t* arena) {
     char* buf;
     size_t total_size = value.size;
     if(value.size >= 254) {
@@ -80,7 +80,7 @@ void utl_encode_bytes(utl_StringView value, arena_t* arena) {
 }
 
 void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena, bool is_vector) {
-    utl_FieldType field_type = is_vector ? ((utl_MessageDefVector*)field)->type : field->type;
+    const utl_FieldType field_type = is_vector ? ((utl_MessageDefVector*)field)->type : field->type;
 
     switch (field_type) {
         case FLAGS:
@@ -121,7 +121,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, arena_t* arena, bo
             break;
         }
         case VECTOR: {
-            utl_Vector* vector = value;
+            const utl_Vector* vector = value;
             utl_encode_int32(VECTOR_CONSTR, arena);
             utl_encode_int32(utl_Vector_size(vector), arena);
             for(size_t i = 0; i < utl_Vector_size(vector); i++) {
@@ -168,7 +168,7 @@ size_t utl_encode(const utl_Message* message, arena_t* arena) {
             if(is_big_endian())
                 flag_bit = 31 - flag_bit;
 #endif
-            uint32_t flag_value = 1 << flag_bit;
+            const uint32_t flag_value = 1 << flag_bit;
             *flags[(field.flag_info >> 5) - 1] |= flag_value;
         }
 

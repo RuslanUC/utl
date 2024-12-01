@@ -3,7 +3,7 @@
 #include "decoder.h"
 #include "encoder.h"
 
-char* utl_DecodeBuf_read(utl_DecodeBuf* buf, size_t n) {
+char* utl_DecodeBuf_read(utl_DecodeBuf* buf, const size_t n) {
     if(buf->pos >= buf->size)
         return NULL;
     char* ptr = buf->data + buf->pos;
@@ -11,7 +11,7 @@ char* utl_DecodeBuf_read(utl_DecodeBuf* buf, size_t n) {
     return ptr;
 }
 
-bool check_not_eof(utl_DecodeBuf* buf, utl_Status* status, size_t need_bytes) {
+bool check_not_eof(const utl_DecodeBuf* buf, utl_Status* status, const size_t need_bytes) {
     if(buf->size - buf->pos >= need_bytes)
         return true;
     if(status) {
@@ -55,22 +55,22 @@ int64_t utl_decode_int64(utl_DecodeBuf* buffer) {
 }
 
 void utl_decode_int128(char* out, utl_DecodeBuf* buffer) {
-    char* buf = utl_DecodeBuf_read(buffer, 16);
+    const char* buf = utl_DecodeBuf_read(buffer, 16);
     memcpy(out, buf, 16);
 }
 
 void utl_decode_int256(char* out, utl_DecodeBuf* buffer) {
-    char* buf = utl_DecodeBuf_read(buffer, 32);
+    const char* buf = utl_DecodeBuf_read(buffer, 32);
     memcpy(out, buf, 32);
 }
 
 double utl_decode_double(utl_DecodeBuf* buffer) {
     int64_t tmp = utl_decode_int64(buffer);
-    return *((double*)&tmp);
+    return *(double*)&tmp;
 }
 
 bool utl_decode_bool(utl_DecodeBuf* buffer) {
-    char* buf = utl_DecodeBuf_read(buffer, 4);
+    const char* buf = utl_DecodeBuf_read(buffer, 4);
     return !memcmp(buf, BOOL_TRUE, 4);
 }
 
@@ -83,7 +83,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena, utl_Statu
     if(!check_not_eof(buffer, status, 1)) {
         return emptyStringView;
     }
-    char* buf = utl_DecodeBuf_read(buffer, 1);
+    const char* buf = utl_DecodeBuf_read(buffer, 1);
     uint32_t count = (uint8_t)buf[0];
     uint8_t offset = 1;
     if(count >= 254) {
@@ -95,10 +95,10 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena, utl_Statu
         offset = 0;
     }
 
-    utl_StringView result = utl_StringView_new(arena, count);
+    const utl_StringView result = utl_StringView_new(arena, count);
     memcpy(result.data, utl_DecodeBuf_read(buffer, count), count);
 
-    uint32_t padding = (count + offset) % 4;
+    const uint32_t padding = (count + offset) % 4;
     if(padding) {
         buffer->pos += 4 - padding;
     }
@@ -106,7 +106,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena, utl_Statu
     return result;
 }
 
-bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDefVector* field, utl_DecodeBuf* buf, size_t size, utl_Status* status) {
+bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_MessageDefVector* field, utl_DecodeBuf* buf, const size_t size, utl_Status* status) {
     for(size_t i = 0; i < size; i++) {
         void* value = NULL;
 
@@ -158,7 +158,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                 break;
             }
             case BYTES: {
-                utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, status);
+                const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, status);
                 if(!status)
                     return false;
                 value = arena_alloc(&vector->arena, sizeof(utl_Bytes));
@@ -167,7 +167,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                 break;
             }
             case STRING: {
-                utl_StringView string = utl_decode_bytes(buf, &vector->arena, status);
+                const utl_StringView string = utl_decode_bytes(buf, &vector->arena, status);
                 if(!status)
                     return false;
                 value = arena_alloc(&vector->arena, sizeof(utl_String));
@@ -176,7 +176,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                 break;
             }
             case TLOBJECT: {
-                uint32_t tl_id = utl_decode_int32(buf);
+                const uint32_t tl_id = utl_decode_int32(buf);
                 utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
                 if (!new_def) {
                     if(status) {
@@ -186,7 +186,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                     return false;
                 }
 
-                utl_TypeDef* type = field->sub.type_def;
+                const utl_TypeDef* type = field->sub.type_def;
                 if (type && new_def->type != type) {
                     if(status) {
                         status->ok = false;
@@ -210,7 +210,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
                     }
                     return false;
                 }
-                size_t new_size = utl_decode_int32(buf);
+                const size_t new_size = utl_decode_int32(buf);
                 utl_Vector* new_vector = utl_Vector_new(field->sub.vector_def, new_size);
                 value = new_vector;
                 if(!utl_decode_vector(new_vector, def_pool, field->sub.vector_def, buf, new_size, status))
@@ -233,12 +233,12 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, utl_MessageDef
     return true;
 }
 
-bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
+bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
     if(field->flag_info && field->type != FLAGS) {
-        uint8_t flag_bit = field->flag_info & 0b11111;
-        utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
-        uint32_t flags = utl_Message_getInt32(message, flags_field);
-        bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
+        const uint8_t flag_bit = field->flag_info & 0b11111;
+        const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+        const uint32_t flags = utl_Message_getInt32(message, flags_field);
+        const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
         if(field->type == BIT_BOOL)
             utl_Message_setBool(message, field, field_present);
         if(!field_present)
@@ -291,21 +291,21 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
             break;
         }
         case BYTES: {
-            utl_StringView bytes = utl_decode_bytes(buf, &message->arena, status);
+            const utl_StringView bytes = utl_decode_bytes(buf, &message->arena, status);
             if(!status)
                 return false;
             utl_Message_setBytes(message, field, bytes);
             break;
         }
         case STRING: {
-            utl_StringView string = utl_decode_bytes(buf, &message->arena, status);
+            const utl_StringView string = utl_decode_bytes(buf, &message->arena, status);
             if(!status)
                 return false;
             utl_Message_setString(message, field, string);
             break;
         }
         case TLOBJECT: {
-            uint32_t tl_id = utl_decode_int32(buf);
+            const uint32_t tl_id = utl_decode_int32(buf);
             utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
             if (!new_def) {
                 if(status) {
@@ -315,7 +315,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
                 return false;
             }
 
-            utl_TypeDef* type = field->sub.type_def;
+            const utl_TypeDef* type = field->sub.type_def;
             if (type && new_def->type != type) {
                 if(status) {
                     status->ok = false;
@@ -339,7 +339,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
                 }
                 return false;
             }
-            size_t size = utl_decode_int32(buf);
+            const size_t size = utl_decode_int32(buf);
             utl_Vector* vector = utl_Vector_new(field->sub.vector_def, size);
             utl_Message_setVector(message, field, vector);
             if(!utl_decode_vector(vector, def_pool, field->sub.vector_def, buf, size, status))
@@ -351,7 +351,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, utl_FieldDef*
     return true;
 }
 
-size_t utl_decode(utl_Message* message, utl_DefPool* def_pool, char* buf, size_t size, utl_Status* status) {
+size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, char* buf, const size_t size, utl_Status* status) {
     status->ok = true;
 
     utl_DecodeBuf buffer = {
@@ -360,10 +360,10 @@ size_t utl_decode(utl_Message* message, utl_DefPool* def_pool, char* buf, size_t
         .size = size,
     };
 
-    const utl_FieldDef* fields = message->message_def->fields;
-    for(int i = 0; i < message->message_def->fields_num; i++) {
+    const utl_FieldDef* fields = out_message->message_def->fields;
+    for(int i = 0; i < out_message->message_def->fields_num; i++) {
         utl_FieldDef field = fields[i];
-        if(!utl_decode_field(message, def_pool, &field, &buffer, status))
+        if(!utl_decode_field(out_message, def_pool, &field, &buffer, status))
             return 0;
     }
 

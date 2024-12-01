@@ -2,7 +2,7 @@
 #include "tlvector.h"
 #include "tlobject.h"
 
-static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
+static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index) {
     void* value = utl_Vector_value(self->vector, index);
 
     switch (self->vector->message_def->type) {
@@ -29,15 +29,15 @@ static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
             return ((utl_Bool*)value)->value ? Py_True : Py_False;
         }
         case BYTES: {
-            utl_StringView bytes = ((utl_Bytes*)value)->value;
+            const utl_StringView bytes = ((utl_Bytes*)value)->value;
             return PyBytes_FromStringAndSize(bytes.data, bytes.size);
         }
         case STRING: {
-            utl_StringView bytes = ((utl_Bytes*)value)->value;
+            const utl_StringView bytes = ((utl_Bytes*)value)->value;
             return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
         }
         case TLOBJECT: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             utl_Message* message = value;
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, message);
@@ -56,7 +56,7 @@ static PyObject* Py_TLVector_getitem(Py_TLVector* self, size_t index) {
             return obj;
         }
         case VECTOR: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             utl_Vector* vector = value;
 
             PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
@@ -170,7 +170,7 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
             break;
         }
         case TLOBJECT: {
-            pyutl_ModuleState* state = pyutl_ModuleState_get();
+            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             if(!PyObject_TypeCheck(item, state->tlobject_type)) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
                 return NULL;
@@ -191,7 +191,7 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return false;
             }
 
-            size_t len = PyList_Size(item);
+            const size_t len = PyList_Size(item);
             utl_Vector* new_vector = utl_Vector_new(vector->message_def->sub.vector_def, len);
 
             for(size_t i = 0; i < len; i++) {
@@ -212,14 +212,14 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
 }
 
 void Py_TLVector_dealloc_recursive(utl_Vector* vector) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
 
-    utl_FieldType type = vector->message_def->type;
+    const utl_FieldType type = vector->message_def->type;
     if(type != TLOBJECT && type != VECTOR) {
         goto vec_free;
     }
 
-    size_t size = utl_Vector_size(vector);
+    const size_t size = utl_Vector_size(vector);
     for(size_t i = 0; i < size; i++) {
         void* element = utl_Vector_value(vector, i);
         if(!element) {
@@ -245,7 +245,7 @@ vec_free:
 }
 
 static void Py_TLVector_dealloc(PyObject* self) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_remove(state->objects_cache, ((Py_TLVector*)self)->vector);
 
     Py_TLVector_dealloc_recursive(((Py_TLVector*)self)->vector);
@@ -255,7 +255,7 @@ static void Py_TLVector_dealloc(PyObject* self) {
 void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
     self->vector = vector;
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     utl_PtrMap_insert(state->objects_cache, self->vector, self);
 }
 
@@ -265,7 +265,7 @@ static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUS
     return NULL;
 }
 
-static PyObject* Py_TLVector_sq_item(Py_TLVector* self, ssize_t index) {
+static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t index) {
     if(index >= utl_Vector_size(self->vector)) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
         return NULL;
@@ -274,7 +274,7 @@ static PyObject* Py_TLVector_sq_item(Py_TLVector* self, ssize_t index) {
     return Py_TLVector_getitem(self, index);
 }
 
-static int Py_TLVector_sq_setitem(Py_TLVector* self, ssize_t index, PyObject* value) {
+static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index, PyObject* value) {
     if(value == NULL) {
         // TODO: dealloc/decref value
         utl_Vector_remove(self->vector, index);
@@ -296,15 +296,14 @@ static int Py_TLVector_sq_setitem(Py_TLVector* self, ssize_t index, PyObject* va
     return 0;
 }
 
-static PyObject* Py_TLVector_repr(Py_TLVector* self) {
+static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
     arena_t repr_arena = arena_new();
     repr_arena.flags |= ARENA_DONTALIGN;
-    char* tmp;
 
-    tmp = arena_alloc(&repr_arena, 1);
+    char* tmp = arena_alloc(&repr_arena, 1);
     *tmp = '[';
 
-    size_t size = utl_Vector_size(self->vector);
+    const size_t size = utl_Vector_size(self->vector);
     for(size_t i = 0; i < size; i++) {
         PyObject* value = Py_TLVector_getitem(self, i);
 
@@ -349,17 +348,17 @@ static PyObject* Py_TLVector_repr(Py_TLVector* self) {
     return result;
 }
 
-static PyObject* Py_TLVector_compare(Py_TLVector* self, PyObject* other_, int op) {
+static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, const int op) {
     if(op != Py_EQ && op != Py_NE) {
         return Py_NotImplemented;
     }
 
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
     if(!PyObject_TypeCheck(other_, state->tlvector_type)) {
         return Py_False;
     }
 
-    Py_TLVector* other = (Py_TLVector*)other_;
+    const Py_TLVector* other = (Py_TLVector*)other_;
     bool eq = utl_Vector_equals(self->vector, other->vector);
     if(op == Py_NE) {
         eq = !eq;
@@ -368,7 +367,7 @@ static PyObject* Py_TLVector_compare(Py_TLVector* self, PyObject* other_, int op
     return eq ? Py_True : Py_False;
 }
 
-static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
+static PyObject* Py_TLVector_append(const Py_TLVector* self, PyObject* args) {
     PyObject* obj;
     if (!PyArg_ParseTuple(args, "O", &obj)) {
         return NULL;
@@ -383,7 +382,7 @@ static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
     return Py_None;
 }
 
-static PyObject* Py_TLVector_remove(Py_TLVector* self, PyObject* args) {
+static PyObject* Py_TLVector_remove(const Py_TLVector* self, PyObject* args) {
     uint32_t index;
     if (!PyArg_ParseTuple(args, "I", &index)) {
         return NULL;
