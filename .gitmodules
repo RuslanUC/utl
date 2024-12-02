@@ -1,0 +1,3 @@
+[submodule "ext/arena-allocator"]
+	path = ext/arena-allocator
+	url = https://github.com/RuslanUC/arena-allocator

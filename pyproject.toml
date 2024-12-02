@@ -6,13 +6,38 @@ authors = ["RuslanUC <dev_ruslan_uc@protonmail.com>"]
 license = "MIT"
 readme = "README.md"
 
+packages = [
+    {include = "pyutl"}
+]
+
+include = [
+    {format = "sdist", path = "CMakeLists.txt"},
+    {format = "sdist", path = "ext/arena-allocator/CMakeLists.txt"},
+    {format = "sdist", path = "ext/arena-allocator/src/*.c"},
+    {format = "sdist", path = "ext/arena-allocator/include/*.h"},
+    {format = "sdist", path = "utl/CMakeLists.txt"},
+    {format = "sdist", path = "utl/src/*.c"},
+    {format = "sdist", path = "utl/include/*.h"},
+    {format = "sdist", path = "python/CMakeLists.txt"},
+    {format = "sdist", path = "python/src/*.c"},
+    {format = "sdist", path = "python/include/*.h"},
+]
+
+[tool.poetry.build]
+generate-setup-file = true
+script = "build.py"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
+cibuildwheel = "^2.22.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "setuptools"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.cibuildwheel]
+build = "*-manylinux_x86_64"

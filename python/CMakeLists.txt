@@ -2,8 +2,11 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(Python_FIND_STRATEGY LOCATION)
 set(Python3_ROOT_DIR /usr)
+set(Python3_FIND_VIRTUALENV ONLY)
 
-find_package(Python3 3.10 COMPONENTS Interpreter Development.Module REQUIRED)
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+message("${Python3_INCLUDE_DIR}")
 
 add_library(pyutl SHARED
         src/def_pool.c
@@ -15,9 +18,10 @@ target_include_directories(pyutl PUBLIC include ${Python3_INCLUDE_DIRS})
 target_link_libraries(pyutl PUBLIC utl ${Python3_LIBRARIES})
 target_compile_definitions(pyutl PUBLIC PY_SSIZE_T_CLEAN)
 set_target_properties(pyutl PROPERTIES PREFIX "")
-set_target_properties(pyutl PROPERTIES OUTPUT_NAME "_pyutl")
-set_target_properties(pyutl PROPERTIES SUFFIX ".${Python3_SOABI}.so")
-set_target_properties(pyutl PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/pyutl")
+set_target_properties(pyutl PROPERTIES OUTPUT_NAME "_pyutl.${Python3_SOABI}")
+if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set_target_properties(pyutl PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../pyutl")
+endif ()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(pyutl PUBLIC -fPIC)

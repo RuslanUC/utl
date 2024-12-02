@@ -1,2 +1,5 @@
 .idea
 cmake-build-*
+/dist
+/build
+/setup.py
