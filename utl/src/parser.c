@@ -3,9 +3,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <bits/posix1_lim.h>
 
 void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, utl_FieldDef* field, const bool is_vector) {
     size_t pos = 0, last = 0;
