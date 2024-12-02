@@ -1,11 +1,29 @@
 [tool.poetry]
 name = "utl"
-version = "0.1.0"
+version = "0.1.0b1"
 description = "A small Telegram Type Language implementation"
 authors = ["RuslanUC <dev_ruslan_uc@protonmail.com>"]
 license = "MIT"
 readme = "README.md"
-
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: C",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+]
 packages = [
     {include = "pyutl"}
 ]
@@ -23,13 +41,16 @@ include = [
     {format = "sdist", path = "python/include/*.h"},
 ]
 
+[tool.poetry.urls]
+Homepage = "https://github.com/RuslanUC/utl"
+Repository = "https://github.com/RuslanUC/utl"
+
 [tool.poetry.build]
 generate-setup-file = true
 script = "build.py"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
