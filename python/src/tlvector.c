@@ -108,7 +108,11 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return NULL;
             }
             result = arena_alloc(&vector->arena, sizeof(utl_Int128));
+#if PY_MINOR_VERSION < 13
             _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int128*)result)->value, 16, true, true);
+#else
+            _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int128*)result)->value, 16, true, true, true);
+#endif
             break;
         }
         case INT256: {
@@ -117,7 +121,11 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return NULL;
             }
             result = arena_alloc(&vector->arena, sizeof(utl_Int256));
-            _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int256*)result)->value, 16, true, true);
+#if PY_MINOR_VERSION < 13
+            _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int256*)result)->value, 32, true, true);
+#else
+            _PyLong_AsByteArray((PyLongObject*)item, ((utl_Int256*)result)->value, 32, true, true, true);
+#endif
             break;
         }
         case DOUBLE: {

@@ -98,7 +98,11 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 return false;
             }
             char bytes[16];
+#if PY_MINOR_VERSION < 13
             _PyLong_AsByteArray((PyLongObject*)item, bytes, 16, true, true);
+#else
+            _PyLong_AsByteArray((PyLongObject*)item, bytes, 16, true, true, true);
+#endif
             utl_Message_setInt128(self->message, field, bytes);
             break;
         }
@@ -108,7 +112,11 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 return false;
             }
             char bytes[32];
+#if PY_MINOR_VERSION < 13
             _PyLong_AsByteArray((PyLongObject*)item, bytes, 32, true, true);
+#else
+            _PyLong_AsByteArray((PyLongObject*)item, bytes, 32, true, true, true);
+#endif
             utl_Message_setInt256(self->message, field, bytes);
             break;
         }
