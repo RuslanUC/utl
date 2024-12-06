@@ -6,7 +6,7 @@ import pytest
 print(f"\nPid: {os.getpid()}")
 input("Press enter to continue...")
 
-from pyutl import def_pool as pool, TLObject
+from pyutl import def_pool as pool, TLObject, TLType
 
 
 SKIP_TESTS = 0
@@ -23,6 +23,9 @@ def test_parse() -> None:
 
     assert pool.has_type("InputGeoPoint")
     assert not pool.has_type("InputGeoPointa")
+
+    assert issubclass(pool.get_type("InputGeoPoint"), TLType)
+    assert pool.get_type("InputGeoPointa") is None
 
     assert pool.has_constructor(0x48222faf)
     assert not pool.has_constructor(0x48222fae)

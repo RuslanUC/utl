@@ -14,6 +14,7 @@ typedef struct pyutl_ModuleState {
     PyTypeObject* def_pool_type;
     PyTypeObject* tlobject_type;
     PyTypeObject* tlvector_type;
+    PyTypeObject* tltype_type;
     PyObject* bytesio_type;
     utl_DefPool* c_def_pool;
     PyObject* py_def_pool;

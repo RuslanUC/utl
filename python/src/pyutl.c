@@ -2,8 +2,63 @@
 #include "py_def_pool.h"
 #include "tlobject.h"
 #include "tlvector.h"
+#include "tltype.h"
+
+PyObject* pyutl_parse_tl(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .parse method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
+
+PyObject* pyutl_has_type(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .has_type method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
+
+PyObject* pyutl_get_type(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .get_type method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
+
+PyObject* pyutl_create_type(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .create_type method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
+
+PyObject* pyutl_has_constructor(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .has_constructor method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
+
+PyObject* pyutl_get_constructor(PyObject*, PyObject* args) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    // TODO: call def_pool .get_constructor method
+
+    PyErr_SetString(PyExc_NotImplementedError, "");
+    return NULL;
+}
 
 PyMethodDef method_table[] = {
+    {"parse_tl", (PyCFunction)pyutl_parse_tl, METH_VARARGS, 0,},
+    {"has_type", (PyCFunction)pyutl_has_type, METH_VARARGS, 0,},
+    {"get_type", (PyCFunction)pyutl_get_type, METH_VARARGS, 0,},
+    {"create_type", (PyCFunction)pyutl_create_type, METH_VARARGS, 0,},
+    {"has_constructor", (PyCFunction)pyutl_has_constructor, METH_VARARGS, 0,},
+    {"get_constructor", (PyCFunction)pyutl_get_constructor, METH_VARARGS, 0,},
     {NULL, NULL, 0, NULL}
 };
 
@@ -25,6 +80,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     PyObject* pyutl_DefPoolType = NULL;
     PyObject* pyutl_TLObjectType = NULL;
     PyObject* pyutl_TLVectorType = NULL;
+    PyObject* pyutl_TLTypeType = NULL;
     PyObject* collections = NULL;
     PyObject* seq = NULL;
     PyObject* seq_ret = NULL;
@@ -50,11 +106,18 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     if(!pyutl_TLVectorType) {
         goto failed;
     }
+    pyutl_TLTypeType = PyType_FromSpec(&pyutl_TLTypeType_spec);
+    if(!pyutl_TLTypeType) {
+        goto failed;
+    }
 
     if(PyModule_AddObject(m, "TLObject", pyutl_TLObjectType)) {
         goto failed;
     }
     if(PyModule_AddObject(m, "TLVector", pyutl_TLVectorType)) {
+        goto failed;
+    }
+    if(PyModule_AddObject(m, "TLType", pyutl_TLTypeType)) {
         goto failed;
     }
 
@@ -86,6 +149,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     state->def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
     state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
     state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
+    state->tltype_type = (PyTypeObject*)pyutl_TLTypeType;
     state->py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
     if(!state->py_def_pool || PyModule_AddObject(m, "def_pool", state->py_def_pool)) {
         goto failed;
@@ -105,6 +169,7 @@ failed:
     Py_XDECREF(pyutl_DefPoolType);
     Py_XDECREF(pyutl_TLObjectType);
     Py_XDECREF(pyutl_TLVectorType);
+    Py_XDECREF(pyutl_TLTypeType);
     Py_XDECREF(m);
     return NULL;
 }

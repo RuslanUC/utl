@@ -1,6 +1,7 @@
 #include "pyutl.h"
 #include "py_def_pool.h"
 #include "tlobject.h"
+#include "tltype.h"
 
 static void Py_DefPool_dealloc(PyObject* self) {
     utl_DefPool_free(((Py_DefPool*)self)->pool);
@@ -18,6 +19,7 @@ static PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
+    // TODO: add layer and section arguments
     if (!PyArg_ParseTuple(args, "s#", &str, &str_len)) {
         return NULL;
     }
@@ -96,9 +98,77 @@ static PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* ar
     return (PyObject*)cached->python_cls;
 }
 
+static PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
+    char* str;
+    size_t str_len;
+
+    if (!PyArg_ParseTuple(args, "s#", &str, &str_len)) {
+        return NULL;
+    }
+
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const utl_StringView name = {
+        .size = str_len,
+        .data = str,
+    };
+
+    utl_TypeDef* type_def = utl_DefPool_getType(self->pool, name);
+    if(!type_def) {
+        type_def = utl_TypeDef_new(&self->pool->arena);
+        type_def->name = utl_StringView_clone(&self->pool->arena, name);
+        utl_DefPool_addType(self->pool, type_def);
+    }
+
+    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
+    if(!cached_def) {
+        PyObject* py_type = Py_TLType_createType(type_def);
+        cached_def = arena_alloc(&self->pool->arena, sizeof(pyutl_MessageDef));
+        cached_def->python_cls = (PyTypeObject*)py_type;
+        cached_def->fields = NULL;
+
+        utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
+    }
+
+    return (PyObject*)cached_def->python_cls;
+}
+
+static PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
+    char* str;
+    size_t str_len;
+
+    if (!PyArg_ParseTuple(args, "s#", &str, &str_len)) {
+        return NULL;
+    }
+
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const utl_StringView name = {
+        .size = str_len,
+        .data = str,
+    };
+
+    utl_TypeDef* type_def = utl_DefPool_getType(self->pool, name);
+    if(!type_def) {
+        return Py_None;
+    }
+
+    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
+    if(!cached_def) {
+        PyObject* py_type = Py_TLType_createType(type_def);
+        cached_def = arena_alloc(&self->pool->arena, sizeof(pyutl_MessageDef));
+        cached_def->python_cls = (PyTypeObject*)py_type;
+        cached_def->fields = NULL;
+
+        utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
+    }
+
+    return (PyObject*)cached_def->python_cls;
+}
+
 static PyMethodDef Py_DefPool_methods[] = {
     {"parse", (PyCFunction)Py_DefPool_parse, METH_VARARGS, 0,},
     {"has_type", (PyCFunction)Py_DefPool_has_type, METH_VARARGS, 0,},
+    {"get_type", (PyCFunction)Py_DefPool_get_type, METH_VARARGS, 0,},
+    {"create_type", (PyCFunction)Py_DefPool_create_type, METH_VARARGS, 0,},
     {"has_constructor", (PyCFunction)Py_DefPool_has_constructor, METH_VARARGS, 0,},
     {"get_constructor", (PyCFunction)Py_DefPool_get_constructor, METH_VARARGS, 0,},
     {NULL}
