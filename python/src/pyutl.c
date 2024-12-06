@@ -5,51 +5,33 @@
 #include "tltype.h"
 
 PyObject* pyutl_parse_tl(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .parse method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_parse((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyObject* pyutl_has_type(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .has_type method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_has_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyObject* pyutl_get_type(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .get_type method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_get_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyObject* pyutl_create_type(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .create_type method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_create_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyObject* pyutl_has_constructor(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .has_constructor method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_has_constructor((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyObject* pyutl_get_constructor(PyObject*, PyObject* args) {
-    pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: call def_pool .get_constructor method
-
-    PyErr_SetString(PyExc_NotImplementedError, "");
-    return NULL;
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    return Py_DefPool_get_constructor((const Py_DefPool*)state->py_def_pool, args);
 }
 
 PyMethodDef method_table[] = {

@@ -15,7 +15,7 @@ static PyObject* Py_DefPool_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), Py
     return self;
 }
 
-static PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
@@ -53,7 +53,7 @@ static PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     return (PyObject*)cached_def->python_cls;
 }
 
-static PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
@@ -68,7 +68,7 @@ static PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args) {
     return PyBool_FromLong(utl_DefPool_hasType(self->pool, name));
 }
 
-static PyObject* Py_DefPool_has_constructor(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_has_constructor(const Py_DefPool* self, PyObject* args) {
     uint32_t tl_id;
 
     if (!PyArg_ParseTuple(args, "I", &tl_id)) {
@@ -78,7 +78,7 @@ static PyObject* Py_DefPool_has_constructor(const Py_DefPool* self, PyObject* ar
     return PyBool_FromLong(utl_DefPool_hasMessage(self->pool, tl_id));
 }
 
-static PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
     uint32_t tl_id;
 
     if (!PyArg_ParseTuple(args, "I", &tl_id)) {
@@ -98,7 +98,7 @@ static PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* ar
     return (PyObject*)cached->python_cls;
 }
 
-static PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
@@ -132,7 +132,7 @@ static PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) 
     return (PyObject*)cached_def->python_cls;
 }
 
-static PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
+PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
 
