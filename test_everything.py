@@ -15,6 +15,9 @@ SKIP_TESTS = 0
 def test_parse() -> None:
     assert pyutl.def_pool
 
+    InputGeoPointBase = pyutl.create_type("InputGeoPoint")
+    assert pyutl.has_type("InputGeoPoint")
+
     cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 177, pyutl.TLSection.TYPES)
     assert cls
     assert issubclass(cls, pyutl.TLObject)
@@ -25,6 +28,7 @@ def test_parse() -> None:
 
     assert issubclass(pyutl.get_type("InputGeoPoint"), pyutl.TLType)
     assert pyutl.get_type("InputGeoPointa") is None
+    assert pyutl.get_type("InputGeoPoint") is InputGeoPointBase
 
     assert pyutl.has_constructor(0x48222faf)
     assert not pyutl.has_constructor(0x48222fae)

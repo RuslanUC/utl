@@ -16,6 +16,12 @@ PyType_Spec pyutl_TLTypeType_spec = {
 
 PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
+
+    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
+    if(cached_def) {
+        return (PyObject*)cached_def->python_cls;
+    }
+
     arena_t* arena = &state->c_def_pool->arena;
     const size_t real_size = arena->size;
 
@@ -54,10 +60,16 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
     }
 
     Py_DECREF(typedef_capsule);
+
+    cached_def = arena_alloc(&state->c_def_pool->arena, sizeof(pyutl_MessageDef));
+    cached_def->python_cls = (PyTypeObject*)new_type;
+    cached_def->fields = NULL;
+    utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
+
     return new_type;
 
-    failed:
-        Py_XDECREF(typedef_capsule);
+failed:
+    Py_XDECREF(typedef_capsule);
     Py_XDECREF(new_type);
     return NULL;
 }

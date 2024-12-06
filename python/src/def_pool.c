@@ -128,17 +128,7 @@ PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
         utl_DefPool_addType(self->pool, type_def);
     }
 
-    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
-    if(!cached_def) {
-        PyObject* py_type = Py_TLType_createType(type_def);
-        cached_def = arena_alloc(&self->pool->arena, sizeof(pyutl_MessageDef));
-        cached_def->python_cls = (PyTypeObject*)py_type;
-        cached_def->fields = NULL;
-
-        utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
-    }
-
-    return (PyObject*)cached_def->python_cls;
+    return Py_TLType_createType(type_def);
 }
 
 PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
@@ -160,17 +150,7 @@ PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
         return Py_None;
     }
 
-    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
-    if(!cached_def) {
-        PyObject* py_type = Py_TLType_createType(type_def);
-        cached_def = arena_alloc(&self->pool->arena, sizeof(pyutl_MessageDef));
-        cached_def->python_cls = (PyTypeObject*)py_type;
-        cached_def->fields = NULL;
-
-        utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
-    }
-
-    return (PyObject*)cached_def->python_cls;
+    return Py_TLType_createType(type_def);
 }
 
 static PyMethodDef Py_DefPool_methods[] = {
