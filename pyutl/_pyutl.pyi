@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Literal
 from collections.abc import MutableSequence
 
 class TLVector(MutableSequence):
@@ -27,7 +27,7 @@ class TLObject:
 
 
 class __DefPool:
-    def parse(self, tl_type_def: str, /) -> type[TLObject]: ...
+    def parse(self, tl_type_def: str, layer: int, section: Literal[0, 1], /) -> type[TLObject]: ...
 
     def has_type(self, tl_type: str, /) -> bool: ...
 
@@ -42,7 +42,7 @@ class __DefPool:
 
 def_pool: __DefPool
 
-def parse_tl(tl_type_def: str, /) -> type[TLObject]: ...
+def parse_tl(tl_type_def: str, layer: int, section: Literal[0, 1], /) -> type[TLObject]: ...
 
 def has_type(tl_type: str, /) -> bool: ...
 

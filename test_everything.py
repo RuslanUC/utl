@@ -15,7 +15,7 @@ SKIP_TESTS = 0
 def test_parse() -> None:
     assert pyutl.def_pool
 
-    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
+    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 177, pyutl.TLSection.TYPES)
     assert cls
     assert issubclass(cls, pyutl.TLObject)
     assert cls is not pyutl.TLObject
@@ -34,7 +34,7 @@ def test_parse() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 2, reason="")
 def test_create_object() -> None:
-    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
+    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 177, pyutl.TLSection.TYPES)
     assert cls
 
     obj = cls(lat=123.456, long=456.123)
@@ -50,7 +50,7 @@ def test_create_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 3, reason="")
 def test_encode_object() -> None:
-    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
+    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 177, pyutl.TLSection.TYPES)
     assert cls
 
     obj = cls(lat=42.24, long=24.42)
@@ -62,7 +62,7 @@ def test_encode_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 4, reason="")
 def test_decode_object() -> None:
-    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;")
+    cls = pyutl.parse_tl("inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;", 177, pyutl.TLSection.TYPES)
     assert cls
 
     obj = cls.read_bytes(bytes([0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40]))
@@ -88,10 +88,10 @@ def test_decode_object() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 5, reason="")
 def test_nested_message() -> None:
-    inputPeerUser = pyutl.parse_tl("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;")
+    inputPeerUser = pyutl.parse_tl("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 177, pyutl.TLSection.TYPES)
     assert inputPeerUser
 
-    inputUserFromMessage = pyutl.parse_tl("inputUserFromMessage#1da448e2 peer:InputPeer msg_id:int user_id:long = InputUser;")
+    inputUserFromMessage = pyutl.parse_tl("inputUserFromMessage#1da448e2 peer:InputPeer msg_id:int user_id:long = InputUser;", 177, pyutl.TLSection.TYPES)
     assert inputUserFromMessage
 
     obj = inputUserFromMessage(peer=inputPeerUser(user_id=123, access_hash=456), msg_id=789, user_id=123123)
@@ -118,10 +118,10 @@ def test_nested_message() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 6, reason="")
 def test_equals() -> None:
-    inputPeerUser = pyutl.parse_tl("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;")
+    inputPeerUser = pyutl.parse_tl("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 177, pyutl.TLSection.TYPES)
     assert inputPeerUser
 
-    inputUserFromMessage = pyutl.parse_tl("inputUserFromMessage#1da448e2 peer:InputPeer msg_id:int user_id:long = InputUser;")
+    inputUserFromMessage = pyutl.parse_tl("inputUserFromMessage#1da448e2 peer:InputPeer msg_id:int user_id:long = InputUser;", 177, pyutl.TLSection.TYPES)
     assert inputUserFromMessage
 
     obj = inputUserFromMessage(peer=inputPeerUser(user_id=123, access_hash=456), msg_id=789, user_id=123123)
@@ -148,7 +148,7 @@ def test_equals() -> None:
 
 @pytest.mark.skipif(SKIP_TESTS >= 7, reason="")
 def test_vector() -> None:
-    photoSizeProgressive = pyutl.parse_tl("photoSizeProgressive#fa3efb95 type:string w:int h:int sizes:Vector<int> = PhotoSize;")
+    photoSizeProgressive = pyutl.parse_tl("photoSizeProgressive#fa3efb95 type:string w:int h:int sizes:Vector<int> = PhotoSize;", 177, pyutl.TLSection.TYPES)
     assert photoSizeProgressive
 
     obj = photoSizeProgressive(type="test", w=123, h=456, sizes=[1, 2, 3, 4, 5])

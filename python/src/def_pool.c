@@ -18,9 +18,15 @@ static PyObject* Py_DefPool_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), Py
 PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     char* str;
     size_t str_len;
+    int32_t layer;
+    uint8_t section;
 
-    // TODO: add layer and section arguments
-    if (!PyArg_ParseTuple(args, "s#", &str, &str_len)) {
+    if (!PyArg_ParseTuple(args, "s#ib", &str, &str_len, &layer, &section)) {
+        return NULL;
+    }
+
+    if(section != TYPES && section != FUNCTIONS) {
+        PyErr_SetString(PyExc_ValueError, "\"section\" argument can be either 0 or 1.");
         return NULL;
     }
 
@@ -34,6 +40,9 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
         PyErr_SetString(PyExc_ValueError, "Status.ok is true, but utl_parse_line returned NULL.");
         return NULL;
     }
+
+    message_def->layer = layer;
+    message_def->section = (utl_MessageSection)section;
 
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
