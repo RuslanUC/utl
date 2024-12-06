@@ -187,21 +187,6 @@ def test_creation_from_python_type_annotated_class() -> None:
     SomethingBase = pyutl.create_type("SomethingBase")
     IdkBase = pyutl.get_type("IdkBase")
 
-    # should be translated to
-    # "Something#12345678 some_int:int some_long:long some_int128:int128 some_int256:int256 some_double:double
-    # some_string:string some_bytes:bytes some_bool:bool some_object:IdkBase some_primitive_vector:Vector<int>
-    # some_object_vector:Vector<IdkBase> flags:# some_optional_int:flags.1?int some_optional_long:flags.2?long
-    # some_optional_int128:flags.3?int128 some_optional_int256:flags.4?int256 some_optional_double:flags.5?double
-    # some_optional_string:flags.6?string some_optional_bytes:flags.7?bytes some_optional_object:flags.8?IdkBase
-    # some_optional_primitive_vector:flags.9?Vector<pyutl.TLInt> some_optional_object_vector:flags.10?Vector<IdkBase>
-    # some_optional_bool:flags.11?bool some_optional_true:flags.12?true flags2:# some_another_optional_int:flags2.1?int
-    # some_another_optional_long:flags2.2?long some_another_optional_int128:flags2.3?int128
-    # some_another_optional_int256:flags2.4?int256 some_another_optional_double:flags2.5?double
-    # some_another_optional_string:flags2.6?string some_another_optional_bytes:flags2.7?bytes
-    # some_another_optional_object:flags2.8?IdkBase some_another_optional_primitive_vector:flags2.9?Vector<pyutl.TLInt>
-    # some_another_optional_object_vector:flags2.10?Vector<IdkBase> some_another_optional_bool:flags2.11?bool
-    # some_another_optional_true:flags2.12?true = SomethingBase;"
-
     # TODO: maybe somehow make it inherit TLObject so .read and .write would be visible for pycharm and other tools
     class Something(pyutl.AnnotatedTLObject[SomethingBase]):
         __tl_id__ = 0x12345678
@@ -251,5 +236,5 @@ def test_creation_from_python_type_annotated_class() -> None:
 
     assert issubclass(Something, pyutl.TLObject)
 
-    # TODO: test Something.__tl__
+    # TODO: test Something.__tl__?
     # TODO: test serialization, deserialization, etc.

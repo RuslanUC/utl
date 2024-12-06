@@ -4,32 +4,32 @@
 #include "tlvector.h"
 #include "tltype.h"
 
-PyObject* pyutl_parse_tl(PyObject*, PyObject* args) {
+PyObject* pyutl_parse_tl(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_parse((const Py_DefPool*)state->py_def_pool, args);
 }
 
-PyObject* pyutl_has_type(PyObject*, PyObject* args) {
+PyObject* pyutl_has_type(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_has_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
-PyObject* pyutl_get_type(PyObject*, PyObject* args) {
+PyObject* pyutl_get_type(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_get_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
-PyObject* pyutl_create_type(PyObject*, PyObject* args) {
+PyObject* pyutl_create_type(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_create_type((const Py_DefPool*)state->py_def_pool, args);
 }
 
-PyObject* pyutl_has_constructor(PyObject*, PyObject* args) {
+PyObject* pyutl_has_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_has_constructor((const Py_DefPool*)state->py_def_pool, args);
 }
 
-PyObject* pyutl_get_constructor(PyObject*, PyObject* args) {
+PyObject* pyutl_get_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     return Py_DefPool_get_constructor((const Py_DefPool*)state->py_def_pool, args);
 }
