@@ -50,7 +50,7 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
         PyObject* type = Py_TLObject_createType(message_def);
         cached_def = arena_alloc(&state->c_def_pool->arena, sizeof(pyutl_MessageDef));
         cached_def->python_cls = (PyTypeObject*)type;
-        cached_def->fields = utl_Map_new_on_arena(message_def->fields_num / 2, &state->c_def_pool->arena);
+        cached_def->fields = utl_Map_new_on_arena(message_def->fields_num / 2 + 1, &state->c_def_pool->arena);
         for(size_t i = 0; i < message_def->fields_num; ++i) {
             utl_FieldDef* field = &message_def->fields[i];
             utl_Map_insert_str(cached_def->fields, field->name, field);
