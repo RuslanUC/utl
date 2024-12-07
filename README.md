@@ -2,6 +2,9 @@
 
 A small Telegram [Type Language](https://core.telegram.org/mtproto/TL) reflection-based implementation in C heavily inspired by Google's [upb](https://github.com/protocolbuffers/protobuf/tree/main/upb).
 
+> [!CAUTION]
+> This project is in development and (since it is also my one of the first python c extensions without using libraries like nanobind) may contain critical bugs such as memory leaks. Use at your own risk!
+
 # Installation
 ```shell
 pip install <TODO: package on PyPI>
