@@ -75,3 +75,9 @@ class SomeConstructor(pyutl.AnnotatedTLObject["SomeType"]):
 
     some_string_field: str
 ```
+
+# TODOs
+ - [ ] Implement __eq__ for TLVector and list
+ - [ ] Decref/dealloc old values when setting new in tlobjects and tlvectors
+ - [ ] Publish on PyPI
+ - [ ] Add more methods to TLVector

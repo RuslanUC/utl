@@ -11,6 +11,11 @@ class TLType:
 
 
 class TLObject:
+    __tl_id__: int
+    __layer__: int
+    __section__: int
+    __tl__: str | None
+
     def __init__(self, **kwargs) -> None: ...
 
     def __getattr__(self, item: str) -> object: ...

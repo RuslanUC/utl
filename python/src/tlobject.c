@@ -589,7 +589,6 @@ static PyType_Slot Py_TLObject_slots[] = {
     {0, NULL}
 };
 
-// TODO: allow to create utl_MessageDef from type-annotated python class
 PyType_Spec pyutl_TLObjectType_spec = {
     "_pyutl.TLObject",
     sizeof(Py_TLObject),
