@@ -202,7 +202,7 @@ def test_creation_from_python_type_annotated_class() -> None:
         some_string: str
         some_bytes: bytes
         some_bool: bool
-        some_object: IdkBase  # TODO: allow tltype annotations to be strings
+        some_object: IdkBase
         some_primitive_vector: list[pyutl.TLInt]
         some_object_vector: list[IdkBase]
 

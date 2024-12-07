@@ -34,7 +34,7 @@ class TLInt256(int):
 
 
 class _TLOptionalMeta(type):
-    def __getitem__(self, params: tuple[type[TAny], int] | tuple[type[TAny], int, int] | int | tuple[int, int]):
+    def __getitem__(self, params: tuple[type[TAny], int] | tuple[type[TAny], int, int] | tuple[str, int] | tuple[str, int, int] | int | tuple[int, int]):
         if isinstance(params, int):
             params = (params,)
 
@@ -107,7 +107,11 @@ def _resolve_annotation(annotation) -> str:
         if args[0] is bool:
             resolved = "true"
         else:
-            resolved = _resolve_annotation(get_args(args[0])[0])
+            arg = get_args(args[0])[0]
+            if isinstance(arg, ForwardRef):
+                resolved = arg.__forward_arg__
+            else:
+                resolved = _resolve_annotation(arg)
         return f"flags{flag_num if flag_num > 1 else ''}.{flag_bit}?{resolved}"
 
 
@@ -116,6 +120,9 @@ class _AnnotatedTLObjectMeta(type):
         return _FieldAccumulatorDict()
 
     def __new__(meta, name, bases, class_dict) -> type[TLObject]:
+        if class_dict.get("__tl__"):
+            return parse_tl(class_dict.get["__tl__"], class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
+
         if "__annotations__" not in class_dict:
             class_dict["__annotations__"] = {}
 
@@ -150,8 +157,11 @@ class _AnnotatedTLObjectMeta(type):
 
         tl_def += f" = {base_type};"
 
-        return parse_tl(tl_def, class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
+        tl_obj_type = parse_tl(tl_def, class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
+        setattr(tl_obj_type, "__tl__", tl_def)
+
+        return tl_obj_type
 
 
-class AnnotatedTLObject(Generic[T], metaclass=_AnnotatedTLObjectMeta):
+class AnnotatedTLObject(Generic[T], TLObject, metaclass=_AnnotatedTLObjectMeta):
     ...
