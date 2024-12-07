@@ -111,14 +111,14 @@ bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
             case INT128: {
                 const char* ia = ((utl_Int128*)value_a)->value;
                 const char* ib = ((utl_Int128*)value_b)->value;
-                if(!memcmp(ia, ib, 16))
+                if(memcmp(ia, ib, 16))
                     return false;
                 break;
             }
             case INT256: {
                 const char* ia = ((utl_Int256*)value_a)->value;
                 const char* ib = ((utl_Int256*)value_b)->value;
-                if(!memcmp(ia, ib, 32))
+                if(memcmp(ia, ib, 32))
                     return false;
                 break;
             }

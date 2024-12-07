@@ -89,7 +89,7 @@ _type_to_tl = {
     float: "double",
     str: "string",
     bytes: "bytes",
-    bool: "bool",
+    bool: "Bool",
 }
 
 
@@ -121,7 +121,9 @@ class _AnnotatedTLObjectMeta(type):
 
     def __new__(meta, name, bases, class_dict) -> type[TLObject]:
         if class_dict.get("__tl__"):
-            return parse_tl(class_dict.get["__tl__"], class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
+            tl_obj_type = parse_tl(class_dict["__tl__"], class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
+            setattr(tl_obj_type, "__tl__", class_dict["__tl__"])
+            return tl_obj_type
 
         if "__annotations__" not in class_dict:
             class_dict["__annotations__"] = {}

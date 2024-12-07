@@ -134,7 +134,7 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"bool\"");
                 return false;
             }
-            utl_Message_setBool(self->message, field, item = Py_True);
+            utl_Message_setBool(self->message, field, item == Py_True);
             break;
         }
         case BYTES: {
@@ -306,6 +306,14 @@ static int Py_TLObject_init(const Py_TLObject* self, PyObject* Py_UNUSED(args), 
                 PyErr_SetString(PyExc_TypeError, "missing required keyword-only argument");
                 return 0;
             }
+            continue;
+        }
+        if(Py_IsNone(item)) {
+            if(!field.flag_info) {
+                PyErr_SetString(PyExc_TypeError, "field is not optional");
+                return 0;
+            }
+            utl_Message_clearField(self->message, &field);
             continue;
         }
 
@@ -622,17 +630,23 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
 
     PyObject* msgdef_capsule = PyCapsule_New(message_def, NULL, NULL);
     if (!msgdef_capsule) {
-        Py_DECREF(new_type);
-        return 0;
+        goto failed;
     }
 
-    if (PyObject_SetAttrString(new_type, "__message_def__", msgdef_capsule) < 0) {
-        Py_DECREF(msgdef_capsule);
-        Py_DECREF(new_type);
-        return 0;
+    if (PyObject_SetAttrString(new_type, "__message_def__", msgdef_capsule) < 0 ||
+        PyObject_SetAttrString(new_type, "__tl_id__", PyLong_FromUnsignedLong(message_def->id)) < 0 ||
+        PyObject_SetAttrString(new_type, "__layer__", PyLong_FromUnsignedLong(message_def->layer)) < 0 ||
+        PyObject_SetAttrString(new_type, "__section__", PyLong_FromUnsignedLong(message_def->section)) < 0 ||
+        PyObject_SetAttrString(new_type, "__tl__", Py_None) < 0) {
+        goto failed;
     }
 
     Py_DECREF(msgdef_capsule);
 
     return new_type;
+
+failed:
+    Py_XDECREF(msgdef_capsule);
+    Py_XDECREF(new_type);
+    return NULL;
 }

@@ -120,14 +120,14 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
             case INT128: {
                 const char* ia = utl_Message_getInt128(a, &field);
                 const char* ib = utl_Message_getInt128(b, &field);
-                if (!memcmp(ia, ib, 16))
+                if (memcmp(ia, ib, 16))
                     return false;
                 break;
             }
             case INT256: {
                 const char* ia = utl_Message_getInt256(a, &field);
                 const char* ib = utl_Message_getInt256(b, &field);
-                if (!memcmp(ia, ib, 32))
+                if (memcmp(ia, ib, 32))
                     return false;
                 break;
             }

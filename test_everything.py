@@ -187,12 +187,14 @@ def test_creation_from_python_type_annotated_class() -> None:
     SomethingBase = pyutl.create_type("SomethingBase")
     IdkBase = pyutl.get_type("IdkBase")
 
-    # TODO: maybe somehow make it inherit TLObject so .read and .write would be visible for pycharm and other tools
+    # TL type inside AnnotatedTLObject[...] may be string
     class Something(pyutl.AnnotatedTLObject[SomethingBase]):
         __tl_id__ = 0x12345678
         __layer__ = 177
         __section__ = pyutl.TLSection.TYPES  # Optional, pyutl.TLSection.TYPES by default
-        __tl__ = None  # TODO: Optional, may be tl definition to skip translation of python class to tl string
+        # Optional, may be tl definition to skip annotations parsing,
+        # if None - then after parsing it will be set to generated tl definition
+        __tl__ = None
 
         some_int: pyutl.TLInt
         some_long: pyutl.TLLong
@@ -235,6 +237,103 @@ def test_creation_from_python_type_annotated_class() -> None:
         some_another_optional_true: pyutl.TLTrue[12, 2]
 
     assert issubclass(Something, pyutl.TLObject)
+    assert Something.__tl__ == "Something#12345678 some_int:int some_long:long some_int128:int128 some_int256:int256 some_double:double some_string:string some_bytes:bytes some_bool:Bool some_object:IdkBase some_primitive_vector:vector<int> some_object_vector:vector<IdkBase> flags:# some_optional_int:flags.1?int some_optional_long:flags.2?long some_optional_int128:flags.3?int128 some_optional_int256:flags.4?int256 some_optional_double:flags.5?double some_optional_string:flags.6?string some_optional_bytes:flags.7?bytes some_optional_object:flags.8?IdkBase some_optional_primitive_vector:flags.9?vector<int> some_optional_object_vector:flags.10?vector<IdkBase> some_optional_bool:flags.11?Bool some_optional_true:flags.12?true flags2:# some_another_optional_int:flags2.1?int some_another_optional_long:flags2.2?long some_another_optional_int128:flags2.3?int128 some_another_optional_int256:flags2.4?int256 some_another_optional_double:flags2.5?double some_another_optional_string:flags2.6?string some_another_optional_bytes:flags2.7?bytes some_another_optional_object:flags2.8?IdkBase some_another_optional_primitive_vector:flags2.9?vector<int> some_another_optional_object_vector:flags2.10?vector<IdkBase> some_another_optional_bool:flags2.11?Bool some_another_optional_true:flags2.12?true = SomethingBase;"
 
-    # TODO: test Something.__tl__?
-    # TODO: test serialization, deserialization, etc.
+    obj = Something(
+        some_int=123,
+        some_long=456,
+        some_int128=789,
+        some_int256=111,
+        some_double=12.23,
+        some_string="test some string",
+        some_bytes=b"test some bytes",
+        some_bool=False,
+        some_object=idk(qwe="qwe1"),
+        some_primitive_vector=[1, 2, 3, 4, 5],
+        some_object_vector=[idk(qwe="qwe1l"), idk(qwe="qwe2l"), idk(qwe="qwe3l"), idk(qwe="qwe4l")],
+        some_optional_int=222,
+        some_optional_long=None,
+        some_optional_int128=333,
+        some_optional_int256=None,
+        some_optional_double=44.4,
+        some_optional_string=None,
+        some_optional_bytes=b"some optional bytes",
+        some_optional_object=None,
+        some_optional_primitive_vector=[6, 7, 8, 9, 10],
+        some_optional_object_vector=None,
+        some_optional_bool=True,
+        some_optional_true=False,
+        some_another_optional_int=None,
+        some_another_optional_long=555,
+        some_another_optional_int128=None,
+        some_another_optional_int256=666,
+        some_another_optional_double=None,
+        some_another_optional_string="some optional string",
+        some_another_optional_bytes=None,
+        some_another_optional_object=idk(qwe="qwe1o"),
+        some_another_optional_primitive_vector=None,
+        some_another_optional_object_vector=[idk(qwe="qwe1lo"), idk(qwe="qwe2lo"), idk(qwe="qwe3lo"), idk(qwe="qwe4lo")],
+        some_another_optional_bool=None,
+        some_another_optional_true=True,
+    )
+
+    def _check_obj(obj_: Something) -> None:
+        assert obj_.some_int == 123
+        assert obj_.some_long == 456
+        assert obj_.some_int128 == 789
+        assert obj_.some_int256 == 111
+        assert obj_.some_double == 12.23
+        assert obj_.some_string == "test some string"
+        assert obj_.some_bytes == b"test some bytes"
+        assert obj_.some_bool is False
+        assert obj_.some_object == idk(qwe="qwe1")
+        assert obj_.some_primitive_vector[0] == 1
+        assert obj_.some_primitive_vector[1] == 2
+        assert obj_.some_primitive_vector[2] == 3
+        assert obj_.some_primitive_vector[3] == 4
+        assert obj_.some_primitive_vector[4] == 5
+        assert obj_.some_object_vector[0] == idk(qwe="qwe1l")
+        assert obj_.some_object_vector[1] == idk(qwe="qwe2l")
+        assert obj_.some_object_vector[2] == idk(qwe="qwe3l")
+        assert obj_.some_object_vector[3] == idk(qwe="qwe4l")
+        assert obj_.some_optional_int == 222
+        assert obj_.some_optional_long is None
+        assert obj_.some_optional_int128 == 333
+        assert obj_.some_optional_int256 is None
+        assert obj_.some_optional_double == 44.4
+        assert obj_.some_optional_string is None
+        assert obj_.some_optional_bytes == b"some optional bytes"
+        assert obj_.some_optional_object is None
+        assert obj_.some_optional_primitive_vector[0] == 6
+        assert obj_.some_optional_primitive_vector[1] == 7
+        assert obj_.some_optional_primitive_vector[2] == 8
+        assert obj_.some_optional_primitive_vector[3] == 9
+        assert obj_.some_optional_primitive_vector[4] == 10
+        assert obj_.some_optional_object_vector is None
+        assert obj_.some_optional_bool is True
+        assert obj_.some_optional_true is False
+        assert obj_.some_another_optional_int is None
+        assert obj_.some_another_optional_long == 555
+        assert obj_.some_another_optional_int128 is None
+        assert obj_.some_another_optional_int256 == 666
+        assert obj_.some_another_optional_double is None
+        assert obj_.some_another_optional_string == "some optional string"
+        assert obj_.some_another_optional_bytes is None
+        assert obj_.some_another_optional_object == idk(qwe="qwe1o")
+        assert obj_.some_another_optional_primitive_vector is None
+        assert obj_.some_another_optional_object_vector[0] == idk(qwe="qwe1lo")
+        assert obj_.some_another_optional_object_vector[1] == idk(qwe="qwe2lo")
+        assert obj_.some_another_optional_object_vector[2] == idk(qwe="qwe3lo")
+        assert obj_.some_another_optional_object_vector[3] == idk(qwe="qwe4lo")
+        assert obj_.some_another_optional_bool is None
+        assert obj_.some_another_optional_true is True
+
+    _check_obj(obj)
+
+    obj2 = pyutl.TLObject.read_bytes(obj.write())
+    _check_obj(obj2)
+    assert obj2 == obj
+
+    obj3 = Something.read_bytes(obj.write()[4:])
+    _check_obj(obj3)
+    assert obj3 == obj
