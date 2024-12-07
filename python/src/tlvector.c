@@ -26,7 +26,9 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
         }
         case FULL_BOOL:
         case BIT_BOOL: {
-            return ((utl_Bool*)value)->value ? Py_True : Py_False;
+            if(((utl_Bool*)value)->value)
+                Py_RETURN_TRUE;
+            Py_RETURN_FALSE;
         }
         case BYTES: {
             const utl_StringView bytes = ((utl_Bytes*)value)->value;
@@ -144,7 +146,7 @@ void* Py_TLVector_item_to_utl(utl_Vector* vector, PyObject* item) {
                 return NULL;
             }
             result = arena_alloc(&vector->arena, sizeof(utl_Bool));
-            ((utl_Bool*)result)->value = item = Py_True;
+            ((utl_Bool*)result)->value = item == Py_True;
             break;
         }
         case BYTES: {
@@ -372,7 +374,9 @@ static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, 
         eq = !eq;
     }
 
-    return eq ? Py_True : Py_False;
+    if(eq)
+        Py_RETURN_TRUE;
+    Py_RETURN_FALSE;
 }
 
 static PyObject* Py_TLVector_append(const Py_TLVector* self, PyObject* args) {

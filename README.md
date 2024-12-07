@@ -27,7 +27,7 @@ print(obj)
 # SomeConstructor(some_string_field="this is a string in SomeConstructor object!")
 serialized = obj.write()
 print(obj)
-# b"..."
+# b"xV4\x12+this is a string in SomeConstructor object!"
 
 # Skipping first 4 bytes because it is tl id, and it is not needed when .read_bytes is called on known type
 new_obj = SomeConstructor.read_bytes(serialized[4:])

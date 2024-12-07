@@ -26,7 +26,9 @@ static PyObject* Py_TLObject_getitem(const Py_TLObject* self, const utl_FieldDef
         }
         case FULL_BOOL:
         case BIT_BOOL: {
-            return utl_Message_getBool(self->message, field) ? Py_True : Py_False;
+            if(utl_Message_getBool(self->message, field))
+                Py_RETURN_TRUE;
+            Py_RETURN_FALSE;
         }
         case BYTES: {
             const utl_StringView bytes = utl_Message_getBytes(self->message, field);
@@ -463,7 +465,9 @@ static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, 
         eq = !eq;
     }
 
-    return eq ? Py_True : Py_False;
+    if(eq)
+        Py_RETURN_TRUE;
+    Py_RETURN_FALSE;
 }
 
 static PyObject* Py_TLObject_read(PyTypeObject* cls, char* buf, size_t buf_len, size_t* bytes_read) {
