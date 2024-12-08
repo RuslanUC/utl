@@ -43,6 +43,17 @@ _field_type_to_typestr = {
     FieldType.BYTES: "bytes",
     FieldType.STRING: "string",
 }
+_field_type_to_pytype = {
+    FieldType.FLAGS: "pyutl.TLFlags",
+    FieldType.INT32: "pyutl.TLInt",
+    FieldType.INT64: "pyutl.TLLong",
+    FieldType.INT128: "pyutl.TLInt128",
+    FieldType.INT256: "pyutl.TLInt256",
+    FieldType.DOUBLE: "float",
+    FieldType.FULL_BOOL: "bool",
+    FieldType.BYTES: "bytes",
+    FieldType.STRING: "str",
+}
 
 
 class SlotsRepr:
@@ -60,14 +71,23 @@ class VectorDef(SlotsRepr):
         self.type = type_
         self.sub_def = sub_def
 
-    def __str__(self) -> str:
+    def to_tl(self) -> str:
         inner = _field_type_to_typestr.get(self.type)
         if self.type == FieldType.VECTOR or (self.type == FieldType.TLOBJECT and self.sub_def is not None):
-            inner = str(self.sub_def)
+            inner = self.sub_def.to_tl() if isinstance(self.sub_def, VectorDef) else self.sub_def
         elif self.type == FieldType.TLOBJECT and self.sub_def is None:
             inner = "TLObject"
 
         return f"vector<{inner}>"
+
+    def to_python(self) -> str:
+        inner = _field_type_to_pytype.get(self.type)
+        if self.type == FieldType.VECTOR or (self.type == FieldType.TLOBJECT and self.sub_def is not None):
+            inner = self.sub_def.to_python() if isinstance(self.sub_def, VectorDef) else f"\"{self.sub_def}\""
+        elif self.type == FieldType.TLOBJECT and self.sub_def is None:
+            inner = "\"TLObject\""
+
+        return f"list[{inner}]"
 
 
 class FieldDef(SlotsRepr):
@@ -80,10 +100,10 @@ class FieldDef(SlotsRepr):
         self.flag_bit = flag_bit
         self.sub_def = sub_def
 
-    def __str__(self) -> str:
+    def to_tl(self) -> str:
         real_type = _field_type_to_typestr.get(self.type)
         if self.type == FieldType.VECTOR or (self.type == FieldType.TLOBJECT and self.sub_def is not None):
-            real_type = str(self.sub_def)
+            real_type = self.sub_def.to_tl() if isinstance(self.sub_def, VectorDef) else self.sub_def
         elif self.type == FieldType.TLOBJECT and self.sub_def is None:
             real_type = "TLObject"
 
@@ -92,6 +112,22 @@ class FieldDef(SlotsRepr):
             flags_part = f"flags{self.flag_num if self.flag_num > 1 else ''}.{self.flag_bit}?"
 
         return f"{self.name}:{flags_part}{real_type}"
+
+    def to_python(self) -> str:
+        real_type = _field_type_to_pytype.get(self.type)
+        if self.type == FieldType.VECTOR or (self.type == FieldType.TLOBJECT and self.sub_def is not None):
+            real_type = self.sub_def.to_python() if isinstance(self.sub_def, VectorDef) else f"\"{self.sub_def}\""
+        elif self.type == FieldType.TLOBJECT and self.sub_def is None:
+            real_type = "\"TLObject\""
+
+        if self.type != FieldType.FLAGS and self.type != FieldType.BIT_BOOL and self.flag_num:
+            flag_num = "" if self.flag_num == 1 else f", {self.flag_num}"
+            real_type = f"pyutl.TLOptional[{real_type}, {self.flag_bit}{flag_num}]"
+        elif self.type != FieldType.FLAGS and self.type == FieldType.BIT_BOOL and self.flag_num:
+            flag_num = "" if self.flag_num == 1 else f", {self.flag_num}"
+            real_type = f"pyutl.TLTrue[{self.flag_bit}{flag_num}]"
+
+        return f"{self.name}: {real_type}"
 
 
 class MessageDef(SlotsRepr):
@@ -105,20 +141,35 @@ class MessageDef(SlotsRepr):
         self.layer = layer
         self.fields = fields
 
-    def __str__(self) -> str:
-        name = self.name
-        if self.namespace:
-            name = f"{self.namespace}.{name}"
+    def full_name(self, sep: str = ".") -> str:
+        return f"{self.namespace}{sep}{self.name}" if self.namespace else self.name
 
-        fields = " ".join([str(field) for field in self.fields])
+    def to_tl(self) -> str:
+        fields = " ".join([field.to_tl() for field in self.fields])
         if fields:
             fields += " "
 
-        return f"{name}#{hex(self.id)[2:]} {fields}= {self.type};"
+        return f"{self.full_name()}#{hex(self.id)[2:]} {fields}= {self.type};"
+
+    def to_python_class(self) -> str:
+        result = [
+            f"class {self.full_name('_')}(pyutl.AnnotatedTLObject[\"{self.type}\"]):",
+            f"    __tl_id__ = {hex(self.id)}",
+            f"    __layer__ = {self.layer}",
+            f"    __section__ = pyutl.TLSection.TYPES  # TODO: write actual section",
+            f"    __tl__ = \"{self.to_tl()}\"",
+            f"",
+            *[f"    {field.to_python()}" for field in self.fields],
+            f"",
+            f"",
+        ]
+
+        return "\n".join(result)
 
 
 def _resolve_field_type(field: FieldDef | VectorDef, field_type: str) -> bool:
-    if field_type[0] == "<":
+    if field_type.lower().startswith("vector<"):
+        field_type = field_type[6:]
         if field_type[-1] != ">":
             return False
         field.type = FieldType.VECTOR
