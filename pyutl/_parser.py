@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from enum import Enum
 
+from pyutl import TLSection
+
 
 class FieldType(Enum):
     INT32 = 0
@@ -131,14 +133,15 @@ class FieldDef(SlotsRepr):
 
 
 class MessageDef(SlotsRepr):
-    __slots__ = ("id", "name", "namespace", "type", "layer", "fields",)
+    __slots__ = ("id", "name", "namespace", "type", "layer", "section", "fields",)
     
-    def __init__(self, id_: int, name: str, namespace: str, type_: str, layer: int, fields: list[FieldDef]):
+    def __init__(self, id_: int, name: str, namespace: str, type_: str, layer: int, section: int, fields: list[FieldDef]):
         self.id = id_
         self.name = name
         self.namespace = namespace
         self.type = type_
         self.layer = layer
+        self.section = section
         self.fields = fields
 
     def full_name(self, sep: str = ".") -> str:
@@ -152,17 +155,23 @@ class MessageDef(SlotsRepr):
         return f"{self.full_name()}#{hex(self.id)[2:]} {fields}= {self.type};"
 
     def to_python_class(self) -> str:
+        obj_type = self.type
+        if obj_type.lower().startswith("vector<"):
+            obj_type = f"vector_{obj_type[7:-1]}"
         result = [
-            f"class {self.full_name('_')}(pyutl.AnnotatedTLObject[\"{self.type}\"]):",
+            f"class {self.full_name('_')}(pyutl.AnnotatedTLObject[\"{obj_type}\"]):",
             f"    __tl_id__ = {hex(self.id)}",
             f"    __layer__ = {self.layer}",
-            f"    __section__ = pyutl.TLSection.TYPES  # TODO: write actual section",
+            f"    __section__ = {'pyutl.TLSection.TYPES' if self.section == 0 else 'pyutl.TLSection.FUNCTIONS'}",
             f"    __tl__ = \"{self.to_tl()}\"",
             f"",
             *[f"    {field.to_python()}" for field in self.fields],
             f"",
             f"",
         ]
+
+        if self.fields:
+            result.append("")
 
         return "\n".join(result)
 
@@ -195,7 +204,7 @@ def _resolve_field_type(field: FieldDef | VectorDef, field_type: str) -> bool:
     return True
 
 
-def parse_line(line: str) -> MessageDef | None:
+def parse_line(line: str, layer: int = 1, section: int = TLSection.TYPES) -> MessageDef | None:
     name_end = line.find("#")
     if name_end == -1:
         return
@@ -205,7 +214,7 @@ def parse_line(line: str) -> MessageDef | None:
     if len(name_with_ns) == 1:
         name, namespace = name_with_ns[0], None
     else:
-        name, namespace = name_with_ns
+        namespace, name = name_with_ns
 
     id_end = line.find(" ")
     if id_end == -1:
@@ -226,14 +235,22 @@ def parse_line(line: str) -> MessageDef | None:
         name=name,
         namespace=namespace,
         type_=type_name,
-        layer=-1,
+        layer=layer,
+        section=section,
         fields=[],
     )
 
     for field in fields.split(" "):
+        field = field.strip()
+        if not field or field.startswith("{") or field.endswith("}"):
+            continue
+
         field_name, field_type = field.split(":")
         if not field_name or not field_type:
             return
+
+        if field_name in ("self", "from", "private", "public"):
+            field_name = f"{field_name}_"
 
         flag_num = 0
         flag_bit = 0
