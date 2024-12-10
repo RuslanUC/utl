@@ -71,7 +71,7 @@ void* utl_Vector_value(const utl_Vector* vector, const size_t index) {
     return vector->items[index];
 }
 
-size_t utl_Vector_size(const utl_Vector* vector) {
+inline size_t utl_Vector_size(const utl_Vector* vector) {
     return vector->size;
 }
 

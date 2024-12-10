@@ -1,7 +1,6 @@
 #include "def_pool.h"
 
 #include <stdlib.h>
-#include <utils.h>
 #include "message_def.h"
 
 utl_DefPool* utl_DefPool_new() {

@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <utils.h>
 
 utl_StaticMap* utl_Map_new(const size_t buckets_num) {
     utl_StaticMap* map = malloc(sizeof(utl_StaticMap));

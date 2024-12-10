@@ -5,9 +5,6 @@
 #include <string.h>
 #include "vector.h"
 #include "builtins.h"
-#ifndef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
-#include "endianness.h"
-#endif
 
 char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes) {
     if(buf->pos + n_bytes > buf->size) {
@@ -21,25 +18,9 @@ char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes) {
     return result;
 }
 
-void utl_encode_intX(char* value, utl_EncodeBuf* buf, uint8_t bytes_size) {
+void utl_encode_intX(const char* value, utl_EncodeBuf* buf, const uint8_t bytes_size) {
     char* tmp = utl_EncodeBuf_alloc(buf, bytes_size);
-#ifndef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
-#ifdef __BIG_ENDIAN__
-    for(int i = 0; i < bytes_size; i++) {
-        buf[i] = value[bytes_size-i-1];
-    }
-#else
     memcpy(tmp, value, bytes_size);
-#endif
-#else
-    if(is_big_endian()) {
-        for(int i = 0; i < bytes_size; i++) {
-            buf[i] = value[bytes_size-i-1];
-        }
-    } else {
-        memcpy(buf, value, bytes_size);
-    }
-#endif
 }
 
 void utl_encode_int32(int32_t value, utl_EncodeBuf* buf) {
@@ -172,15 +153,7 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
         }
 
         if(field.type != FLAGS && field.flag_info && !(field.type == BIT_BOOL && !((utl_Bool*)value)->value)) {
-            uint8_t flag_bit = (field.flag_info & 0b11111);
-#ifndef UTL_DONT_USE_COMPILE_TIME_ENDIANNESS_CHECK
-#ifdef __BIG_ENDIAN__
-            flag_bit = 31 - flag_bit;
-#endif
-#else
-            if(is_big_endian())
-                flag_bit = 31 - flag_bit;
-#endif
+            const uint8_t flag_bit = (field.flag_info & 0b11111);
             const uint32_t flag_value = 1 << flag_bit;
             *(uint32_t*)(buf->data + flags[(field.flag_info >> 5) - 1]) |= flag_value;
         }

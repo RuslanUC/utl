@@ -1,6 +1,5 @@
 #pragma once
 
-#include "utils.h"
 #include "message.h"
 #include "def_pool.h"
 #include "status.h"

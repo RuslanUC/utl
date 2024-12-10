@@ -36,7 +36,7 @@ void utl_Arena_free(utl_Arena* arena) {
     }
 }
 
-void* utl_Arena_alloc(utl_Arena* arena, size_t n_bytes) {
+void* utl_Arena_alloc(utl_Arena* arena, const size_t n_bytes) {
     if(arena->page_size == 0 || n_bytes > arena->page_size) {
         return NULL;
     }
