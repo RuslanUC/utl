@@ -22,12 +22,11 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
         return (PyObject*)cached_def->python_cls;
     }
 
-    arena_t* arena = &state->c_def_pool->arena;
-    const size_t real_size = arena->size;
-
-    char* name = arena_alloc(arena, 11 + type_def->name.size);
-    memcpy(name, "_pyutl._tl.", 11);
-    memcpy(name + 11, type_def->name.data, type_def->name.size);
+    const size_t alloc_size = 7 + type_def->name.size;
+    char* name = malloc(alloc_size + 1);
+    name[alloc_size] = '\0';
+    memcpy(name, "_pyutl.", 7);
+    memcpy(name + 7, type_def->name.data, type_def->name.size);
 
     PyType_Slot slots[] = {
         {Py_tp_base, state->tltype_type},
@@ -43,12 +42,11 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
     };
 
     PyObject* new_type = PyType_FromSpec(&spec);
+    // TODO: i have no idea what to do with this memory, if i free it - it breaks type name in python, if dont - then it is a memory leak
+    // free(name);
     if(!new_type) {
-        arena->size = real_size;
         return 0;
     }
-
-    arena->size = real_size;
 
     PyObject* typedef_capsule = PyCapsule_New(type_def, NULL, NULL);
     if (!typedef_capsule) {
@@ -61,7 +59,7 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
 
     Py_DECREF(typedef_capsule);
 
-    cached_def = arena_alloc(&state->c_def_pool->arena, sizeof(pyutl_MessageDef));
+    cached_def = utl_Arena_alloc(&state->c_def_pool->arena, sizeof(pyutl_MessageDef));
     cached_def->python_cls = (PyTypeObject*)new_type;
     cached_def->fields = NULL;
     utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);

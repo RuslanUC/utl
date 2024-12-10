@@ -2,28 +2,28 @@
 #include "message.h"
 
 #include <string.h>
-#include <utils.h>
+#include "builtins.h"
 
 utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initial_size) {
-    arena_t arena = arena_new();
-    utl_Vector* vector = arena_alloc(&arena, sizeof(utl_Vector));
+    utl_Arena arena = utl_Arena_new(4096);
+    utl_Vector* vector = utl_Arena_alloc(&arena, sizeof(utl_Vector));
     vector->message_def = vector_def;
     vector->size = 0;
     vector->capacity = initial_size;
-    vector->items = arena_alloc(&arena, sizeof(void*) * initial_size);
+    vector->items = utl_Arena_alloc(&arena, sizeof(void*) * initial_size);
     vector->arena = arena;
     return vector;
 }
 
 void utl_Vector_free(utl_Vector* vector) {
-    arena_delete(&vector->arena);
+    utl_Arena_free(&vector->arena);
 }
 
 size_t utl_Vector_capacity(const utl_Vector* vector) {
     return vector->capacity;
 }
 
-arena_t* utl_Vector_arena(utl_Vector* vector) {
+utl_Arena* utl_Vector_arena(utl_Vector* vector) {
     return &vector->arena;
 }
 
@@ -33,7 +33,7 @@ void utl_Vector_resize(utl_Vector* vector, const bool force) {
     if(force || vector->size >= capacity) {
         const void* old_items = vector->items;
         vector->capacity = capacity * 1.25 + 1;
-        vector->items = arena_alloc(&vector->arena, sizeof(void*) * vector->capacity);
+        vector->items = utl_Arena_alloc(&vector->arena, sizeof(void*) * vector->capacity);
         memcpy(vector->items, old_items, sizeof(void*) * vector->size);
     }
 }

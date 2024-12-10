@@ -1,9 +1,9 @@
 #include <memory.h>
 #include "map_list.h"
 
-#define UTL_LIST_APPEND_IMPL(SUFFIX, LIST_TYPE, KEY_TYPE, KEY_SET, KEY_CMP) LIST_TYPE* utl_ListNode_append##SUFFIX(LIST_TYPE* head, KEY_TYPE key, void* value, arena_t* arena) { \
+#define UTL_LIST_APPEND_IMPL(SUFFIX, LIST_TYPE, KEY_TYPE, KEY_SET, KEY_CMP) LIST_TYPE* utl_ListNode_append##SUFFIX(LIST_TYPE* head, KEY_TYPE key, void* value, utl_Arena* arena) { \
         if(head == NULL) { \
-            LIST_TYPE* result = arena_alloc(arena, sizeof(LIST_TYPE)); \
+            LIST_TYPE* result = utl_Arena_alloc(arena, sizeof(LIST_TYPE)); \
             LIST_TYPE* tmp = result;\
             result->base.next = result->base.prev = NULL; \
             KEY_SET; \
@@ -21,7 +21,7 @@
         if(KEY_CMP) { \
             head->base.value = value; \
         } else { \
-            LIST_TYPE* new_node = arena_alloc(arena, sizeof(LIST_TYPE)); \
+            LIST_TYPE* new_node = utl_Arena_alloc(arena, sizeof(LIST_TYPE)); \
             LIST_TYPE* tmp = new_node; \
             new_node->base.next = NULL; \
             new_node->base.prev = (utl_ListNode*)head; \

@@ -1,6 +1,7 @@
 #include "message.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <utils.h>
 #include <vector.h>
@@ -8,55 +9,48 @@
 #include "builtins.h"
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def) {
-    arena_t arena = arena_new();
-    utl_Message* message = arena_alloc(&arena, sizeof(utl_Message));
+    utl_Arena arena = utl_Arena_new(4096);
+    utl_Message* message = utl_Arena_alloc(&arena, sizeof(utl_Message));
     message->message_def = message_def;
-    message->table = arena_alloc(&arena, message_def->fields_num * sizeof(void*));
+    message->table = malloc(message_def->fields_num * sizeof(void*));
 
     for (int i = 0; i < message_def->fields_num; i++) {
         const utl_FieldDef field = message_def->fields[i];
-        if (field.flag_info != 0 && field.type != FLAGS)
+        if (field.flag_info != 0 && field.type != FLAGS) {
+            message->table[i] = NULL;
             continue;
+        }
         switch (field.type) {
             case FLAGS:
             case INT32: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Int32));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int32));
                 break;
             }
             case INT64: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Int64));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int64));
                 break;
             }
             case INT128: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Int128));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int128));
                 break;
             }
             case INT256: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Int256));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int256));
                 break;
             }
             case DOUBLE: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Double));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Double));
                 break;
             }
             case FULL_BOOL:
             case BIT_BOOL: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Bool));
+                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Bool));
                 break;
             }
-            case BYTES: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_Bytes));
-                break;
-            }
-            case STRING: {
-                message->table[i] = arena_alloc(&arena, sizeof(utl_String));
-                break;
-            }
-            case TLOBJECT: {
-                message->table[i] = NULL;
-                break;
-            }
-            case VECTOR: {
+            case BYTES:
+            case STRING:
+            case TLOBJECT:
+            case VECTOR:{
                 message->table[i] = NULL;
                 break;
             }
@@ -68,7 +62,8 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 }
 
 void utl_Message_free(utl_Message* message) {
-    arena_delete(&message->arena);
+    free(message->table);
+    utl_Arena_free(&message->arena);
 }
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field) {
@@ -174,7 +169,7 @@ void utl_Message_setInt32(utl_Message* message, const utl_FieldDef* field, const
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int32));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int32));
     }
     ((utl_Int32*)message->table[field->num])->value = value;
 }
@@ -185,7 +180,7 @@ void utl_Message_setInt64(utl_Message* message, const utl_FieldDef* field, const
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int64));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int64));
     }
     ((utl_Int64*)message->table[field->num])->value = value;
 }
@@ -196,7 +191,7 @@ void utl_Message_setInt128(utl_Message* message, const utl_FieldDef* field, char
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int128));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int128));
     }
     memcpy(&((utl_Int128*)message->table[field->num])->value, value, 16);
 }
@@ -207,7 +202,7 @@ void utl_Message_setInt256(utl_Message* message, const utl_FieldDef* field, char
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Int256));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int256));
     }
     memcpy(&((utl_Int256*)message->table[field->num])->value, value, 32);
 }
@@ -218,7 +213,7 @@ void utl_Message_setDouble(utl_Message* message, const utl_FieldDef* field, cons
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Double));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Double));
     }
     ((utl_Double*)message->table[field->num])->value = value;
 }
@@ -229,7 +224,7 @@ void utl_Message_setBool(utl_Message* message, const utl_FieldDef* field, const 
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Bool));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Bool));
     }
     ((utl_Bool*)message->table[field->num])->value = value;
 }
@@ -240,12 +235,13 @@ void utl_Message_setBytes_internal(utl_Message* message, const utl_FieldDef* fie
     }
 
     if (message->table[field->num] == NULL) {
-        message->table[field->num] = arena_alloc(&message->arena, sizeof(utl_Bytes));
+        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Bytes));
+        memset(message->table[field->num], 0, sizeof(utl_Bytes));
     }
 
     utl_Bytes* bytes = message->table[field->num];
     if (value.size > bytes->max_size) {
-        bytes->value.data = arena_alloc(&message->arena, value.size);
+        bytes->value.data = utl_Arena_alloc(&message->arena, value.size);
         bytes->max_size = value.size;
     }
 

@@ -1,8 +1,9 @@
 set(CMAKE_CXX_STANDARD 20)
 
-target_compile_options(arena PRIVATE "-fPIC")
+#target_compile_options(arena PRIVATE "-fPIC")
 
 add_library(utl STATIC
+        src/arena.c
         src/status.c
         src/utils.c
         src/map_list.c
@@ -18,7 +19,7 @@ add_library(utl STATIC
         src/decoder.c
         src/parser.c)
 target_include_directories(utl PUBLIC include)
-target_link_libraries(utl PUBLIC arena)
+#target_link_libraries(utl PUBLIC arena)
 target_compile_options(utl PUBLIC "-fPIC")
 
 include(FetchContent)

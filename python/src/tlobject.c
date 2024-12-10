@@ -380,29 +380,33 @@ static int Py_TLObject_setattro(const Py_TLObject* self, PyObject* attr, PyObjec
 }
 
 static PyObject* Py_TLObject_repr(const Py_TLObject* self) {
-    arena_t repr_arena = arena_new();
-    repr_arena.flags |= ARENA_DONTALIGN;
+    const size_t alloc_size = self->message->message_def->name.size + self->message->message_def->fields_num * 16;
+    utl_EncodeBuf repr_buf = {
+        .data = malloc(alloc_size),
+        .pos = 0,
+        .size = alloc_size,
+    };
     char* tmp;
 
     const utl_MessageDef* def = self->message->message_def;
 
     if(def->namespace_.size) {
-        tmp = arena_alloc(&repr_arena, def->namespace_.size);
+        tmp = utl_EncodeBuf_alloc(&repr_buf, def->namespace_.size);
         memcpy(tmp, def->namespace_.data, def->namespace_.size);
-        tmp = arena_alloc(&repr_arena, 1);
+        tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
         *tmp = '.';
     }
 
-    tmp = arena_alloc(&repr_arena, def->name.size);
+    tmp = utl_EncodeBuf_alloc(&repr_buf, def->name.size);
     memcpy(tmp, def->name.data, def->name.size);
-    tmp = arena_alloc(&repr_arena, 1);
+    tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = '(';
 
     for(size_t i = 0; i < def->fields_num; i++) {
         utl_FieldDef field = def->fields[i];
-        tmp = arena_alloc(&repr_arena, field.name.size);
+        tmp = utl_EncodeBuf_alloc(&repr_buf, field.name.size);
         memcpy(tmp, field.name.data, field.name.size);
-        tmp = arena_alloc(&repr_arena, 1);
+        tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
         *tmp = '=';
 
         PyObject* value;
@@ -417,7 +421,7 @@ static PyObject* Py_TLObject_repr(const Py_TLObject* self) {
             ssize_t len;
             const char *buf = PyUnicode_AsUTF8AndSize(repr, &len);
             if(buf) {
-                tmp = arena_alloc(&repr_arena, len);
+                tmp = utl_EncodeBuf_alloc(&repr_buf, len);
                 memcpy(tmp, buf, len);
             } else {
                 Py_XDECREF(repr);
@@ -426,7 +430,7 @@ static PyObject* Py_TLObject_repr(const Py_TLObject* self) {
         }
 
         if(!repr) {
-            tmp = arena_alloc(&repr_arena, 6);
+            tmp = utl_EncodeBuf_alloc(&repr_buf, 6);
             tmp[0] = '<';
             tmp[1] = 'N';
             tmp[2] = 'U';
@@ -439,17 +443,17 @@ static PyObject* Py_TLObject_repr(const Py_TLObject* self) {
         Py_XDECREF(repr);
 
         if(i != def->fields_num - 1) {
-            tmp = arena_alloc(&repr_arena, 2);
+            tmp = utl_EncodeBuf_alloc(&repr_buf, 2);
             tmp[0] = ',';
             tmp[1] = ' ';
         }
     }
 
-    tmp = arena_alloc(&repr_arena, 1);
+    tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = ')';
 
-    PyObject* result = PyUnicode_FromStringAndSize(repr_arena.data, repr_arena.size);
-    arena_delete(&repr_arena);
+    PyObject* result = PyUnicode_FromStringAndSize(repr_buf.data, repr_buf.pos);
+    free(repr_buf.data);
     return result;
 }
 
@@ -563,12 +567,11 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
 }
 
 static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(args)) {
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    const size_t written_bytes = utl_encode(self->message, &encoder_arena);
+    size_t written_bytes;
+    char* bytes = utl_encode(self->message, &written_bytes);
 
-    PyObject* result = PyBytes_FromStringAndSize(encoder_arena.data + sizeof(uint32_t*) * self->message->message_def->flags_num, written_bytes);
-    arena_delete(&encoder_arena);
+    PyObject* result = PyBytes_FromStringAndSize(bytes, written_bytes);
+    free(bytes);
 
     return result;
 }
@@ -603,15 +606,14 @@ PyType_Spec pyutl_TLObjectType_spec = {
 
 PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    arena_t* arena = &state->c_def_pool->arena;
-    const size_t real_size = arena->size;
 
-    char* name = arena_alloc(
-        arena, 11 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size);
-    memcpy(name, "_pyutl._tl.", 11);
+    const size_t alloc_size = 7 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size;
+    char* name = malloc(alloc_size + 1);
+    name[alloc_size] = '\0';
+    memcpy(name, "_pyutl.", 7);
     if(message_def->namespace_.size)
-        memcpy(name+11, message_def->namespace_.data, message_def->namespace_.size);
-    memcpy(name+11+message_def->namespace_.size, message_def->name.data, message_def->name.size);
+        memcpy(name + 7, message_def->namespace_.data, message_def->namespace_.size);
+    memcpy(name + 7 + message_def->namespace_.size, message_def->name.data, message_def->name.size);
 
     PyType_Slot slots[] = {
         {Py_tp_base, state->tlobject_type},
@@ -628,12 +630,11 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
     };
 
     PyObject* new_type = PyType_FromSpec(&spec);
+    // TODO: i have no idea what to do with this memory, if i free it - it breaks type name in python, if dont - then it is a memory leak
+    // free(name);
     if(!new_type) {
-        arena->size = real_size;
         return 0;
     }
-
-    arena->size = real_size;
 
     PyObject* msgdef_capsule = PyCapsule_New(message_def, NULL, NULL);
     if (!msgdef_capsule) {

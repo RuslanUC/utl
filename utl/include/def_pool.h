@@ -1,13 +1,14 @@
 #pragma once
 
-#include "type_def.h"
+#include <stdbool.h>
 
+#include "type_def.h"
 #include "static_map.h"
 
 #define START_POOL_SIZE DEFAULT_MAP_SIZE
 
 typedef struct utl_DefPool {
-    arena_t arena;
+    utl_Arena arena;
     utl_StaticMap* message_defs; // Map of utl_MessageDef
     utl_StaticMap* types; // Map of utl_TypeDef
 } utl_DefPool;

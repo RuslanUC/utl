@@ -1,10 +1,11 @@
 #pragma once
 
-#include "builtins.h"
+#include <stdbool.h>
+
 #include "message_def.h"
 
 typedef struct utl_Vector {
-    arena_t arena;
+    utl_Arena arena;
     utl_MessageDefVector* message_def;
     size_t size;
     size_t capacity;

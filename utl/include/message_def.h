@@ -19,8 +19,13 @@ typedef struct utl_MessageDef {
     utl_FieldDef* fields;
     uint8_t flags_num;
     utl_FieldDef** flags_fields;
+    // TODO: ?
+    /*uint8_t dynamic_num;
+    utl_FieldDef** dynamic_fields;
+    size_t static_size;*/
 } utl_MessageDef;
 
+// NOTE: If refactoring this structure, keep in mind, that .type and .sub should have same offsets as ones in utl_FieldDef
 typedef struct utl_MessageDefVector {
     utl_FieldType type;
     union {
@@ -29,5 +34,5 @@ typedef struct utl_MessageDefVector {
     } sub;
 } utl_MessageDefVector;
 
-utl_MessageDef* utl_MessageDef_new(arena_t* arena);
-utl_MessageDefVector* utl_MessageDefVector_new(arena_t* arena);
+utl_MessageDef* utl_MessageDef_new(utl_Arena* arena);
+utl_MessageDefVector* utl_MessageDefVector_new(utl_Arena* arena);

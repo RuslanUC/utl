@@ -81,4 +81,4 @@ class SomeConstructor(pyutl.AnnotatedTLObject["SomeType"]):
  - [ ] Decref/dealloc old values when setting new in tlobjects and tlvectors
  - [ ] Publish on PyPI
  - [ ] Add more methods to TLVector
- - [ ] Add tool to compile existing .tl files to .py and .pyi files with classes definition via .parse_tl or .py files with classes definition via type-annotated classes
+ - [x] Add tool to compile existing .tl files to .py and .pyi files with classes definition via .parse_tl or .py files with classes definition via type-annotated classes

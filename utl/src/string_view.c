@@ -1,21 +1,22 @@
-#include "string_view.h"
-
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
-utl_StringView utl_StringView_new(arena_t* arena, const size_t size)  {
+#include "string_view.h"
+
+utl_StringView utl_StringView_new(utl_Arena* arena, const size_t size)  {
     const utl_StringView string = {
         .size = size,
-        .data = arena_alloc(arena, size),
+        .data = utl_Arena_alloc(arena, size),
     };
 
     return string;
 }
 
-utl_StringView utl_StringView_clone(arena_t* arena, const utl_StringView src) {
+utl_StringView utl_StringView_clone(utl_Arena* arena, const utl_StringView src) {
     const utl_StringView string = {
         .size = src.size,
-        .data = arena_alloc(arena, src.size),
+        .data = utl_Arena_alloc(arena, src.size),
     };
 
     memcpy(string.data, src.data, src.size);

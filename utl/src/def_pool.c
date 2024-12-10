@@ -6,7 +6,7 @@
 
 utl_DefPool* utl_DefPool_new() {
     utl_DefPool* result = malloc(sizeof(utl_DefPool));
-    result->arena = arena_new();
+    result->arena = utl_Arena_new(4096);
     result->message_defs = utl_Map_new(START_POOL_SIZE);
     result->types = utl_Map_new(START_POOL_SIZE);
 
@@ -14,7 +14,7 @@ utl_DefPool* utl_DefPool_new() {
 }
 
 void utl_DefPool_free(utl_DefPool* pool) {
-    arena_delete(&pool->arena);
+    utl_Arena_free(&pool->arena);
     free(pool);
 }
 

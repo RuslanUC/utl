@@ -1,9 +1,10 @@
 #pragma once
+#include <stdbool.h>
 #include "message_def.h"
 #include "vector.h"
 
 typedef struct utl_Message {
-    arena_t arena;
+    utl_Arena arena;
     utl_MessageDef* message_def;
     void** table;
 } utl_Message;

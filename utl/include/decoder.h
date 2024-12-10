@@ -17,6 +17,6 @@ void utl_decode_int128(char* out, utl_DecodeBuf* buffer);
 void utl_decode_int256(char* out, utl_DecodeBuf* buffer);
 double utl_decode_double(utl_DecodeBuf* buffer);
 bool utl_decode_bool(utl_DecodeBuf* buffer);
-utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, arena_t* arena, utl_Status* status);
+utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Status* status);
 
 size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, char* buf, size_t size, utl_Status* status);
