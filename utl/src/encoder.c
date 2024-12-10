@@ -1,5 +1,6 @@
 #include "encoder.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vector.h"
@@ -10,7 +11,8 @@
 
 char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes) {
     if(buf->pos + n_bytes > buf->size) {
-        buf->data = realloc(buf->data, (buf->pos + n_bytes) * 1.25);
+        buf->size = (buf->pos + n_bytes) * 1.25;
+        buf->data = realloc(buf->data, buf->size);
     }
 
     char* result = buf->data + buf->pos;
@@ -148,9 +150,9 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
 }
 
 void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
-    uint32_t** flags = NULL;
+    size_t* flags = NULL;
     if (message->message_def->flags_num) {
-        flags = malloc(message->message_def->flags_num * sizeof(void*));
+        flags = malloc(message->message_def->flags_num * sizeof(size_t));
     }
 
     utl_encode_intX((char*)&message->message_def->id, buf, 4);
@@ -160,7 +162,7 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
         const utl_FieldDef field = fields[i];
         void* value = message->table[field.num];
         if(field.type == FLAGS) {
-            flags[(field.flag_info >> 5) - 1] = (uint32_t*)(buf->data + buf->pos);
+            flags[(field.flag_info >> 5) - 1] = buf->pos;
             ((utl_Int32*)value)->value = 0;
         }
 
@@ -180,7 +182,7 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
                 flag_bit = 31 - flag_bit;
 #endif
             const uint32_t flag_value = 1 << flag_bit;
-            *flags[(field.flag_info >> 5) - 1] |= flag_value;
+            *(uint32_t*)(buf->data + flags[(field.flag_info >> 5) - 1]) |= flag_value;
         }
 
         if(field.type != BIT_BOOL)

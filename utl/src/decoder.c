@@ -1,6 +1,9 @@
 #include <string.h>
 
 #include "decoder.h"
+
+#include <stdio.h>
+
 #include "encoder.h"
 #include "builtins.h"
 
