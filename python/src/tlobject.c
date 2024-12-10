@@ -149,8 +149,10 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             if(PyBytes_AsStringAndSize(item, &buf, &len)) {
                 return false;
             }
-            const utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
-            memcpy(bytes.data, buf, len);
+            const utl_StringView bytes = {
+                .size = len,
+                .data = buf,
+            };
             utl_Message_setBytes(self->message, field, bytes);
             break;
         }
@@ -164,8 +166,10 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             if(!buf) {
                 return false;
             }
-            const utl_StringView bytes = utl_StringView_new(&self->message->arena, len);
-            memcpy(bytes.data, buf, len);
+            const utl_StringView bytes = {
+                .size = len,
+                .data = buf,
+            };
             utl_Message_setString(self->message, field, bytes);
             break;
         }
