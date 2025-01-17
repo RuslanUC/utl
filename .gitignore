@@ -4,3 +4,5 @@ cmake-build-*
 /build
 /setup.py
 /wheelhouse
+/pyutl/_pyutl.*.so
+/pyutl/_pyutl.*.dll

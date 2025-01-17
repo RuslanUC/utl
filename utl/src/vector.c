@@ -13,7 +13,7 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initia
     vector->message_def = vector_def;
     vector->size = 0;
     vector->capacity = initial_size;
-    vector->data = malloc(sizeof(void*) * initial_size);
+    vector->data = malloc(vector_def->element_size * initial_size);
     vector->arena = arena;
     return vector;
 }
@@ -135,7 +135,14 @@ bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
         *(C_TYPE*)(vector->data + item_offset) = value; \
     }
 
-UTL_VECTOR_APPEND(Int32, INT32, vector->size++, int32_t)
+void utl_Vector_appendInt32(utl_Vector* vector, int32_t value) {
+    if (vector->message_def->type != INT32) return;
+    utl_Vector_resize(vector, 0);
+    const size_t item_offset = vector->message_def->element_size * vector->size++;
+    *(int32_t*)(vector->data + item_offset) = value;
+}
+
+//UTL_VECTOR_APPEND(Int32, INT32, vector->size++, int32_t)
 UTL_VECTOR_APPEND(Int64, INT64, vector->size++, int64_t)
 UTL_VECTOR_APPEND(Double, DOUBLE, vector->size++, double)
 UTL_VECTOR_APPEND(Bool, FULL_BOOL, vector->size++, bool)

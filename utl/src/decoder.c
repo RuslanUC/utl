@@ -105,33 +105,33 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 break;
             }
             case INT32: {
-                utl_Vector_setInt32(vector, i, utl_decode_int32(buf));
+                utl_Vector_appendInt32(vector, utl_decode_int32(buf));
                 break;
             }
             case INT64: {
-                utl_Vector_setInt64(vector, i, utl_decode_int64(buf));
+                utl_Vector_appendInt64(vector, utl_decode_int64(buf));
                 break;
             }
             case INT128: {
                 utl_Int128 bytes;
                 utl_decode_int128(bytes.value, buf);
-                utl_Vector_setInt128(vector, i, bytes);
+                utl_Vector_appendInt128(vector, bytes);
                 break;
             }
             case INT256: {
                 utl_Int256 bytes;
                 utl_decode_int256(bytes.value, buf);
-                utl_Vector_setInt256(vector, i, bytes);
+                utl_Vector_appendInt256(vector, bytes);
                 break;
             }
             case DOUBLE: {
-                utl_Vector_setDouble(vector, i, utl_decode_double(buf));
+                utl_Vector_appendDouble(vector, utl_decode_double(buf));
                 break;
             }
             case FULL_BOOL: {
                 if(!check_not_eof(buf, status, 4))
                     return false;
-                utl_Vector_setBool(vector, i, utl_decode_bool(buf));
+                utl_Vector_appendBool(vector, utl_decode_bool(buf));
                 break;
             }
             case BYTES:
@@ -139,7 +139,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, status);
                 if(!status)
                     return false;
-                field->type == BYTES ? utl_Vector_setBytes(vector, i, bytes) : utl_Vector_setString(vector, i, bytes);
+                field->type == BYTES ? utl_Vector_appendBytes(vector, bytes) : utl_Vector_appendString(vector, bytes);
                 break;
             }
             case TLOBJECT: {
@@ -166,7 +166,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, status);
                 if(!status->ok)
                     return false;
-                utl_Vector_setMessage(vector, i, new_message);
+                utl_Vector_appendMessage(vector, new_message);
                 break;
             }
             case VECTOR: {
@@ -181,7 +181,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 utl_Vector* new_vector = utl_Vector_new(field->sub.vector_def, new_size);
                 if(!utl_decode_vector(new_vector, def_pool, field->sub.vector_def, buf, new_size, status))
                     return false;
-                utl_Vector_setVector(vector, i, new_vector);
+                utl_Vector_appendVector(vector, new_vector);
                 break;
             }
         }

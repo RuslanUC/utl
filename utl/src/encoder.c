@@ -104,11 +104,11 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             break;
         }
         case TLOBJECT: {
-            utl_encode_internal(value, buf);
+            utl_encode_internal(*(utl_Message**)value, buf);
             break;
         }
         case VECTOR: {
-            const utl_Vector* vector = value;
+            const utl_Vector* vector = *(utl_Vector**)value;
             utl_encode_int32(VECTOR_CONSTR, buf);
             utl_encode_int32(utl_Vector_size(vector), buf);
             for(size_t i = 0; i < utl_Vector_size(vector); i++) {

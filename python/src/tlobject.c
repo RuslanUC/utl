@@ -113,7 +113,7 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return false;
             }
-            utl_Int256 bytes;
+            utl_Int256 bytes = {{0}};
 #if PY_MINOR_VERSION < 13
             _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 32, true, true);
 #else
@@ -205,7 +205,7 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             utl_Message_setVector(self->message, field, vector);
 
             for(size_t i = 0; i < len; i++) {
-                if(!Py_TLVector_item_set(vector, PyList_GetItem(item, i), i)) {
+                if(!Py_TLVector_item_set(vector, PyList_GetItem(item, i), -1)) {
                     utl_Message_setVector(self->message, field, old_vector);
                     utl_Vector_free(vector);
                     return false;
@@ -349,6 +349,8 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     }
 
     if(!utl_Message_hasField(self->message, field)) {
+        if(field->type == BIT_BOOL)
+            Py_RETURN_FALSE;
         Py_RETURN_NONE;
     }
 

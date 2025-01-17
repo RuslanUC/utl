@@ -27,6 +27,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
             return;
         }
 
+        vector_def->element_size = 0;
         utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)vector_def, &vector_def->element_size);
         return;
     }
@@ -54,7 +55,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         *offset += 16;
     } else if(type_len == 6 && !memcmp(type_str, "int256", 6)) {
         field_type = INT256;
-        *offset += 16;
+        *offset += 32;
     } else if(type_len == 6 && !memcmp(type_str, "double", 6)) {
         field_type = DOUBLE;
         *offset += 8;

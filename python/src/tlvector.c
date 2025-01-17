@@ -201,7 +201,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
             utl_Vector* new_vector = utl_Vector_new(vector->message_def->sub.vector_def, len);
 
             for(size_t i = 0; i < len; i++) {
-                if(!Py_TLVector_item_set(new_vector, PyList_GetItem(item, i), i)) {
+                if(!Py_TLVector_item_set(new_vector, PyList_GetItem(item, i), -1)) {
                     utl_Vector_free(new_vector);
                     return false;
                 }
