@@ -23,6 +23,7 @@ typedef struct utl_MessageDef {
     /*uint8_t dynamic_num;
     utl_FieldDef** dynamic_fields;
     size_t static_size;*/
+    size_t size;
 } utl_MessageDef;
 
 // NOTE: If refactoring this structure, keep in mind, that .type and .sub should have same offsets as ones in utl_FieldDef
@@ -32,6 +33,7 @@ typedef struct utl_MessageDefVector {
         struct utl_TypeDef* type_def;
         struct utl_MessageDefVector* vector_def;
     } sub;
+    size_t element_size;
 } utl_MessageDefVector;
 
 utl_MessageDef* utl_MessageDef_new(utl_Arena* arena);

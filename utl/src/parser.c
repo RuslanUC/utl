@@ -1,10 +1,11 @@
 #include "parser.h"
 
+#include <builtins.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, utl_FieldDef* field) {
+void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, utl_FieldDef* field, size_t* offset) {
     size_t pos = 0, last = 0;
 
     utl_FieldType field_type;
@@ -15,6 +16,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         utl_MessageDefVector* vector_def = utl_MessageDefVector_new(&def_pool->arena);
         field->type = VECTOR;
         field->sub.vector_def = vector_def;
+        *offset += sizeof(void*);
 
         ++pos;
         last = pos;
@@ -25,7 +27,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
             return;
         }
 
-        utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)vector_def);
+        utl_parse_fieldType(def_pool, line + last, pos - last, (utl_FieldDef*)vector_def, &vector_def->element_size);
         return;
     }
 
@@ -40,26 +42,37 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         } else {
             field->flag_info = 1 << 5;
         }
+        *offset += 4;
     } else if(type_len == 3 && !memcmp(type_str, "int", 3)) {
         field_type = INT32;
+        *offset += 4;
     } else if(type_len == 4 && !memcmp(type_str, "long", 4)) {
         field_type = INT64;
+        *offset += 8;
     } else if(type_len == 6 && !memcmp(type_str, "int128", 6)) {
         field_type = INT128;
+        *offset += 16;
     } else if(type_len == 6 && !memcmp(type_str, "int256", 6)) {
         field_type = INT256;
+        *offset += 16;
     } else if(type_len == 6 && !memcmp(type_str, "double", 6)) {
         field_type = DOUBLE;
+        *offset += 8;
     } else if(type_len == 5 && !memcmp(type_str, "bytes", 5)) {
         field_type = BYTES;
+        *offset += sizeof(utl_Bytes);
     } else if(type_len == 6 && !memcmp(type_str, "string", 6)) {
         field_type = STRING;
+        *offset += sizeof(utl_Bytes);
     } else if(type_len == 4 && !memcmp(type_str, "Bool", 4)) {
         field_type = FULL_BOOL;
+        *offset += 1;
     } else if(type_len == 4 && !memcmp(type_str, "true", 4)) {
         field_type = BIT_BOOL;
+        *offset += 0;
     } else if((type_len == 2 && !memcmp(type_str, "!X", 2)) || type_len == 8 && !memcmp(type_str, "TLObject", 8)) {
         field_type = TLOBJECT;
+        *offset += sizeof(void*);
     } else {
         field_type = TLOBJECT;
         const utl_StringView type_name = {
@@ -70,6 +83,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         if(!sub_type) {
             // TODO: fail
         }
+        *offset += sizeof(void*);
     }
 
     field->type = field_type;
@@ -218,9 +232,11 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
     if(message_def->fields_num)
         message_def->fields = (utl_FieldDef*)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef) * message_def->fields_num);
 
+    size_t offset = 0;
     for(int i = 0; i < message_def->fields_num; i++) {
         utl_FieldDef* field = &message_def->fields[i];
         field->num = i;
+        field->offset = offset;
         field->flag_info = 0;
 
         while(pos < size && line[pos] == ' ') ++pos;
@@ -279,9 +295,9 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             last = pos;
             while(pos < size && line[pos] != ' ') ++pos;
 
-            utl_parse_fieldType(def_pool, line + last, pos - last, field);
+            utl_parse_fieldType(def_pool, line + last, pos - last, field, &offset);
         } else if(line[pos] == ' ') {
-            utl_parse_fieldType(def_pool, line + last, pos - last, field);
+            utl_parse_fieldType(def_pool, line + last, pos - last, field, &offset);
         } else {
             // Field type expected, but end of string is reached
             if(status) {
@@ -295,6 +311,8 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         if(field->type == FLAGS)
             message_def->flags_num++;
     }
+
+    message_def->size = offset;
 
     if(message_def->flags_num) {
         message_def->flags_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->flags_num);

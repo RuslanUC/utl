@@ -16,6 +16,7 @@ typedef struct utl_FieldDef {
     } sub;
 
     size_t num;
+    size_t offset;
     utl_StringView name;
     // if fields is optional, 3 higher bits represent flag_num (flags, flags2, flags3, etc.), 5 lower bits
     //   represent flag_bit (max value is 31 since flags field type is int32)

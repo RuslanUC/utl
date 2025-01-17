@@ -14,12 +14,12 @@ static PyObject* Py_TLObject_getitem(const Py_TLObject* self, const utl_FieldDef
             return PyLong_FromLong(utl_Message_getInt64(self->message, field));
         }
         case INT128: {
-            char* bytes = utl_Message_getInt128(self->message, field);
-            return _PyLong_FromByteArray((uint8_t*)bytes, 16, true, true);
+            const utl_Int128 bytes = utl_Message_getInt128(self->message, field);
+            return _PyLong_FromByteArray(bytes.value, 16, true, true);
         }
         case INT256: {
-            char* bytes = utl_Message_getInt256(self->message, field);
-            return _PyLong_FromByteArray((uint8_t*)bytes, 32, true, true);
+            const utl_Int256 bytes = utl_Message_getInt256(self->message, field);
+            return _PyLong_FromByteArray(bytes.value, 32, true, true);
         }
         case DOUBLE: {
             return PyFloat_FromDouble(utl_Message_getDouble(self->message, field));
@@ -72,7 +72,7 @@ static PyObject* Py_TLObject_getitem(const Py_TLObject* self, const utl_FieldDef
         }
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* field, PyObject* item) {
@@ -99,11 +99,11 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return false;
             }
-            char bytes[16];
+            utl_Int128 bytes;
 #if PY_MINOR_VERSION < 13
-            _PyLong_AsByteArray((PyLongObject*)item, bytes, 16, true, true);
+            _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 16, true, true);
 #else
-            _PyLong_AsByteArray((PyLongObject*)item, bytes, 16, true, true, true);
+            _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 16, true, true, true);
 #endif
             utl_Message_setInt128(self->message, field, bytes);
             break;
@@ -113,11 +113,11 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return false;
             }
-            char bytes[32];
+            utl_Int256 bytes;
 #if PY_MINOR_VERSION < 13
-            _PyLong_AsByteArray((PyLongObject*)item, bytes, 32, true, true);
+            _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 32, true, true);
 #else
-            _PyLong_AsByteArray((PyLongObject*)item, bytes, 32, true, true, true);
+            _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 32, true, true, true);
 #endif
             utl_Message_setInt256(self->message, field, bytes);
             break;
@@ -205,13 +205,11 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             utl_Message_setVector(self->message, field, vector);
 
             for(size_t i = 0; i < len; i++) {
-                void* element = Py_TLVector_item_to_utl(vector, PyList_GetItem(item, i));
-                if(!element) {
+                if(!Py_TLVector_item_set(vector, PyList_GetItem(item, i), i)) {
                     utl_Message_setVector(self->message, field, old_vector);
                     utl_Vector_free(vector);
                     return false;
                 }
-                utl_Vector_append(vector, element);
             }
 
             const pyutl_ModuleState* state = pyutl_ModuleState_get();
@@ -351,7 +349,7 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     }
 
     if(!utl_Message_hasField(self->message, field)) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     return Py_TLObject_getitem(self, field);

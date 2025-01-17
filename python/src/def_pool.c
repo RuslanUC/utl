@@ -96,12 +96,12 @@ PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
 
     utl_MessageDef* message_def = utl_DefPool_getMessage(self->pool, tl_id);
     if(!message_def)
-        return Py_None;
+        Py_RETURN_NONE;
 
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
     pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
     if(!cached) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     return (PyObject*)cached->python_cls;
@@ -147,7 +147,7 @@ PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
 
     utl_TypeDef* type_def = utl_DefPool_getType(self->pool, name);
     if(!type_def) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     return Py_TLType_createType(type_def);

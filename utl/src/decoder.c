@@ -96,7 +96,8 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Sta
 
 bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_MessageDefVector* field, utl_DecodeBuf* buf, const size_t size, utl_Status* status) {
     for(size_t i = 0; i < size; i++) {
-        void* value = NULL;
+        if(!check_not_eof(buf, status, vector->message_def->element_size))
+            return false;
 
         switch (field->type) {
             case FLAGS:
@@ -104,63 +105,41 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 break;
             }
             case INT32: {
-                if(!check_not_eof(buf, status, 4))
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Int32));
-                ((utl_Int32*)value)->value = utl_decode_int32(buf);
+                utl_Vector_setInt32(vector, i, utl_decode_int32(buf));
                 break;
             }
             case INT64: {
-                if(!check_not_eof(buf, status, 8))
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Int64));
-                ((utl_Int64*)value)->value = utl_decode_int64(buf);
+                utl_Vector_setInt64(vector, i, utl_decode_int64(buf));
                 break;
             }
             case INT128: {
-                if(!check_not_eof(buf, status, 16))
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Int128));
-                utl_decode_int128(((utl_Int128*)value)->value, buf);
+                utl_Int128 bytes;
+                utl_decode_int128(bytes.value, buf);
+                utl_Vector_setInt128(vector, i, bytes);
                 break;
             }
             case INT256: {
-                if(!check_not_eof(buf, status, 32))
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Int256));
-                utl_decode_int128(((utl_Int256*)value)->value, buf);
+                utl_Int256 bytes;
+                utl_decode_int256(bytes.value, buf);
+                utl_Vector_setInt256(vector, i, bytes);
                 break;
             }
             case DOUBLE: {
-                if(!check_not_eof(buf, status, 8))
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Double));
-                ((utl_Double*)value)->value = utl_decode_double(buf);
+                utl_Vector_setDouble(vector, i, utl_decode_double(buf));
                 break;
             }
             case FULL_BOOL: {
                 if(!check_not_eof(buf, status, 4))
                     return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Bool));
-                ((utl_Bool*)value)->value = utl_decode_bool(buf);
+                utl_Vector_setBool(vector, i, utl_decode_bool(buf));
                 break;
             }
-            case BYTES: {
+            case BYTES:
+            case STRING: {
                 const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, status);
                 if(!status)
                     return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_Bytes));
-                ((utl_Bytes*)value)->value = bytes;
-                ((utl_Bytes*)value)->max_size = ((utl_Bytes*)value)->value.size;
-                break;
-            }
-            case STRING: {
-                const utl_StringView string = utl_decode_bytes(buf, &vector->arena, status);
-                if(!status)
-                    return false;
-                value = utl_Arena_alloc(&vector->arena, sizeof(utl_String));
-                ((utl_String*)value)->value = string;
-                ((utl_String*)value)->max_size = ((utl_String*)value)->value.size;
+                field->type == BYTES ? utl_Vector_setBytes(vector, i, bytes) : utl_Vector_setString(vector, i, bytes);
                 break;
             }
             case TLOBJECT: {
@@ -184,10 +163,10 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 }
 
                 utl_Message* new_message = utl_Message_new(new_def);
-                value = new_message;
                 buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, status);
                 if(!status->ok)
                     return false;
+                utl_Vector_setMessage(vector, i, new_message);
                 break;
             }
             case VECTOR: {
@@ -200,22 +179,20 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 }
                 const size_t new_size = utl_decode_int32(buf);
                 utl_Vector* new_vector = utl_Vector_new(field->sub.vector_def, new_size);
-                value = new_vector;
                 if(!utl_decode_vector(new_vector, def_pool, field->sub.vector_def, buf, new_size, status))
                     return false;
+                utl_Vector_setVector(vector, i, new_vector);
                 break;
             }
         }
 
-        if(value == NULL) {
+        /*if(value == NULL) {
             if(status) {
                 status->ok = false;
                 strncpy(status->message, "Expected vector value", UTL_STATUS_MAX_MESSAGE_SIZE);
             }
             return false;
-        }
-
-        utl_Vector_append(vector, value);
+        }*/
     }
 
     return true;
@@ -250,16 +227,16 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
         case INT128: {
             if(!check_not_eof(buf, status, 16))
                 return false;
-            char tmp[16];
-            utl_decode_int128(tmp, buf);
+            utl_Int128 tmp;
+            utl_decode_int128(tmp.value, buf);
             utl_Message_setInt128(message, field, tmp);
             break;
         }
         case INT256: {
             if(!check_not_eof(buf, status, 32))
                 return false;
-            char tmp[32];
-            utl_decode_int256(tmp, buf);
+            utl_Int256 tmp;
+            utl_decode_int256(tmp.value, buf);
             utl_Message_setInt256(message, field, tmp);
             break;
         }

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <unity.h>
 #include "parser.h"
 #include "encoder.h"
@@ -15,31 +16,15 @@ void test_MessageWithoutFields() {
     TEST_ASSERT_NOT_NULL(message_def);
 
     utl_Message* message = utl_Message_new(message_def);
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(message, &encoder_arena);
+    size_t written_bytes;
+    char* data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(4, written_bytes);
     char expected[4] = {0xea, 0x18, 0x3b, 0x7f};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, encoder_arena.data, 4);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, data, 4);
 
     utl_Message_free(message);
-    arena_delete(&encoder_arena);
     utl_DefPool_free(pool);
-}
-
-void test_EncodeWithArenaAlignment_MustNotEncode() {
-    utl_DefPool* pool = utl_DefPool_new();
-    utl_MessageDef* message_def = utl_parse_line(pool, "inputPeerEmpty#7f3b18ea = InputPeer;", 36, NULL);
-    TEST_ASSERT_NOT_NULL(message_def);
-
-    utl_Message* message = utl_Message_new(message_def);
-    arena_t encoder_arena = arena_new();
-    size_t written_bytes = utl_encode(message, &encoder_arena);
-    TEST_ASSERT_EQUAL(0, written_bytes);
-
-    utl_Message_free(message);
-    arena_delete(&encoder_arena);
-    utl_DefPool_free(pool);
+    free(data);
 }
 
 void test_MessageSimpleEncode() {
@@ -51,16 +36,15 @@ void test_MessageSimpleEncode() {
     utl_Message_setInt64(message, &message_def->fields[0], 123456789123);
     utl_Message_setInt64(message, &message_def->fields[1], 987654321321);
 
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(message, &encoder_arena);
+    size_t written_bytes;
+    char* data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(20, written_bytes);
     char expected[20] = {0x4c, 0xa5, 0xe8, 0xdd, 0x83, 0x1a, 0x99, 0xbe, 0x1c, 0x00, 0x00, 0x00, 0xa9, 0xf4, 0xc8, 0xf4, 0xe5, 0x00, 0x00, 0x00};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, encoder_arena.data, 20);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, data, 20);
 
     utl_Message_free(message);
-    arena_delete(&encoder_arena);
     utl_DefPool_free(pool);
+    free(data);
 }
 
 void test_MessageSimpleDecode() {
@@ -101,16 +85,15 @@ void test_MessageWithStringEncode() {
     utl_Message_setString(message, &message_def->fields[2], test_small_string);
     utl_Message_setString(message, &message_def->fields[3], test_big_string);
 
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(message, &encoder_arena);
+    size_t written_bytes;
+    char* data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(316, written_bytes);
     char expected[316] = {0x7f, 0xf2, 0x2f, 0xf5, 0x83, 0x1a, 0x99, 0xbe, 0x1c, 0x0, 0x0, 0x0, 0xf3, 0xe0, 0x1, 0x0, 0x15, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0, 0x0, 0xfe, 0xd, 0x1, 0x0, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x20, 0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x20, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0, 0x0, 0x0};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, encoder_arena.data, 316);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected, data, 316);
 
     utl_Message_free(message);
-    arena_delete(&encoder_arena);
     utl_DefPool_free(pool);
+    free(data);
 }
 
 void test_MessageWithStringDecode() {
@@ -144,22 +127,21 @@ void test_MessageWithFlagsEncode() {
     utl_Message_setDouble(message, &message_def->fields[1], 42.24);
     utl_Message_setDouble(message, &message_def->fields[2], 24.42);
 
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(message, &encoder_arena);
+    size_t written_bytes;
+    char* data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(24, written_bytes);
     char expected1[24] = {0xaf, 0x2f, 0x22, 0x48, 0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, encoder_arena.data+8, 24);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, data, 24);
+    free(data);
 
-    arena_reset(&encoder_arena);
     utl_Message_setInt32(message, &message_def->fields[3], 456123);
-    written_bytes = utl_encode(message, &encoder_arena);
+    data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(28, written_bytes);
     char expected2[28] = {0xaf, 0x2f, 0x22, 0x48, 0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, encoder_arena.data+8, 28);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, data, 28);
+    free(data);
 
     utl_Message_free(message);
-    arena_delete(&encoder_arena);
     utl_DefPool_free(pool);
 }
 
@@ -198,22 +180,21 @@ void test_MessageWithBitBoolEncode() {
     utl_Message* message = utl_Message_new(message_def);
     utl_Message_setBool(message, &message_def->fields[1], false);
 
-    arena_t encoder_arena = arena_new();
-    encoder_arena.flags |= ARENA_DONTALIGN;
-    size_t written_bytes = utl_encode(message, &encoder_arena);
+    size_t written_bytes;
+    char* data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(8, written_bytes);
     char expected1[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x0, 0x0, 0x0, 0x0};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, encoder_arena.data+8, 8);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected1, data, 8);
+    free(data);
 
-    arena_reset(&encoder_arena);
     utl_Message_setBool(message, &message_def->fields[1], true);
-    written_bytes = utl_encode(message, &encoder_arena);
+    data = utl_encode(message, &written_bytes);
     TEST_ASSERT_EQUAL(8, written_bytes);
     char expected2[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x01, 0x0, 0x0, 0x0};
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, encoder_arena.data+8, 8);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected2, data, 8);
+    free(data);
 
     utl_Message_free(message);
-    arena_delete(&encoder_arena);
     utl_DefPool_free(pool);
 }
 
@@ -228,7 +209,7 @@ void test_MessageWithBitBoolDecode() {
     utl_decode(message, pool, bytes1+4, 8-4, &status);
 
     TEST_ASSERT_TRUE(status.ok);
-    TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
+    TEST_ASSERT_FALSE(utl_Message_hasField(message, &message_def->fields[1]));
     TEST_ASSERT_FALSE(utl_Message_getBool(message, &message_def->fields[1]));
 
     char bytes2[8] = {0xc8, 0x7d, 0x19, 0x7b, 0x01, 0x0, 0x0, 0x0};
@@ -245,7 +226,6 @@ int main() {
     UNITY_BEGIN();
 
     RUN_TEST(test_MessageWithoutFields);
-    RUN_TEST(test_EncodeWithArenaAlignment_MustNotEncode);
     RUN_TEST(test_MessageSimpleEncode);
     RUN_TEST(test_MessageSimpleDecode);
     RUN_TEST(test_MessageWithStringEncode);

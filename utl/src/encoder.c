@@ -77,29 +77,18 @@ void utl_encode_bytes(const utl_StringView value, utl_EncodeBuf* buf) {
 
 void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf);
 
-void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf) {
+void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf, size_t size) {
     const utl_FieldType field_type = field->type;
 
     switch (field_type) {
         case FLAGS:
-        case INT32: {
-            utl_encode_int32(((utl_Int32*)value)->value, buf);
-            break;
-        }
-        case INT64: {
-            utl_encode_int64(((utl_Int64*)value)->value, buf);
-            break;
-        }
-        case INT128: {
-            utl_encode_int128(((utl_Int128*)value)->value, buf);
-            break;
-        }
-        case INT256: {
-            utl_encode_int256(((utl_Int256*)value)->value, buf);
-            break;
-        }
+        case INT32:
+        case INT64:
+        case INT128:
+        case INT256:
         case DOUBLE: {
-            utl_encode_double(((utl_Double*)value)->value, buf);
+            char* tmp = utl_EncodeBuf_alloc(buf, size);
+            memcpy(tmp, value, size);
             break;
         }
         case FULL_BOOL: {
@@ -123,7 +112,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             utl_encode_int32(VECTOR_CONSTR, buf);
             utl_encode_int32(utl_Vector_size(vector), buf);
             for(size_t i = 0; i < utl_Vector_size(vector); i++) {
-                utl_encode_field((utl_FieldDef*)vector->message_def, utl_Vector_value(vector, i), buf);
+                utl_encode_field((utl_FieldDef*)vector->message_def, utl_Vector_rawValue(vector, i), buf, vector->message_def->element_size);
             }
             break;
         }
@@ -131,39 +120,21 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
 }
 
 void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
-    size_t* flags = NULL;
-    if (message->message_def->flags_num) {
-        flags = malloc(message->message_def->flags_num * sizeof(size_t));
-    }
-
     utl_encode_intX((char*)&message->message_def->id, buf, 4);
 
     const utl_FieldDef* fields = message->message_def->fields;
     for(int i = 0; i < message->message_def->fields_num; i++) {
         const utl_FieldDef field = fields[i];
-        void* value = message->table[field.num];
-        if(field.type == FLAGS) {
-            flags[(field.flag_info >> 5) - 1] = buf->pos;
-            ((utl_Int32*)value)->value = 0;
-        }
-
-        if(value == NULL) {
-            // TODO: check if optional, if not - fail
+        if(field.flag_info && field.type != FLAGS && !utl_Message_hasField(message, &field))
             continue;
-        }
 
-        if(field.type != FLAGS && field.flag_info && !(field.type == BIT_BOOL && !((utl_Bool*)value)->value)) {
-            const uint8_t flag_bit = (field.flag_info & 0b11111);
-            const uint32_t flag_value = 1 << flag_bit;
-            *(uint32_t*)(buf->data + flags[(field.flag_info >> 5) - 1]) |= flag_value;
+        if(field.type != BIT_BOOL) {
+            const size_t next_offset = (i == (message->message_def->fields_num - 1)) ? message->message_def->size : message->message_def->fields[i + 1].offset;
+            const size_t item_size = next_offset - field.offset;
+            void* value = message->data + field.offset;
+            utl_encode_field(&field, value, buf, item_size);
         }
-
-        if(field.type != BIT_BOOL)
-            utl_encode_field(&field, value, buf);
     }
-
-    if(flags)
-        free(flags);
 }
 
 char* utl_encode(const utl_Message* message, size_t* out_size) {

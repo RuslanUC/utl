@@ -11,57 +11,14 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
     utl_Arena arena = utl_Arena_new(4096);
     utl_Message* message = utl_Arena_alloc(&arena, sizeof(utl_Message));
     message->message_def = message_def;
-    message->table = malloc(message_def->fields_num * sizeof(void*));
-
-    for (int i = 0; i < message_def->fields_num; i++) {
-        const utl_FieldDef field = message_def->fields[i];
-        if (field.flag_info != 0 && field.type != FLAGS) {
-            message->table[i] = NULL;
-            continue;
-        }
-        switch (field.type) {
-            case FLAGS:
-            case INT32: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int32));
-                break;
-            }
-            case INT64: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int64));
-                break;
-            }
-            case INT128: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int128));
-                break;
-            }
-            case INT256: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Int256));
-                break;
-            }
-            case DOUBLE: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Double));
-                break;
-            }
-            case FULL_BOOL:
-            case BIT_BOOL: {
-                message->table[i] = utl_Arena_alloc(&arena, sizeof(utl_Bool));
-                break;
-            }
-            case BYTES:
-            case STRING:
-            case TLOBJECT:
-            case VECTOR:{
-                message->table[i] = NULL;
-                break;
-            }
-        }
-    }
-
+    message->data = malloc(message_def->size);
+    memset(message->data, 0, message_def->size);
     message->arena = arena;
     return message;
 }
 
 void utl_Message_free(utl_Message* message) {
-    free(message->table);
+    free(message->data);
     utl_Arena_free(&message->arena);
 }
 
@@ -69,14 +26,29 @@ bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field)
     if (field->flag_info == 0)
         return true;
 
-    return message->table[field->num] != 0;
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const uint32_t flag = *(uint32_t*)(message->data + flags_field->offset);
+    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+
+    return (flag & flag_bit) == flag_bit;
 }
 
 void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field) {
     if (field->flag_info == 0)
         return;
 
-    message->table[field->num] = 0;
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    *(uint32_t*)(message->data + flags_field->offset) &= ~flag_bit;
+}
+
+void utl_Message_setFlag(const utl_Message* message, const utl_FieldDef* field) {
+    if (field->flag_info == 0)
+        return;
+
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    *(uint32_t*)(message->data + flags_field->offset) |= flag_bit;
 }
 
 bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
@@ -89,51 +61,32 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
 
     for (int i = 0; i < a->message_def->fields_num; i++) {
         utl_FieldDef field = a->message_def->fields[i];
-        if (field.type == FLAGS) {
-            continue;
-        }
-        if (field.flag_info != 0) {
+        if (field.flag_info != 0 && field.type != FLAGS) {
             const bool has_a = utl_Message_hasField(a, &field);
             const bool has_b = utl_Message_hasField(a, &field);
 
-            return !(has_a ^ has_b);
+            if(has_a ^ has_b)
+                return false;
         }
 
         switch (field.type) {
             case FLAGS:
-            case INT32: {
-                if (utl_Message_getInt32(a, &field) != utl_Message_getInt32(b, &field))
+            case INT32:
+            case INT64:
+            case INT128:
+            case INT256:
+            case DOUBLE:
+            case FULL_BOOL: {
+                const size_t next_offset = (i == (a->message_def->fields_num - 1)) ? a->message_def->size : a->message_def->fields[i + 1].offset;
+                const size_t item_size = next_offset - field.offset;
+                const void* value_a = a->data + field.offset;
+                const void* value_b = b->data + field.offset;
+
+                if (memcmp(value_a, value_b, item_size))
                     return false;
                 break;
             }
-            case INT64: {
-                if (utl_Message_getInt64(a, &field) != utl_Message_getInt64(b, &field))
-                    return false;
-                break;
-            }
-            case INT128: {
-                const char* ia = utl_Message_getInt128(a, &field);
-                const char* ib = utl_Message_getInt128(b, &field);
-                if (memcmp(ia, ib, 16))
-                    return false;
-                break;
-            }
-            case INT256: {
-                const char* ia = utl_Message_getInt256(a, &field);
-                const char* ib = utl_Message_getInt256(b, &field);
-                if (memcmp(ia, ib, 32))
-                    return false;
-                break;
-            }
-            case DOUBLE: {
-                if (utl_Message_getDouble(a, &field) != utl_Message_getDouble(b, &field))
-                    return false;
-                break;
-            }
-            case FULL_BOOL:
             case BIT_BOOL: {
-                if (utl_Message_getBool(a, &field) != utl_Message_getBool(b, &field))
-                    return false;
                 break;
             }
             case BYTES: {
@@ -162,70 +115,61 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
     return true;
 }
 
-void utl_Message_setInt32(utl_Message* message, const utl_FieldDef* field, const int32_t value) {
+void utl_Message_setInt32(const utl_Message* message, const utl_FieldDef* field, const int32_t value) {
     if (field->type != INT32 && field->type != FLAGS) {
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int32));
-    }
-    ((utl_Int32*)message->table[field->num])->value = value;
+    utl_Message_setFlag(message, field);
+    *(int32_t*)(message->data + field->offset) = value;
 }
 
-void utl_Message_setInt64(utl_Message* message, const utl_FieldDef* field, const int64_t value) {
+void utl_Message_setInt64(const utl_Message* message, const utl_FieldDef* field, const int64_t value) {
     if (field->type != INT64) {
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int64));
-    }
-    ((utl_Int64*)message->table[field->num])->value = value;
+    utl_Message_setFlag(message, field);
+    *(int64_t*)(message->data + field->offset) = value;
 }
 
-void utl_Message_setInt128(utl_Message* message, const utl_FieldDef* field, char value[16]) {
+void utl_Message_setInt128(const utl_Message* message, const utl_FieldDef* field, const utl_Int128 value) {
     if (field->type != INT128) {
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int128));
-    }
-    memcpy(&((utl_Int128*)message->table[field->num])->value, value, 16);
+    utl_Message_setFlag(message, field);
+    memcpy(message->data + field->offset, value.value, 16);
 }
 
-void utl_Message_setInt256(utl_Message* message, const utl_FieldDef* field, char value[32]) {
+void utl_Message_setInt256(const utl_Message* message, const utl_FieldDef* field, const utl_Int256 value) {
     if (field->type != INT256) {
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Int256));
-    }
-    memcpy(&((utl_Int256*)message->table[field->num])->value, value, 32);
+    utl_Message_setFlag(message, field);
+    memcpy(message->data + field->offset, value.value, 32);
 }
 
-void utl_Message_setDouble(utl_Message* message, const utl_FieldDef* field, const double value) {
+void utl_Message_setDouble(const utl_Message* message, const utl_FieldDef* field, const double value) {
     if (field->type != DOUBLE) {
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Double));
-    }
-    ((utl_Double*)message->table[field->num])->value = value;
+    utl_Message_setFlag(message, field);
+    *(double*)(message->data + field->offset) = value;
 }
 
-void utl_Message_setBool(utl_Message* message, const utl_FieldDef* field, const bool value) {
-    if (field->type != FULL_BOOL && field->type != BIT_BOOL) {
-        return;
+void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, const bool value) {
+    if(field->type == FULL_BOOL) {
+        utl_Message_setFlag(message, field);
+        *(bool*)(message->data + field->offset) = value;
+    } else if (field->type == BIT_BOOL) {
+        if(value)
+            utl_Message_setFlag(message, field);
+        else
+            utl_Message_clearField(message, field);
     }
-
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Bool));
-    }
-    ((utl_Bool*)message->table[field->num])->value = value;
 }
 
 void utl_Message_setBytes_internal(utl_Message* message, const utl_FieldDef* field, const utl_StringView value, const bool check_type) {
@@ -233,12 +177,8 @@ void utl_Message_setBytes_internal(utl_Message* message, const utl_FieldDef* fie
         return;
     }
 
-    if (message->table[field->num] == NULL) {
-        message->table[field->num] = utl_Arena_alloc(&message->arena, sizeof(utl_Bytes));
-        memset(message->table[field->num], 0, sizeof(utl_Bytes));
-    }
+    utl_Bytes* bytes = message->data + field->offset;
 
-    utl_Bytes* bytes = message->table[field->num];
     if (value.size > bytes->max_size) {
         bytes->value.data = utl_Arena_alloc(&message->arena, value.size);
         bytes->max_size = value.size;
@@ -246,6 +186,8 @@ void utl_Message_setBytes_internal(utl_Message* message, const utl_FieldDef* fie
 
     bytes->value.size = value.size;
     memcpy(bytes->value.data, value.data, value.size);
+
+    utl_Message_setFlag(message, field);
 }
 
 void utl_Message_setBytes(utl_Message* message, const utl_FieldDef* field, const utl_StringView value) {
@@ -261,7 +203,8 @@ void utl_Message_setMessage(const utl_Message* message, const utl_FieldDef* fiel
         return;
     }
 
-    message->table[field->num] = value;
+    utl_Message_setFlag(message, field);
+    *(utl_Message**)(message->data + field->offset) = value;
 }
 
 void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value) {
@@ -269,7 +212,8 @@ void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field
         return;
     }
 
-    message->table[field->num] = value;
+    utl_Message_setFlag(message, field);
+    *(utl_Vector**)(message->data + field->offset) = value;
 }
 
 int32_t utl_Message_getInt32(const utl_Message* message, const utl_FieldDef* field) {
@@ -277,10 +221,7 @@ int32_t utl_Message_getInt32(const utl_Message* message, const utl_FieldDef* fie
         return 0;
     }
 
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Int32*)message->table[field->num])->value;
+    return *(int32_t*)(message->data + field->offset);
 }
 
 int64_t utl_Message_getInt64(const utl_Message* message, const utl_FieldDef* field) {
@@ -288,32 +229,27 @@ int64_t utl_Message_getInt64(const utl_Message* message, const utl_FieldDef* fie
         return 0;
     }
 
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Int64*)message->table[field->num])->value;
+    return *(int64_t*)(message->data + field->offset);
 }
 
-char* utl_Message_getInt128(const utl_Message* message, const utl_FieldDef* field) {
+utl_Int128 utl_Message_getInt128(const utl_Message* message, const utl_FieldDef* field) {
+    utl_Int128 result;
     if (field->type != INT128) {
-        return 0;
+        return result;
     }
 
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Int128*)message->table[field->num])->value;
+    memcpy(result.value, message->data + field->offset, 16);
+    return result;
 }
 
-char* utl_Message_getInt256(const utl_Message* message, const utl_FieldDef* field) {
+utl_Int256 utl_Message_getInt256(const utl_Message* message, const utl_FieldDef* field) {
+    utl_Int256 result;
     if (field->type != INT256) {
-        return 0;
+        return result;
     }
 
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Int256*)message->table[field->num])->value;
+    memcpy(result.value, message->data + field->offset, 32);
+    return result;
 }
 
 double utl_Message_getDouble(const utl_Message* message, const utl_FieldDef* field) {
@@ -321,21 +257,16 @@ double utl_Message_getDouble(const utl_Message* message, const utl_FieldDef* fie
         return 0;
     }
 
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Double*)message->table[field->num])->value;
+    return *(double*)(message->data + field->offset);
 }
 
 bool utl_Message_getBool(const utl_Message* message, const utl_FieldDef* field) {
-    if (field->type != FULL_BOOL && field->type != BIT_BOOL) {
-        return 0;
+    if(field->type == FULL_BOOL) {
+        return *(bool*)(message->data + field->offset);
+    } else if (field->type == BIT_BOOL) {
+        return utl_Message_hasField(message, field);
     }
-
-    if (message->table[field->num] == NULL) {
-        return 0;
-    }
-    return ((utl_Bool*)message->table[field->num])->value;
+    return false;
 }
 
 utl_StringView utl_Message_getBytes_internal(const utl_Message* message, const utl_FieldDef* field, const utl_FieldType check_type) {
@@ -345,11 +276,12 @@ utl_StringView utl_Message_getBytes_internal(const utl_Message* message, const u
         return empty;
     }
 
-    if (message->table[field->num] == NULL) {
+    const utl_Bytes* bytes = message->data + field->offset;
+    if (bytes == NULL) {
         return empty;
     }
 
-    return ((utl_Bytes*)message->table[field->num])->value;
+    return bytes->value;
 }
 
 utl_StringView utl_Message_getBytes(const utl_Message* message, const utl_FieldDef* field) {
@@ -365,7 +297,7 @@ utl_Message* utl_Message_getMessage(const utl_Message* message, const utl_FieldD
         return 0;
     }
 
-    return message->table[field->num];
+    return *(utl_Message**)(message->data + field->offset);
 }
 
 utl_Vector* utl_Message_getVector(const utl_Message* message, const utl_FieldDef* field) {
@@ -373,5 +305,5 @@ utl_Vector* utl_Message_getVector(const utl_Message* message, const utl_FieldDef
         return 0;
     }
 
-    return message->table[field->num];
+    return *(utl_Vector**)(message->data + field->offset);
 }
