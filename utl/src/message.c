@@ -1,11 +1,13 @@
 #include "message.h"
 
+#include <constants.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <vector.h>
 
+#include "string.h"
+#include "vector.h"
 #include "builtins.h"
+#include "string_pool.h"
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def) {
     utl_Arena arena = utl_Arena_new(4096);
@@ -18,6 +20,14 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 }
 
 void utl_Message_free(utl_Message* message) {
+    for(int i = 0; i < message->message_def->strings_num; ++i) {
+        const utl_FieldDef* field = message->message_def->string_fields[i];
+        const utl_StringView string = field->type == STRING ? utl_Message_getString(message, field) : utl_Message_getBytes(message, field);
+        if(!string.data)
+            continue;
+        utl_StringPool_free(string);
+    }
+
     free(message->data);
     utl_Arena_free(&message->arena);
 }
@@ -89,13 +99,9 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
             case BIT_BOOL: {
                 break;
             }
-            case BYTES: {
-                if (!utl_StringView_equals(utl_Message_getBytes(a, &field), utl_Message_getBytes(b, &field)))
-                    return false;
-                break;
-            }
+            case BYTES:
             case STRING: {
-                if (!utl_StringView_equals(utl_Message_getString(a, &field), utl_Message_getString(b, &field)))
+                if (!utl_StringView_equals(*(utl_StringView*)(a->data + field.offset), *(utl_StringView*)(b->data + field.offset)))
                     return false;
                 break;
             }
@@ -172,30 +178,24 @@ void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, 
     }
 }
 
-void utl_Message_setBytes_internal(utl_Message* message, const utl_FieldDef* field, const utl_StringView value, const bool check_type) {
-    if (check_type && field->type != BYTES) {
+void utl_Message_setBytes_internal(const utl_Message* message, const utl_FieldDef* field, const utl_StringView value, const utl_FieldType check_type) {
+    if (field->type != check_type || value.size > UTL_MAX_STRINT_LENGTH) {
         return;
     }
 
-    utl_Bytes* bytes = message->data + field->offset;
-
-    if (value.size > bytes->max_size) {
-        bytes->value.data = utl_Arena_alloc(&message->arena, value.size);
-        bytes->max_size = value.size;
-    }
-
-    bytes->value.size = value.size;
-    memcpy(bytes->value.data, value.data, value.size);
+    utl_StringView* bytes = message->data + field->offset;
+    *bytes = utl_StringPool_realloc(*bytes, value.size);
+    memcpy(bytes->data, value.data, value.size);
 
     utl_Message_setFlag(message, field);
 }
 
-void utl_Message_setBytes(utl_Message* message, const utl_FieldDef* field, const utl_StringView value) {
-    utl_Message_setBytes_internal(message, field, value, true);
+void utl_Message_setBytes(const utl_Message* message, const utl_FieldDef* field, const utl_StringView value) {
+    utl_Message_setBytes_internal(message, field, value, BYTES);
 }
 
-void utl_Message_setString(utl_Message* message, const utl_FieldDef* field, const utl_StringView value) {
-    utl_Message_setBytes_internal(message, field, value, false);
+void utl_Message_setString(const utl_Message* message, const utl_FieldDef* field, const utl_StringView value) {
+    utl_Message_setBytes_internal(message, field, value, STRING);
 }
 
 void utl_Message_setMessage(const utl_Message* message, const utl_FieldDef* field, utl_Message* value) {
@@ -276,12 +276,12 @@ utl_StringView utl_Message_getBytes_internal(const utl_Message* message, const u
         return empty;
     }
 
-    const utl_Bytes* bytes = message->data + field->offset;
-    if (bytes == NULL) {
+    const utl_StringView* bytes = message->data + field->offset;
+    if (bytes->data == NULL) {
         return empty;
     }
 
-    return bytes->value;
+    return *bytes;
 }
 
 utl_StringView utl_Message_getBytes(const utl_Message* message, const utl_FieldDef* field) {

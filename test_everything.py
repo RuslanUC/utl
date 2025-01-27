@@ -337,3 +337,16 @@ def test_creation_from_python_type_annotated_class() -> None:
     obj3 = Something.read_bytes(obj.write()[4:])
     _check_obj(obj3)
     assert obj3 == obj
+
+
+@pytest.mark.skipif(SKIP_TESTS >= 9, reason="")
+def test_long_string() -> None:
+    cls = pyutl.parse_tl("testLongString#00000001 some_string:string = TestLongString;", 177, pyutl.TLSection.TYPES)
+    assert cls
+
+    obj = cls(some_string="a" * 1024 * 1024)
+    obj2 = pyutl.TLObject.read_bytes(obj.write())
+    assert obj == obj2
+
+    with pytest.raises(ValueError):
+        cls(some_string="a" * 1024 * 1024 * 17)

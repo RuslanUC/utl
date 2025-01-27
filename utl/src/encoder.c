@@ -31,16 +31,6 @@ void utl_encode_int64(int64_t value, utl_EncodeBuf* buf) {
     utl_encode_intX((char*)&value, buf, 8);
 }
 
-void utl_encode_int128(char value[16], utl_EncodeBuf* buf) {
-    char* tmp = utl_EncodeBuf_alloc(buf, 16);
-    memcpy(tmp, value, 16);
-}
-
-void utl_encode_int256(char value[32], utl_EncodeBuf* buf) {
-    char* tmp = utl_EncodeBuf_alloc(buf, 32);
-    memcpy(tmp, value, 32);
-}
-
 void utl_encode_double(double value, utl_EncodeBuf* buf) {
     utl_encode_int64(*(uint64_t*)&value, buf);
 }
@@ -92,7 +82,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             break;
         }
         case FULL_BOOL: {
-            utl_encode_bool(((utl_Bool*)value)->value, buf);
+            utl_encode_bool(*(bool*)value, buf);
             break;
         }
         case BIT_BOOL: {
@@ -100,7 +90,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
         }
         case BYTES:
         case STRING: {
-            utl_encode_bytes(((utl_Bytes*)value)->value, buf);
+            utl_encode_bytes(*(utl_StringView*)value, buf);
             break;
         }
         case TLOBJECT: {

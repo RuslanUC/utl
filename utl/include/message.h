@@ -24,8 +24,8 @@ void utl_Message_setInt128(const utl_Message* message, const utl_FieldDef* field
 void utl_Message_setInt256(const utl_Message* message, const utl_FieldDef* field, utl_Int256 value);
 void utl_Message_setDouble(const utl_Message* message, const utl_FieldDef* field, double value);
 void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, bool value);
-void utl_Message_setBytes(utl_Message* message, const utl_FieldDef* field, utl_StringView value);
-void utl_Message_setString(utl_Message* message, const utl_FieldDef* field, utl_StringView value);
+void utl_Message_setBytes(const utl_Message* message, const utl_FieldDef* field, utl_StringView value);
+void utl_Message_setString(const utl_Message* message, const utl_FieldDef* field, utl_StringView value);
 void utl_Message_setMessage(const utl_Message* message, const utl_FieldDef* field, utl_Message* value);
 void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value);
 

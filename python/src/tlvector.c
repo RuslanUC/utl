@@ -5,6 +5,7 @@
 #include <encoder.h>
 
 #include "tlobject.h"
+#include "constants.h"
 
 static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index) {
     switch (self->vector->message_def->type) {
@@ -157,6 +158,10 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
             if(PyBytes_AsStringAndSize(item, &buf, &len)) {
                 return false;
             }
+            if(len > UTL_MAX_STRINT_LENGTH) {
+                PyErr_SetString(PyExc_ValueError, "bytes object is too big");
+                return false;
+            }
             const utl_StringView bytes = {.size = len, .data = buf};
             index >= 0 ? utl_Vector_setBytes(vector, index, bytes) : utl_Vector_appendBytes(vector, bytes);
             return true;
@@ -169,6 +174,10 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
             ssize_t len;
             const char *buf = PyUnicode_AsUTF8AndSize(item, &len);
             if(!buf) {
+                return false;
+            }
+            if(len > UTL_MAX_STRINT_LENGTH) {
+                PyErr_SetString(PyExc_ValueError, "string is too big");
                 return false;
             }
             const utl_StringView bytes = {.size = len, .data = (char*)buf};

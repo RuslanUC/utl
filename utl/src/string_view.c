@@ -25,16 +25,6 @@ utl_StringView utl_StringView_clone(utl_Arena* arena, const utl_StringView src) 
     return string;
 }
 
-utl_StringView utl_StringView_new_malloc(const size_t size)  {
-    const utl_StringView string = {
-        .size = size,
-        .data = malloc(size + 1),
-    };
-
-    string.data[size] = '\0';
-    return string;
-}
-
 bool utl_StringView_equals(const utl_StringView a, const utl_StringView b) {
     if(a.data == b.data) {
         return true;

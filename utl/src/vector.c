@@ -1,11 +1,13 @@
-#include "vector.h"
+
 
 #include <stdlib.h>
-
-#include "message.h"
-
 #include <string.h>
+
+#include "vector.h"
+#include "message.h"
 #include "builtins.h"
+#include "string_pool.h"
+#include "constants.h"
 
 utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initial_size) {
     utl_Arena arena = utl_Arena_new(4096);
@@ -18,7 +20,18 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initia
     return vector;
 }
 
+utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size_t index, const utl_FieldType check_type);
+
 void utl_Vector_free(utl_Vector* vector) {
+    if(vector->message_def->type == STRING || vector->message_def->type == BYTES) {
+        for(int i = 0; i < vector->size; i++) {
+            utl_StringView string = ((utl_StringView*)vector->data)[i];
+            if(!string.data)
+                continue;
+            utl_StringPool_free(string);
+        }
+    }
+
     free(vector->data);
     utl_Arena_free(&vector->arena);
 }
@@ -98,13 +111,9 @@ bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
                     return false;
                 break;
             }
-            case BYTES: {
-                if (!utl_StringView_equals(((utl_Bytes*)value_a)->value, ((utl_Bytes*)value_b)->value))
-                    return false;
-                break;
-            }
+            case BYTES:
             case STRING: {
-                if (!utl_StringView_equals(((utl_Bytes*)value_a)->value, ((utl_Bytes*)value_b)->value))
+                if (!utl_StringView_equals(*(utl_StringView*)value_a, *(utl_StringView*)value_b))
                     return false;
                 break;
             }
@@ -168,16 +177,14 @@ void utl_Vector_appendInt256(utl_Vector* vector, utl_Int256 value) {
 }
 
 void utl_Vector_setBytes_internal(utl_Vector* vector, const size_t index, const utl_StringView value) {
+    if(value.size > UTL_MAX_STRINT_LENGTH)
+        return;
+
     utl_Vector_resize(vector, false);
-    utl_Bytes* bytes = vector->data + vector->message_def->element_size * index;
+    utl_StringView* bytes = vector->data + vector->message_def->element_size * index;
 
-    if (value.size > bytes->max_size) {
-        bytes->value.data = utl_Arena_alloc(&vector->arena, value.size);
-        bytes->max_size = value.size;
-    }
-
-    bytes->value.size = value.size;
-    memcpy(bytes->value.data, value.data, value.size);
+    *bytes = utl_StringPool_realloc(*bytes, value.size);
+    memcpy(bytes->data, value.data, value.size);
 }
 
 void utl_Vector_appendBytes(utl_Vector* vector, utl_StringView value) {
@@ -274,18 +281,17 @@ utl_Int256 utl_Vector_getInt256(const utl_Vector* vector, const size_t index) {
     return result;
 }
 
-utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size_t index,
-                                            const utl_FieldType check_type) {
+utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size_t index, const utl_FieldType check_type) {
     const utl_StringView empty = {.size = 0, .data = NULL};
     if (vector->message_def->type != check_type || index >= vector->size)
         return empty;
 
-    const utl_Bytes* bytes = vector->data + vector->message_def->element_size * index;
+    const utl_StringView* bytes = vector->data + vector->message_def->element_size * index;
     if (bytes == NULL) {
         return empty;
     }
 
-    return bytes->value;
+    return *bytes;
 }
 
 utl_StringView utl_Vector_getBytes(const utl_Vector* vector, const size_t index) {

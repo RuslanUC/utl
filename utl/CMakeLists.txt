@@ -10,6 +10,7 @@ add_library(utl STATIC
         src/type_def.c
         src/message_def.c
         src/def_pool.c
+        src/string_pool.c
         src/message.c
         src/vector.c
         src/encoder.c
@@ -43,3 +44,10 @@ target_compile_definitions(test_encoding_decoding_exe PRIVATE UNITY_INCLUDE_DOUB
 target_compile_options(test_encoding_decoding_exe PRIVATE -fpermissive -fsanitize=address)
 target_link_options(test_encoding_decoding_exe PRIVATE -fsanitize=address)
 add_test(test_encoding_decoding test_encoding_decoding_exe)
+
+add_executable(test_string_pool_exe tests/test_string_pool.c)
+target_include_directories(test_string_pool_exe PRIVATE include)
+target_link_libraries(test_string_pool_exe PRIVATE utl unity::framework)
+#target_compile_options(test_encoding_decoding_exe PRIVATE -fpermissive -fsanitize=address)
+#target_link_options(test_encoding_decoding_exe PRIVATE -fsanitize=address)
+add_test(test_string_pool test_string_pool_exe)

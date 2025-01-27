@@ -19,10 +19,8 @@ typedef struct utl_MessageDef {
     utl_FieldDef* fields;
     uint8_t flags_num;
     utl_FieldDef** flags_fields;
-    // TODO: ?
-    /*uint8_t dynamic_num;
-    utl_FieldDef** dynamic_fields;
-    size_t static_size;*/
+    uint8_t strings_num;
+    utl_FieldDef** string_fields;
     size_t size;
 } utl_MessageDef;
 

@@ -6,6 +6,7 @@
 
 #include "encoder.h"
 #include "builtins.h"
+#include "string_pool.h"
 
 char* utl_DecodeBuf_read(utl_DecodeBuf* buf, const size_t n) {
     if(buf->pos >= buf->size)
@@ -83,8 +84,10 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Sta
         offset = 0;
     }
 
-    const utl_StringView result = utl_StringView_new(arena, count);
-    memcpy(result.data, utl_DecodeBuf_read(buffer, count), count);
+    const utl_StringView result = {
+        .size = count,
+        .data = utl_DecodeBuf_read(buffer, count),
+    };
 
     const uint32_t padding = (count + offset) % 4;
     if(padding) {

@@ -61,10 +61,10 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         *offset += 8;
     } else if(type_len == 5 && !memcmp(type_str, "bytes", 5)) {
         field_type = BYTES;
-        *offset += sizeof(utl_Bytes);
+        *offset += sizeof(utl_StringView);
     } else if(type_len == 6 && !memcmp(type_str, "string", 6)) {
         field_type = STRING;
-        *offset += sizeof(utl_Bytes);
+        *offset += sizeof(utl_StringView);
     } else if(type_len == 4 && !memcmp(type_str, "Bool", 4)) {
         field_type = FULL_BOOL;
         *offset += 1;
@@ -311,17 +311,31 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
 
         if(field->type == FLAGS)
             message_def->flags_num++;
+        else if(field->type == STRING || field->type == BYTES)
+            message_def->strings_num++;
     }
 
     message_def->size = offset;
 
-    if(message_def->flags_num) {
+    if(message_def->flags_num)
         message_def->flags_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->flags_num);
-        size_t flags_i = 0;
-        for(int i = 0; i < message_def->fields_num && flags_i < message_def->flags_num; i++) {
+    if(message_def->strings_num)
+        message_def->string_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->strings_num);
+
+    if(message_def->flags_num || message_def->strings_num) {
+        size_t field_i = 0;
+
+        for(int i = 0; i < message_def->fields_num && field_i < message_def->flags_num; i++) {
             if(message_def->fields[i].type != FLAGS)
                 continue;
-            message_def->flags_fields[flags_i++] = &message_def->fields[i];
+            message_def->flags_fields[field_i++] = &message_def->fields[i];
+        }
+
+        field_i = 0;
+        for(int i = 0; i < message_def->fields_num && field_i < message_def->strings_num; i++) {
+            if(message_def->fields[i].type != STRING && message_def->fields[i].type != BYTES)
+                continue;
+            message_def->string_fields[field_i++] = &message_def->fields[i];
         }
     }
 

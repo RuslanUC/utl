@@ -3,6 +3,7 @@
 #include "tlvector.h"
 #include "encoder.h"
 #include "decoder.h"
+#include "constants.h"
 
 static PyObject* Py_TLObject_getitem(const Py_TLObject* self, const utl_FieldDef* field) {
     switch (field->type) {
@@ -149,6 +150,10 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             if(PyBytes_AsStringAndSize(item, &buf, &len)) {
                 return false;
             }
+            if(len > UTL_MAX_STRINT_LENGTH) {
+                PyErr_SetString(PyExc_ValueError, "bytes object is too big");
+                return false;
+            }
             const utl_StringView bytes = {
                 .size = len,
                 .data = buf,
@@ -166,9 +171,13 @@ static bool Py_TLObject_setitem(const Py_TLObject* self, const utl_FieldDef* fie
             if(!buf) {
                 return false;
             }
+            if(len > UTL_MAX_STRINT_LENGTH) {
+                PyErr_SetString(PyExc_ValueError, "string is too big");
+                return false;
+            }
             const utl_StringView bytes = {
                 .size = len,
-                .data = buf,
+                .data = (char*)buf,
             };
             utl_Message_setString(self->message, field, bytes);
             break;
@@ -301,28 +310,26 @@ static int Py_TLObject_init(const Py_TLObject* self, PyObject* Py_UNUSED(args), 
             continue;
         }
 
-        PyObject* field_name = PyUnicode_FromStringAndSize(field.name.data, field.name.size);
-        PyObject* item = PyDict_GetItem(kwargs, field_name);
-        Py_DECREF(field_name);
+        PyObject* item = PyDict_GetItemString(kwargs, field.name.data);
 
         if(!item) {
             if(!field.flag_info) {
                 PyErr_SetString(PyExc_TypeError, "missing required keyword-only argument");
-                return 0;
+                return -1;
             }
             continue;
         }
         if(Py_IsNone(item)) {
             if(!field.flag_info) {
                 PyErr_SetString(PyExc_TypeError, "field is not optional");
-                return 0;
+                return -1;
             }
             utl_Message_clearField(self->message, &field);
             continue;
         }
 
         if(!Py_TLObject_setitem(self, &field, item)) {
-            return 0;
+            return -1;
         }
     }
 
