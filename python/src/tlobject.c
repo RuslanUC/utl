@@ -566,7 +566,7 @@ static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
 static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
     char* buf;
     size_t buf_len;
-    if (!PyArg_ParseTuple(args, "s#", &buf, &buf_len)) {
+    if (!PyArg_ParseTuple(args, "y#", &buf, &buf_len)) {
         return NULL;
     }
 

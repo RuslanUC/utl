@@ -12,6 +12,7 @@ add_library(utl STATIC
         src/def_pool.c
         src/string_pool.c
         src/message.c
+        src/message_ro.c
         src/vector.c
         src/encoder.c
         src/decoder.c

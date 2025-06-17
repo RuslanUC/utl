@@ -8,15 +8,15 @@
 #include "builtins.h"
 #include "string_pool.h"
 
-char* utl_DecodeBuf_read(utl_DecodeBuf* buf, const size_t n) {
+uint8_t* utl_DecodeBuf_read(utl_DecodeBuf* buf, const size_t n) {
     if(buf->pos >= buf->size)
         return NULL;
-    char* ptr = buf->data + buf->pos;
+    uint8_t* ptr = buf->data + buf->pos;
     buf->pos += n;
     return ptr;
 }
 
-bool check_not_eof(const utl_DecodeBuf* buf, utl_Status* status, const size_t need_bytes) {
+static bool check_not_eof(const utl_DecodeBuf* buf, utl_Status* status, const size_t need_bytes) {
     if(buf->size - buf->pos >= need_bytes)
         return true;
     if(status) {
@@ -26,8 +26,14 @@ bool check_not_eof(const utl_DecodeBuf* buf, utl_Status* status, const size_t ne
     return false;
 }
 
+uint8_t* utl_DecodeBuf_read_with_oef_check(utl_DecodeBuf* buf, const size_t n) {
+    if(!check_not_eof(buf, NULL, n))
+        return NULL;
+    return utl_DecodeBuf_read(buf, n);
+}
+
 void utl_decode_intX(char* value, utl_DecodeBuf* buffer, const uint8_t bytes_size) {
-    const char* buf = utl_DecodeBuf_read(buffer, bytes_size);
+    const uint8_t* buf = utl_DecodeBuf_read(buffer, bytes_size);
     memcpy(value, buf, bytes_size);
 }
 
@@ -44,12 +50,12 @@ int64_t utl_decode_int64(utl_DecodeBuf* buffer) {
 }
 
 void utl_decode_int128(char* out, utl_DecodeBuf* buffer) {
-    const char* buf = utl_DecodeBuf_read(buffer, 16);
+    const uint8_t* buf = utl_DecodeBuf_read(buffer, 16);
     memcpy(out, buf, 16);
 }
 
 void utl_decode_int256(char* out, utl_DecodeBuf* buffer) {
-    const char* buf = utl_DecodeBuf_read(buffer, 32);
+    const uint8_t* buf = utl_DecodeBuf_read(buffer, 32);
     memcpy(out, buf, 32);
 }
 
@@ -59,7 +65,7 @@ double utl_decode_double(utl_DecodeBuf* buffer) {
 }
 
 bool utl_decode_bool(utl_DecodeBuf* buffer) {
-    const char* buf = utl_DecodeBuf_read(buffer, 4);
+    const uint8_t* buf = utl_DecodeBuf_read(buffer, 4);
     return !memcmp(buf, BOOL_TRUE, 4);
 }
 
@@ -72,7 +78,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Sta
     if(!check_not_eof(buffer, status, 1)) {
         return emptyStringView;
     }
-    const char* buf = utl_DecodeBuf_read(buffer, 1);
+    const uint8_t* buf = utl_DecodeBuf_read(buffer, 1);
     uint32_t count = (uint8_t)buf[0];
     uint8_t offset = 1;
     if(count >= 254) {
@@ -86,7 +92,7 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Sta
 
     const utl_StringView result = {
         .size = count,
-        .data = utl_DecodeBuf_read(buffer, count),
+        .data = (char*)utl_DecodeBuf_read(buffer, count),
     };
 
     const uint32_t padding = (count + offset) % 4;
@@ -319,7 +325,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
     return true;
 }
 
-size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, char* buf, const size_t size, utl_Status* status) {
+size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, uint8_t* buf, const size_t size, utl_Status* status) {
     status->ok = true;
 
     utl_DecodeBuf buffer = {

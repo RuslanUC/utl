@@ -131,8 +131,6 @@ utl_StringView utl_StringPool_alloc(size_t size) {
         .data = string->data,
     };
 
-    //printf("allocating object %p on list with (new) head at %p\n", string, string->next);
-
     ret.data[size] = '\0';
     return ret;
 }
@@ -168,8 +166,6 @@ void utl_StringPool_free(utl_StringView string) {
             return;
         }
     }
-
-    //printf("freeing object %p on list with (old) head at %p\n", obj, free_list);
 
     obj->next = free_list;
 }
