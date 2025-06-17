@@ -5,7 +5,8 @@ from typing import Annotated
 import pytest
 
 print(f"\nPid: {os.getpid()}")
-input("Press enter to continue...")
+if os.environ.get("CMAKE_POST_BUILD_TEST") != "1":
+    input("Press enter to continue...")
 
 import pyutl
 

@@ -6,6 +6,7 @@
 #include "vector_ro.h"
 #include "builtins.h"
 
+// Read-only zero-copy version of utl_Message
 typedef struct utl_RoMessage {
     utl_MessageDef* message_def;
     utl_DefPool* def_pool;

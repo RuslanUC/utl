@@ -6,8 +6,6 @@ set(Python3_FIND_VIRTUALENV ONLY)
 
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
-message("${Python3_INCLUDE_DIR}")
-
 add_library(pyutl SHARED
         src/def_pool.c
         src/ptr_map.c
@@ -31,3 +29,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 else()
     target_compile_options(pyutl PUBLIC -fPIC -Os -s)
 endif()
+
+add_custom_command(
+        TARGET pyutl
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PROJECT_SOURCE_DIR} CMAKE_POST_BUILD_TEST=1 ${Python3_EXECUTABLE} -m pytest test_everything.py
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
