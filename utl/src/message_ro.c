@@ -1,5 +1,6 @@
 #include "message_ro.h"
 
+#include <encoder.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,203 +10,14 @@
 #include "string_pool.h"
 #include "def_pool.h"
 #include "decoder.h"
-#include "encoder.h"
-
-static bool utl_RoMessage_get_positions_message(utl_MessageDef* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, ssize_t* positions);
-static bool utl_RoMessage_get_positions_vector(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, size_t elements_count, ssize_t* positions);
-
-static bool skip_bytes(utl_DecodeBuf* buffer) {
-    const uint8_t* buf = utl_DecodeBuf_read_with_oef_check(buffer, 1);
-    if (!buf)
-        return false;
-
-    uint32_t count = (uint8_t)buf[0];
-    uint8_t offset = 1;
-    if (count >= 254) {
-        buf = utl_DecodeBuf_read_with_oef_check(buffer, 3);
-        if (!buf)
-            return false;
-        count = (uint8_t)buf[0] + ((uint8_t)buf[1] << 8) + ((uint8_t)buf[2] << 16);
-        offset = 0;
-    }
-
-    const uint32_t padding = (count + offset) % 4;
-    if (!utl_DecodeBuf_read_with_oef_check(buffer, count))
-        return false;
-    if (padding && !utl_DecodeBuf_read_with_oef_check(buffer, 4 - padding))
-        return false;
-
-    return false;
-}
-
-static bool skip_tlobject(utl_DecodeBuf* buffer, utl_DefPool* def_pool, utl_TypeDef* type) {
-    if (!utl_DecodeBuf_read_with_oef_check(buffer, 4))
-        return false;
-    buffer->pos -= 4;
-    const uint32_t tl_id = utl_decode_int32(buffer);
-    utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
-    if (!new_def)
-        return false;
-    if (type && new_def->type != type)
-        return false;
-    if(!utl_RoMessage_get_positions_message(new_def, def_pool, buffer, NULL))
-        return false;
-
-    return true;
-}
-
-static bool skip_vector(utl_DecodeBuf* buffer, utl_DefPool* def_pool, utl_MessageDefVector* vector_def) {
-    if (!utl_DecodeBuf_read_with_oef_check(buffer, 8))
-        return false;
-    buffer->pos -= 8;
-    if (utl_decode_int32(buffer) != VECTOR_CONSTR)
-        return false;
-    const size_t size = utl_decode_int32(buffer);
-    if (!utl_RoMessage_get_positions_vector(vector_def, def_pool, buffer, size, NULL))
-        return false;
-
-    return true;
-}
-
-static bool utl_RoMessage_get_positions_vector(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, size_t elements_count, ssize_t* positions) {
-    const size_t buffer_start = buffer->pos;
-
-    for(size_t i = 0; i < elements_count; i++) {
-        if(positions)
-            positions[i] = buffer->pos - buffer_start;
-
-        switch (def->type) {
-            case FLAGS:
-            case BIT_BOOL: {
-                break;
-            }
-
-            case INT32:
-            case FULL_BOOL: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 4))
-                    return false;
-                break;
-            }
-            case INT64:
-            case DOUBLE: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 8))
-                    return false;
-                break;
-            }
-            case INT128: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 16))
-                    return false;
-                break;
-            }
-            case INT256: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 32))
-                    return false;
-                break;
-            }
-            case BYTES:
-            case STRING: {
-                if(!skip_bytes(buffer))
-                    return false;
-                break;
-            }
-            case TLOBJECT: {
-                if(!skip_tlobject(buffer, def_pool, def->sub.type_def))
-                    return false;
-                break;
-            }
-            case VECTOR: {
-                if(!skip_vector(buffer, def_pool, def->sub.vector_def))
-                    return false;
-                break;
-            }
-        }
-    }
-
-    return true;
-}
-
-static bool utl_RoMessage_get_positions_message(utl_MessageDef* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, ssize_t* positions) {
-    const size_t buffer_start = buffer->pos;
-    uint32_t flags_fields[4] = {0};
-    size_t flags_num = 0;
-
-    for (int i = 0; i < def->fields_num; i++) {
-        const utl_FieldDef field = def->fields[i];
-
-        if (field.flag_info && field.type != FLAGS) {
-            const uint8_t flag_bit = field.flag_info & 0b11111;
-            const uint32_t flags = flags_fields[(field.flag_info >> 5) - 1];
-            const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
-            if (field.type == BIT_BOOL && positions != NULL)
-                positions[i] = -1;
-            if (!field_present) {
-                if (positions != NULL)
-                    positions[i] = -1;
-                continue;
-            }
-        }
-
-        if (positions != NULL)
-            positions[i] = buffer->pos - buffer_start;
-
-        switch (field.type) {
-            case FLAGS:
-            case INT32:
-            case FULL_BOOL: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 4))
-                    return false;
-                if (field.type == FLAGS) {
-                    buffer->pos -= 4;
-                    flags_fields[flags_num++] = utl_decode_int32(buffer);
-                }
-                break;
-            }
-            case INT64:
-            case DOUBLE: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 8))
-                    return false;
-                break;
-            }
-            case INT128: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 16))
-                    return false;
-                break;
-            }
-            case INT256: {
-                if (!utl_DecodeBuf_read_with_oef_check(buffer, 32))
-                    return false;
-                break;
-            }
-            case BIT_BOOL: {
-                break;
-            }
-            case BYTES:
-            case STRING: {
-                if(!skip_bytes(buffer))
-                    return false;
-                break;
-            }
-            case TLOBJECT: {
-                if(!skip_tlobject(buffer, def_pool, field.sub.type_def))
-                    return false;
-                break;
-            }
-            case VECTOR: {
-                if(!skip_vector(buffer, def_pool, field.sub.vector_def))
-                    return false;
-                break;
-            }
-        }
-    }
-
-    return true;
-}
+#include "ro.h"
 
 utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size) {
     utl_RoMessage* message = malloc(sizeof(utl_RoMessage) + sizeof(ssize_t) * message_def->fields_num);
     message->message_def = message_def;
     message->def_pool = def_pool;
     message->data = data;
+    message->size = size;
     message->field_positions = (ssize_t*)(message + 1);
 
     utl_DecodeBuf buffer = {
@@ -214,7 +26,7 @@ utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_p
         .size = size,
     };
 
-    if(!utl_RoMessage_get_positions_message(message_def, def_pool, &buffer, message->field_positions)) {
+    if(!utl_RoMessage_get_positions(message_def, def_pool, &buffer, message->field_positions)) {
         free(message);
         return false;
     }
@@ -238,63 +50,14 @@ bool utl_RoMessage_hasField(const utl_RoMessage* message, const utl_FieldDef* fi
 }
 
 bool utl_RoMessage_equals(const utl_RoMessage* a, const utl_RoMessage* b) {
-    if (a == b) {
+    if (a == b)
         return true;
-    }
-    if (a->message_def != b->message_def) {
+    if (a->message_def != b->message_def)
         return false;
-    }
+    if(a->size != b->size)
+        return false;
 
-    for (int i = 0; i < a->message_def->fields_num; i++) {
-        utl_FieldDef field = a->message_def->fields[i];
-        if (field.flag_info != 0 && field.type != FLAGS) {
-            const bool has_a = utl_RoMessage_hasField(a, &field);
-            const bool has_b = utl_RoMessage_hasField(a, &field);
-
-            if(has_a ^ has_b)
-                return false;
-        }
-
-        switch (field.type) {
-            case FLAGS:
-            case INT32:
-            case INT64:
-            case INT128:
-            case INT256:
-            case DOUBLE:
-            case FULL_BOOL: {
-                const size_t next_offset = (i == (a->message_def->fields_num - 1)) ? a->message_def->size : a->message_def->fields[i + 1].offset;
-                const size_t item_size = next_offset - field.offset;
-                const void* value_a = a->data + field.offset;
-                const void* value_b = b->data + field.offset;
-
-                if (memcmp(value_a, value_b, item_size))
-                    return false;
-                break;
-            }
-            case BIT_BOOL: {
-                break;
-            }
-            case BYTES:
-            case STRING: {
-                if (!utl_StringView_equals(*(utl_StringView*)(a->data + field.offset), *(utl_StringView*)(b->data + field.offset)))
-                    return false;
-                break;
-            }
-            case TLOBJECT: {
-                if (!utl_RoMessage_equals(utl_RoMessage_getMessage(a, &field), utl_RoMessage_getMessage(b, &field)))
-                    return false;
-                break;
-            }
-            case VECTOR: {
-                if (!utl_Vector_equals(utl_RoMessage_getVector(a, &field), utl_RoMessage_getVector(b, &field)))
-                    return false;
-                break;
-            }
-        }
-    }
-
-    return true;
+    return !memcmp(a->data, b->data, a->size);
 }
 
 int32_t utl_RoMessage_getInt32(const utl_RoMessage* message, const utl_FieldDef* field) {
@@ -361,7 +124,7 @@ bool utl_RoMessage_getBool(const utl_RoMessage* message, const utl_FieldDef* fie
         const ssize_t pos = message->field_positions[field->num];
         if(pos < 0)
             return 0;
-        return *(bool*)(message->data + pos);
+        return !memcmp(BOOL_TRUE, message->data + pos, 4);
     } else if (field->type == BIT_BOOL) {
         return utl_RoMessage_hasField(message, field);
     }
@@ -408,11 +171,10 @@ utl_RoMessage* utl_RoMessage_getMessage(const utl_RoMessage* message, const utl_
         return 0;
 
     size_t size;
-    if(field->num == message->message_def->fields_num - 1) {
+    if(field->num == message->message_def->fields_num - 1)
         size = message->size - pos;
-    } else {
+    else
         size = message->field_positions[field->num + 1] - pos;
-    }
 
     const uint32_t tl_id = *(uint32_t*)(message->data + pos);
     pos += 4;
@@ -421,14 +183,27 @@ utl_RoMessage* utl_RoMessage_getMessage(const utl_RoMessage* message, const utl_
     if (!new_def)
         return NULL;
 
-    return utl_RoMessage_new(new_def, message->def_pool, message->data + pos, size);
+    return utl_RoMessage_new(new_def, message->def_pool, message->data + pos, size - 4);
 }
 
-utl_Vector* utl_RoMessage_getVector(const utl_RoMessage* message, const utl_FieldDef* field) {
+utl_RoVector* utl_RoMessage_getVector(const utl_RoMessage* message, const utl_FieldDef* field) {
     if (field->type != VECTOR) {
         return 0;
     }
 
-    // TODO: read RoVector
-    return NULL;
+    ssize_t pos = message->field_positions[field->num];
+    if(pos < 0)
+        return 0;
+
+    size_t size;
+    if(field->num == message->message_def->fields_num - 1)
+        size = message->size - pos;
+    else
+        size = message->field_positions[field->num + 1] - pos;
+
+    pos += 4;
+    const uint32_t elements_count = *(uint32_t*)(message->data + pos);
+    pos += 4;
+
+    return utl_RoVector_new(field->sub.vector_def, message->def_pool, message->data + pos, size - 8, elements_count);
 }

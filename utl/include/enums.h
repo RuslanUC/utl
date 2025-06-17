@@ -14,6 +14,9 @@ typedef enum utl_FieldType {
     DOUBLE,
     FULL_BOOL,
     BIT_BOOL,
+
+    STATIC_FIELDS_END,
+
     BYTES,
     STRING,
     TLOBJECT,

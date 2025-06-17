@@ -26,6 +26,7 @@ utl_StaticMap* utl_Map_new_on_arena(const size_t buckets_num, utl_Arena* arena) 
 void utl_Map_free(utl_StaticMap* map) {
     if(map->arena_type == 0)
         utl_Arena_free(&map->arena.arena);
+    free(map);
 }
 
 utl_Arena* arena_ptr(utl_StaticMap* map) {

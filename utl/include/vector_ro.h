@@ -1,21 +1,25 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "message_def.h"
 #include "builtins.h"
+#include "def_pool.h"
 
 struct utl_RoMessage;
 
 typedef struct utl_RoVector {
-    utl_Arena arena;
     utl_MessageDefVector* message_def;
+    utl_DefPool* def_pool;
+    size_t elements_count;
+    size_t element_size;
     size_t size;
-    size_t capacity;
-    void* data;
+    uint8_t* data;
+    ssize_t* field_positions;
 } utl_RoVector;
 
-utl_RoVector* utl_RoVector_new(utl_MessageDefVector* vector_def, size_t initial_size);
+utl_RoVector* utl_RoVector_new(utl_MessageDefVector* message_def, utl_DefPool* def_pool, uint8_t* data, size_t size, size_t elements_count);
 void utl_RoVector_free(utl_RoVector* vector);
 size_t utl_RoVector_capacity(const utl_RoVector* vector);
 size_t utl_RoVector_size(const utl_RoVector* vector);
@@ -30,5 +34,5 @@ double utl_RoVector_getDouble(const utl_RoVector* vector, size_t index);
 bool utl_RoVector_getBool(const utl_RoVector* vector, size_t index);
 utl_StringView utl_RoVector_getBytes(const utl_RoVector* vector, size_t index);
 utl_StringView utl_RoVector_getString(const utl_RoVector* vector, size_t index);
-struct utl_Message* utl_RoVector_getMessage(const utl_RoVector* vector, size_t index);
+struct utl_RoMessage* utl_RoVector_getMessage(const utl_RoVector* vector, size_t index);
 utl_RoVector* utl_RoVector_getVector(const utl_RoVector* vector, size_t index);

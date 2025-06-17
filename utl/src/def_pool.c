@@ -14,6 +14,8 @@ utl_DefPool* utl_DefPool_new() {
 
 void utl_DefPool_free(utl_DefPool* pool) {
     utl_Arena_free(&pool->arena);
+    utl_Map_free(pool->message_defs);
+    utl_Map_free(pool->types);
     free(pool);
 }
 

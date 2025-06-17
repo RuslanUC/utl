@@ -14,7 +14,7 @@ typedef struct utl_RoMessage {
     ssize_t* field_positions;
 } utl_RoMessage;
 
-utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size);
+utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, size_t size);
 void utl_RoMessage_free(utl_RoMessage* message);
 
 bool utl_RoMessage_hasField(const utl_RoMessage* message, const utl_FieldDef* field);
