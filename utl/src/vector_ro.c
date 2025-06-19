@@ -198,7 +198,7 @@ utl_RoMessage* utl_RoVector_getMessage(const utl_RoVector* vector, const size_t 
     if (!new_def)
         return NULL;
 
-    return utl_RoMessage_new(new_def, vector->def_pool, vector->data + pos, size - 4);
+    return utl_RoMessage_new(new_def, vector->def_pool, vector->data + pos, size - 4, NULL);
 }
 
 utl_RoVector* utl_RoVector_getVector(const utl_RoVector* vector, const size_t index) {

@@ -12,7 +12,7 @@
 #include "decoder.h"
 #include "ro.h"
 
-utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size) {
+utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size, size_t* bytes_read) {
     utl_RoMessage* message = malloc(sizeof(utl_RoMessage) + sizeof(ssize_t) * message_def->fields_num);
     message->message_def = message_def;
     message->def_pool = def_pool;
@@ -30,6 +30,9 @@ utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_p
         free(message);
         return false;
     }
+
+    if(bytes_read)
+        *bytes_read = buffer.pos;
 
     return message;
 }
@@ -183,7 +186,7 @@ utl_RoMessage* utl_RoMessage_getMessage(const utl_RoMessage* message, const utl_
     if (!new_def)
         return NULL;
 
-    return utl_RoMessage_new(new_def, message->def_pool, message->data + pos, size - 4);
+    return utl_RoMessage_new(new_def, message->def_pool, message->data + pos, size - 4, NULL);
 }
 
 utl_RoVector* utl_RoMessage_getVector(const utl_RoMessage* message, const utl_FieldDef* field) {

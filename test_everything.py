@@ -1,6 +1,6 @@
 import os
 from io import BytesIO
-from typing import Annotated
+from typing import Annotated, cast
 
 import pytest
 
@@ -331,7 +331,7 @@ def test_creation_from_python_type_annotated_class() -> None:
 
     _check_obj(obj)
 
-    obj2 = pyutl.TLObject.read_bytes(obj.write())
+    obj2 = cast(Something, pyutl.TLObject.read_bytes(obj.write()))
     _check_obj(obj2)
     assert obj2 == obj
 

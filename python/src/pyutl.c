@@ -138,7 +138,6 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     }
     state->c_def_pool = ((Py_DefPool*)state->py_def_pool)->pool;
     state->messages_cache = utl_Map_new_on_arena(state->c_def_pool->message_defs->buckets_num, &state->c_def_pool->arena);
-    state->objects_cache = utl_PtrMap_new(128);
 
     return m;
 

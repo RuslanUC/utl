@@ -7,78 +7,152 @@
 #include "tlobject.h"
 #include "constants.h"
 
+static bool bitmap_bit_get(const uint64_t* bitmap, const size_t bitmap_size, const size_t bit_num) {
+    const size_t byte_num = bit_num / 64;
+    return (byte_num >= bitmap_size) ? 0 : bitmap[byte_num] & ((uint64_t)1 << (bit_num % 64));
+}
+
+static void bitmap_bit_set(uint64_t* bitmap, const size_t bitmap_size, const size_t bit_num) {
+    const size_t byte_num = bit_num / 64;
+    if(byte_num < bitmap_size)
+        bitmap[byte_num] |= (uint64_t)1 << (bit_num % 64);
+}
+
+static void bitmap_bit_clr(uint64_t* bitmap, const size_t bitmap_size, const size_t bit_num) {
+    const size_t byte_num = bit_num / 64;
+    if(byte_num < bitmap_size)
+        bitmap[byte_num] &= ~((uint64_t)1 << (bit_num % 64));
+}
+
+#define tlvector_is_readonly(OBJECT_PTR) (((OBJECT_PTR)->refs_bitmap[self->refs_bitmap_bytes - 1]) & ((uint64_t)1 << 63))
+
 static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index) {
+    if(self->out_refs[index] != NULL && bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, index)) {
+        PyObject* obj = self->out_refs[index];
+        Py_INCREF(obj);
+        return obj;
+    }
+
+    const bool vector_is_read_only = tlvector_is_readonly(self);
+    PyObject* result_obj = NULL;
+
     switch (self->vector->message_def->type) {
         case FLAGS:
         case INT32: {
-            return PyLong_FromLong(utl_Vector_getInt32(self->vector, index));
+            result_obj = PyLong_FromLong(
+                vector_is_read_only
+                    ? utl_RoVector_getInt32(self->ro_vector, index)
+                    : utl_Vector_getInt32(self->vector, index)
+            );
+            break;
         }
         case INT64: {
-            return PyLong_FromLong(utl_Vector_getInt64(self->vector, index));
+            result_obj = PyLong_FromLong(
+                vector_is_read_only
+                    ? utl_RoVector_getInt64(self->ro_vector, index)
+                    : utl_Vector_getInt64(self->vector, index)
+            );
+            break;
         }
         case INT128: {
-            const utl_Int128 value = utl_Vector_getInt128(self->vector, index);
-            return _PyLong_FromByteArray(value.value, 16, true, true);
+            const utl_Int128 value = vector_is_read_only
+                    ? utl_RoVector_getInt128(self->ro_vector, index)
+                    : utl_Vector_getInt128(self->vector, index);
+            result_obj = _PyLong_FromByteArray(value.value, 16, true, true);
+            break;
         }
         case INT256: {
-            const utl_Int256 value = utl_Vector_getInt256(self->vector, index);
-            return _PyLong_FromByteArray(value.value, 32, true, true);
+            const utl_Int256 value = vector_is_read_only
+                    ? utl_RoVector_getInt256(self->ro_vector, index)
+                    : utl_Vector_getInt256(self->vector, index);
+            result_obj = _PyLong_FromByteArray(value.value, 32, true, true);
+            break;
         }
         case DOUBLE: {
-            return PyFloat_FromDouble(utl_Vector_getDouble(self->vector, index));
+            result_obj = PyFloat_FromDouble(
+                vector_is_read_only
+                    ? utl_RoVector_getDouble(self->ro_vector, index)
+                    : utl_Vector_getDouble(self->vector, index)
+            );
+            break;
         }
         case FULL_BOOL:
         case BIT_BOOL: {
-            if(utl_Vector_getBool(self->vector, index))
+            const bool res = vector_is_read_only
+                                ? utl_RoVector_getBool(self->ro_vector, index)
+                                : utl_Vector_getBool(self->vector, index);
+            if(res)
                 Py_RETURN_TRUE;
             Py_RETURN_FALSE;
         }
         case BYTES: {
-            const utl_StringView bytes = utl_Vector_getBytes(self->vector, index);
-            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            const utl_StringView bytes = vector_is_read_only
+                    ? utl_RoVector_getBytes(self->ro_vector, index)
+                    : utl_Vector_getBytes(self->vector, index);
+            result_obj = PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            break;
         }
         case STRING: {
-            const utl_StringView bytes = utl_Vector_getString(self->vector, index);
-            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            const utl_StringView bytes = vector_is_read_only
+                    ? utl_RoVector_getString(self->ro_vector, index)
+                    : utl_Vector_getString(self->vector, index);
+            result_obj = PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            break;
         }
         case TLOBJECT: {
             const pyutl_ModuleState* state = pyutl_ModuleState_get();
-            utl_Message* message = utl_Vector_getMessage(self->vector, index);
+            void* message = vector_is_read_only
+                                ? (void*)utl_RoVector_getMessage(self->ro_vector, index)
+                                : (void*)utl_Vector_getMessage(self->vector, index);
+            utl_MessageDef* message_def = vector_is_read_only
+                                              ? ((utl_RoMessage*)message)->message_def
+                                              : ((utl_Message*)message)->message_def;
 
-            PyObject* obj = utl_PtrMap_search(state->objects_cache, message);
-            if(!obj) {
-                pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message->message_def);
-                if(!cached_def) {
-                    PyErr_SetString(PyExc_TypeError, "object type is not found");
-                    return NULL;
-                }
-
-                obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
-                Py_TLObject_init_message((Py_TLObject*)obj, NULL, message);
+            pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
+            if(!cached_def) {
+                PyErr_SetString(PyExc_TypeError, "object type is not found");
+                return NULL;
             }
 
-            Py_INCREF(obj);
-            return obj;
+            result_obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
+            if(vector_is_read_only) {
+                Py_TLObject_init_message_ro((Py_TLObject*)result_obj, message);
+                PyObject* bytes = self->out_refs[self->ro_vector->elements_count];
+                ((Py_TLObject*)result_obj)->out_refs[message_def->fields_num] = bytes;
+                Py_INCREF(bytes);
+            } else {
+                Py_TLObject_init_message((Py_TLObject*)result_obj, NULL, message);
+            }
+
+            break;
         }
         case VECTOR: {
             const pyutl_ModuleState* state = pyutl_ModuleState_get();
-            utl_Vector* vector = utl_Vector_getVector(self->vector, index);
+            void* vector = vector_is_read_only
+                                ? (void*)utl_RoVector_getVector(self->ro_vector, index)
+                                : (void*)utl_Vector_getVector(self->vector, index);
 
-            PyObject* obj = utl_PtrMap_search(state->objects_cache, vector);
-            if(!obj) {
-                pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)vector->message_def);
-                if(!cached_def) {
-                    PyErr_SetString(PyExc_TypeError, "object type is not found");
-                    return NULL;
-                }
-
-                obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
-                Py_TLVector_init_message((Py_TLVector*)obj, vector);
+            result_obj = state->tlvector_type->tp_alloc(state->tlvector_type, 0);
+            if(vector_is_read_only) {
+                Py_TLVector_init_message_ro((Py_TLVector*)result_obj, vector);
+                PyObject* bytes = self->out_refs[self->ro_vector->elements_count];
+                ((Py_TLObject*)result_obj)->out_refs[((utl_RoVector*)vector)->elements_count] = bytes;
+                Py_INCREF(bytes);
+            } else {
+                Py_TLVector_init_message((Py_TLVector*)result_obj, vector);
             }
 
-            Py_INCREF(obj);
-            return obj;
+            break;
         }
+
+        case STATIC_FIELDS_END: return NULL;
+    }
+
+    if(result_obj != NULL) {
+        Py_INCREF(result_obj);
+        self->out_refs[index] = result_obj;
+        bitmap_bit_set(self->refs_bitmap, self->refs_bitmap_bytes, index);
+        return result_obj;
     }
 
     Py_RETURN_NONE;
@@ -195,6 +269,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\" (TODO: show exact type)");
                 return false;
             }
+            // TODO: check if message is read-only
 
             index >= 0 ? utl_Vector_setMessage(vector, index, message) : utl_Vector_appendMessage(vector, message);
             Py_INCREF(item);
@@ -217,59 +292,68 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
             }
 
             index >= 0 ? utl_Vector_setVector(vector, index, new_vector) : utl_Vector_appendVector(vector, new_vector);
+
             return true;
         }
+
+        case STATIC_FIELDS_END: return false;
     }
 
     return false;
 }
 
-void Py_TLVector_dealloc_recursive(utl_Vector* vector) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+static void Py_TLVector_dealloc(Py_TLVector* self) {
+    const bool vector_is_read_only = tlvector_is_readonly(self);
+    const utl_MessageDefVector* def = vector_is_read_only ? self->ro_vector->message_def : self->vector->message_def;
+    const size_t fields_count = vector_is_read_only ? self->ro_vector->elements_count : self->vector->size;
 
-    const utl_FieldType type = vector->message_def->type;
-    if(type != TLOBJECT && type != VECTOR) {
-        goto vec_free;
+    if(vector_is_read_only) {
+        for (size_t i = 0; i < fields_count + 1; ++i) {
+            if(self->out_refs[i] != NULL)
+                Py_DECREF(self->out_refs[i]);
+        }
+        utl_RoVector_free(self->ro_vector);
+    } else {
+        for (size_t i = 0; i < fields_count; ++i) {
+            if(self->out_refs[i] == NULL)
+                continue;
+            if(bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, i))
+                Py_DECREF(self->out_refs[i]);
+            else if(def->type == TLOBJECT)
+                utl_Message_free(self->out_refs[i]);
+            else if(def->type == VECTOR)
+                utl_Vector_free(self->out_refs[i]);
+        }
+        utl_Vector_free(self->vector);
     }
 
-    const size_t size = utl_Vector_size(vector);
-    for(size_t i = 0; i < size; i++) {
-        void* element = type == TLOBJECT ? (void*)utl_Vector_getMessage(vector, i) : (void*)utl_Vector_getVector(vector, i);
-        if(!element) {
-            continue;
-        }
-
-        PyObject* obj = utl_PtrMap_search(state->objects_cache, element);
-        if(obj) {
-            Py_DECREF(obj);
-        } else {
-            if(type == TLOBJECT) {
-                Py_TLObject_dealloc_recursive(element);
-            } else if(type == VECTOR) {
-                Py_TLVector_dealloc_recursive(element);
-            }
-        }
-
-        type == TLOBJECT ? utl_Vector_setMessage(vector, i, NULL) : utl_Vector_setVector(vector, i, NULL);
-    }
-
-vec_free:
-    utl_Vector_free(vector);
-}
-
-static void Py_TLVector_dealloc(PyObject* self) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    utl_PtrMap_remove(state->objects_cache, ((Py_TLVector*)self)->vector);
-
-    Py_TLVector_dealloc_recursive(((Py_TLVector*)self)->vector);
-    self->ob_type->tp_free(self);
+    free(self->out_refs);
+    free(self->refs_bitmap);
+    ((PyObject*)self)->ob_type->tp_free(self);
 }
 
 void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
     self->vector = vector;
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    utl_PtrMap_insert(state->objects_cache, self->vector, self);
+    const size_t vec_size = utl_Vector_size(vector);
+    const size_t out_refs_bytes = sizeof(void*) * vec_size;
+    self->out_refs = malloc(out_refs_bytes);
+    self->refs_bitmap = malloc((vec_size + 7) / 8);
+    self->refs_bitmap_bytes = (vec_size + 7) / 8;
+    memset(self->out_refs, 0, out_refs_bytes);
+    memset(self->refs_bitmap, 0, sizeof(self->refs_bitmap));
+}
+
+void Py_TLVector_init_message_ro(Py_TLVector* self, utl_RoVector* vector) {
+    self->ro_vector = vector;
+
+    const size_t vec_size = utl_RoVector_size(vector);
+    const size_t out_refs_bytes = sizeof(void*) * (utl_RoVector_size(vector) + 1);
+    self->out_refs = malloc(out_refs_bytes);
+    self->refs_bitmap = malloc(vec_size / 8 + 1);
+    self->refs_bitmap_bytes = vec_size / 8 + 1;
+    memset(self->out_refs, 0, out_refs_bytes);
+    memset(self->refs_bitmap, 0xff, sizeof(self->refs_bitmap));
 }
 
 static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUSED(args), PyObject* Py_UNUSED(kwargs)) {
@@ -279,7 +363,8 @@ static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUS
 }
 
 static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t index) {
-    if(index >= utl_Vector_size(self->vector)) {
+    const size_t vector_size = tlvector_is_readonly(self) ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+    if(index >= vector_size) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
         return NULL;
     }
@@ -287,28 +372,73 @@ static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t inde
     return Py_TLVector_getitem(self, index);
 }
 
+static void Py_TLVector_remove_at_index(const Py_TLVector* self, const size_t index) {
+    PyObject* old_ref = self->out_refs[index];
+    const bool old_bit = bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, index);
+
+    utl_Vector_remove(self->vector, index);
+
+    if(old_bit)
+        Py_XDECREF(old_ref);
+    else if (self->vector->message_def->type == TLOBJECT)
+        utl_Message_free((utl_Message*)old_ref);
+    else if(self->vector->message_def->type == VECTOR)
+        utl_Vector_free((utl_Vector*)old_ref);
+
+    const size_t new_size = utl_Vector_size(self->vector);
+    memcpy(self->out_refs + index, self->out_refs + index + 1, (new_size - index) * sizeof(void*));
+    for(size_t bit_num = index + 1; bit_num < new_size; ++bit_num)
+        if(bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, bit_num))
+            bitmap_bit_set(self->refs_bitmap, self->refs_bitmap_bytes, bit_num - 1);
+        else
+            bitmap_bit_clr(self->refs_bitmap, self->refs_bitmap_bytes, bit_num - 1);
+}
+
 static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index, PyObject* value) {
-    if(value == NULL) {
-        // TODO: dealloc/decref value
-        utl_Vector_remove(self->vector, index);
-        return 0;
+    if(tlvector_is_readonly(self)) {
+        PyErr_SetString(PyExc_AttributeError, "Vector is read-only");
+        return -1;
     }
 
-    if(index >= utl_Vector_size(self->vector)) {
+    if(index >= utl_Vector_size(self->vector) || (index < 0 && value == NULL)) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
         return -1;
     }
 
-    // TODO: dealloc/decref old value
+    PyObject* old_ref = self->out_refs[index];
+    const bool old_bit = bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, index);
+
+    if(value == NULL) {
+        Py_TLVector_remove_at_index(self, index);
+        return 0;
+    }
+
     if(!Py_TLVector_item_set(self->vector, value, index)) {
         return -1;
+    }
+
+    if(old_ref != NULL) {
+        if(old_bit)
+            Py_XDECREF(old_ref);
+        else if (self->vector->message_def->type == TLOBJECT)
+            utl_Message_free((utl_Message*)old_ref);
+        else if(self->vector->message_def->type == VECTOR)
+            utl_Vector_free((utl_Vector*)old_ref);
+    }
+
+    if(value != Py_True && value != Py_False && self->vector->message_def->type != VECTOR) {
+        self->out_refs[index] = value;
+        bitmap_bit_set(self->refs_bitmap, self->refs_bitmap_bytes, index);
+        Py_INCREF(value);
     }
 
     return 0;
 }
 
 static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
-    const size_t alloc_size = utl_Vector_size(self->vector) * 8;
+    const size_t size = tlvector_is_readonly(self) ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+    const size_t alloc_size = size * 8;
+
     utl_EncodeBuf repr_buf = {
         .data = malloc(alloc_size),
         .pos = 0,
@@ -318,7 +448,7 @@ static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
     char* tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = '[';
 
-    const size_t size = utl_Vector_size(self->vector);
+
     for(size_t i = 0; i < size; i++) {
         PyObject* value = Py_TLVector_getitem(self, i);
 
@@ -375,17 +505,32 @@ static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, 
     }
 
     const Py_TLVector* other = (Py_TLVector*)other_;
-    bool eq = utl_Vector_equals(self->vector, other->vector);
-    if(op == Py_NE) {
+    const bool this_ro = tlvector_is_readonly(self);
+    const bool other_ro = tlvector_is_readonly(other);
+
+    bool eq;
+    if (this_ro != other_ro)
+        eq = false;
+    else
+        eq = this_ro
+                 ? utl_RoVector_equals(self->ro_vector, other->ro_vector)
+                 : utl_Vector_equals(self->vector, other->vector);
+
+    if(op == Py_NE)
         eq = !eq;
-    }
 
     if(eq)
         Py_RETURN_TRUE;
     Py_RETURN_FALSE;
 }
 
-static PyObject* Py_TLVector_append(const Py_TLVector* self, PyObject* args) {
+static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
+    const bool readonly = tlvector_is_readonly(self);
+    if(readonly) {
+        PyErr_SetString(PyExc_AttributeError, "Vector is read-only");
+        return NULL;
+    }
+
     PyObject* obj;
     if (!PyArg_ParseTuple(args, "O", &obj)) {
         return NULL;
@@ -395,23 +540,32 @@ static PyObject* Py_TLVector_append(const Py_TLVector* self, PyObject* args) {
         return NULL;
     }
 
-    Py_RETURN_NONE;
-}
+    if(obj != Py_True && obj != Py_False && self->vector->message_def->type != VECTOR) {
+        const size_t size = utl_Vector_size(self->vector);
+        const size_t index = size - 1;
+        const size_t refs_capacity = (size / 128 + 2) * 128;
 
-static PyObject* Py_TLVector_remove(const Py_TLVector* self, PyObject* args) {
-    uint32_t index;
-    if (!PyArg_ParseTuple(args, "I", &index)) {
-        return NULL;
+        self->out_refs = realloc(self->out_refs, refs_capacity * sizeof(void*));
+        self->refs_bitmap = realloc(self->refs_bitmap, refs_capacity / 8);
+        self->refs_bitmap_bytes = refs_capacity / 8;
+
+        self->out_refs[index] = obj;
+        bitmap_bit_set(self->refs_bitmap, self->refs_bitmap_bytes, index);
+
+        // TODO: only set refs to zeros if capacity is changed
+        for(size_t i = index + 1; i < refs_capacity; ++i) {
+            self->out_refs[i] = NULL;
+            bitmap_bit_clr(self->refs_bitmap, self->refs_bitmap_bytes, i);
+        }
+
+        Py_INCREF(obj);
     }
 
-    // TODO: dealloc/decref value
-    utl_Vector_remove(self->vector, index);
     Py_RETURN_NONE;
 }
 
 static PyMethodDef Py_TLVector_methods[] = {
     {"append", (PyCFunction)Py_TLVector_append, METH_VARARGS, 0,},
-    {"remove", (PyCFunction)Py_TLVector_remove, METH_VARARGS, 0,},
     {NULL}
 };
 
