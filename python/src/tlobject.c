@@ -329,6 +329,11 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
 }
 
 static void Py_TLObject_dealloc(Py_TLObject* self) {
+    if(self->message == NULL) {
+        ((PyObject*)self)->ob_type->tp_free(self);
+        return;
+    }
+
     const bool object_is_read_only = tlobject_is_readonly(self);
     const utl_MessageDef* def = object_is_read_only ? self->ro_message->message_def : self->message->message_def;
     const size_t fields_count = def->fields_num;
@@ -704,15 +709,15 @@ static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
 static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
     uint8_t* buf;
     size_t buf_len;
-    bool read_only = false;
+    int read_only = 0;
     if (!PyArg_ParseTuple(args, "y#|p", &buf, &buf_len, &read_only)) {
         return NULL;
     }
 
     PyObject* result = Py_TLObject_read(cls, buf, buf_len, NULL, read_only);
-    if(read_only) {
+    if(result && read_only) {
         PyObject* bytes;
-        if (!PyArg_ParseTuple(args, "O!|p", PyBytes_Type, &bytes)) {
+        if (!PyArg_ParseTuple(args, "O!|p", &PyBytes_Type, &bytes, &read_only)) {
             return NULL;
         }
 

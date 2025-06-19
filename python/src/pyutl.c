@@ -58,7 +58,58 @@ pyutl_ModuleState* pyutl_ModuleState_get() {
     return PyModule_GetState(module);
 }
 
+#if !defined(NDEBUG) && defined(__linux__)
+#define GDB_CHECK_AVAILABLE
+
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+
+// https://stackoverflow.com/a/3599394
+int gdb_check() {
+    const int pid = fork();
+    int status;
+    int res;
+
+    if (pid == -1) {
+        perror("fork");
+        return -1;
+    }
+
+    if (pid == 0) {
+        const int ppid = getppid();
+
+        if (ptrace(PTRACE_ATTACH, ppid, NULL, NULL) == 0) {
+            waitpid(ppid, NULL, 0);
+            ptrace(PTRACE_CONT, NULL, NULL);
+
+            ptrace(PTRACE_DETACH, getppid(), NULL, NULL);
+
+            res = 0;
+        } else {
+            res = 1;
+        }
+        exit(res);
+    } else {
+        waitpid(pid, &status, 0);
+        res = WEXITSTATUS(status);
+    }
+
+    return res;
+}
+#endif
+
 PyMODINIT_FUNC PyInit__pyutl(void) {
+#ifdef GDB_CHECK_AVAILABLE
+    {
+        const char* wait_for_debugger = getenv("WAIT_FOR_DEBUGGER");
+        if(wait_for_debugger != NULL && !strcmp(wait_for_debugger, "true")) {
+            printf("Waiting for debugger...\n");
+            while(!gdb_check())
+                sleep(1);
+        }
+    }
+#endif
+
     PyObject* pyutl_DefPoolType = NULL;
     PyObject* pyutl_TLObjectType = NULL;
     PyObject* pyutl_TLVectorType = NULL;
@@ -138,6 +189,17 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     }
     state->c_def_pool = ((Py_DefPool*)state->py_def_pool)->pool;
     state->messages_cache = utl_Map_new_on_arena(state->c_def_pool->message_defs->buckets_num, &state->c_def_pool->arena);
+
+#ifdef GDB_CHECK_AVAILABLE
+    {
+        const char* wait_for_debugger = getenv("WAIT_FOR_DEBUGGER");
+        if(wait_for_debugger != NULL && !strcmp(wait_for_debugger, "true")) {
+            printf("Waiting for debugger...\n");
+            while(!gdb_check())
+                sleep(1);
+        }
+    }
+#endif
 
     return m;
 
