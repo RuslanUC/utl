@@ -3,7 +3,6 @@
 #include <Python.h>
 #include "def_pool.h"
 #include "message_def.h"
-#include "ptr_map.h"
 
 typedef struct pyutl_MessageDef {
     PyTypeObject* python_cls;

@@ -8,7 +8,6 @@ find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
 add_library(pyutl SHARED
         src/def_pool.c
-        src/ptr_map.c
         src/tltype.c
         src/tlobject.c
         src/tlvector.c
