@@ -733,11 +733,10 @@ static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(
     PyObject* result;
 
     if(tlobject_is_readonly(self)) {
-        uint8_t* data = malloc(self->ro_message->size + 4);
-        memcpy(data, &self->ro_message->message_def->id, 4);
-        memcpy(data + 4, self->ro_message->data, self->ro_message->size);
-        result = PyBytes_FromStringAndSize((char*)data, self->ro_message->size + 4);
-        free(data);
+        result = PyBytes_FromStringAndSize(NULL, self->ro_message->size + 4);
+        char* result_buf = PyBytes_AsString(result);
+        memcpy(result_buf, &self->ro_message->message_def->id, 4);
+        memcpy(result_buf + 4, self->ro_message->data, self->ro_message->size);
     } else {
         size_t written_bytes;
         char* bytes = utl_encode(self->message, &written_bytes);
