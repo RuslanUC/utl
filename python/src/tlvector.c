@@ -127,12 +127,11 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
             break;
         }
         case VECTOR: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             void* vector = vector_is_read_only
                                 ? (void*)utl_RoVector_getVector(self->ro_vector, index)
                                 : (void*)utl_Vector_getVector(self->vector, index);
 
-            result_obj = state->tlvector_type->tp_alloc(state->tlvector_type, 0);
+            result_obj = tlvector_type->tp_alloc(tlvector_type, 0);
             if(vector_is_read_only) {
                 Py_TLVector_init_message_ro((Py_TLVector*)result_obj, vector);
                 PyObject* bytes = self->out_refs[self->ro_vector->elements_count];
@@ -259,8 +258,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
             return true;
         }
         case TLOBJECT: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
-            if(!PyObject_TypeCheck(item, state->tlobject_type)) {
+            if(!PyObject_TypeCheck(item, tlobject_type)) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
                 return false;
             }
@@ -499,8 +497,7 @@ static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, 
         return Py_NotImplemented;
     }
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    if(!PyObject_TypeCheck(other_, state->tlvector_type)) {
+    if(!PyObject_TypeCheck(other_, tlvector_type)) {
         return Py_False;
     }
 

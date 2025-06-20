@@ -29,7 +29,7 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
     memcpy(name + 7, type_def->name.data, type_def->name.size);
 
     PyType_Slot slots[] = {
-        {Py_tp_base, state->tltype_type},
+        {Py_tp_base, tltype_type},
         {0, NULL}
     };
 
@@ -59,7 +59,7 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
 
     Py_DECREF(typedef_capsule);
 
-    cached_def = utl_Arena_alloc(&state->c_def_pool->arena, sizeof(pyutl_MessageDef));
+    cached_def = utl_Arena_alloc(&c_def_pool->arena, sizeof(pyutl_MessageDef));
     cached_def->python_cls = (PyTypeObject*)new_type;
     cached_def->fields = NULL;
     utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);

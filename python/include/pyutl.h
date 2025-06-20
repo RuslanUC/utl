@@ -11,17 +11,17 @@ typedef struct pyutl_MessageDef {
 } pyutl_MessageDef;
 
 typedef struct pyutl_ModuleState {
-    PyTypeObject* def_pool_type;
-    PyTypeObject* tlobject_type;
-    PyTypeObject* tlvector_type;
-    PyTypeObject* tltype_type;
-    PyObject* bytesio_type;
-    utl_DefPool* c_def_pool;
-    PyObject* py_def_pool;
-
     utl_StaticMap* messages_cache;
 } pyutl_ModuleState;
 
 PyMODINIT_FUNC PyInit__pyutl(void);
 
 pyutl_ModuleState* pyutl_ModuleState_get();
+
+extern PyTypeObject* def_pool_type;
+extern PyTypeObject* tlobject_type;
+extern PyTypeObject* tlvector_type;
+extern PyTypeObject* tltype_type;
+extern PyObject* bytesio_type;
+extern utl_DefPool* c_def_pool;
+extern PyObject* py_def_pool;

@@ -4,34 +4,36 @@
 #include "tlvector.h"
 #include "tltype.h"
 
+PyTypeObject* def_pool_type;
+PyTypeObject* tlobject_type;
+PyTypeObject* tlvector_type;
+PyTypeObject* tltype_type;
+PyObject* bytesio_type;
+utl_DefPool* c_def_pool;
+PyObject* py_def_pool;
+
 PyObject* pyutl_parse_tl(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_parse((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_parse((const Py_DefPool*)py_def_pool, args);
 }
 
 PyObject* pyutl_has_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_has_type((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_has_type((const Py_DefPool*)py_def_pool, args);
 }
 
 PyObject* pyutl_get_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_get_type((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_get_type((const Py_DefPool*)py_def_pool, args);
 }
 
 PyObject* pyutl_create_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_create_type((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_create_type((const Py_DefPool*)py_def_pool, args);
 }
 
 PyObject* pyutl_has_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_has_constructor((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_has_constructor((const Py_DefPool*)py_def_pool, args);
 }
 
 PyObject* pyutl_get_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    return Py_DefPool_get_constructor((const Py_DefPool*)state->py_def_pool, args);
+    return Py_DefPool_get_constructor((const Py_DefPool*)py_def_pool, args);
 }
 
 PyMethodDef method_table[] = {
@@ -125,7 +127,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     }
 
     pyutl_ModuleState* state = PyModule_GetState(m);
-    state->bytesio_type = NULL;
+    bytesio_type = NULL;
 
     pyutl_DefPoolType = PyType_FromSpec(&pyutl_DefPoolType_spec);
     if(!pyutl_DefPoolType) {
@@ -158,8 +160,8 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     if(!io) {
         goto failed;
     }
-    state->bytesio_type = PyObject_GetAttrString(io, "BytesIO");
-    if(!state->bytesio_type) {
+    bytesio_type = PyObject_GetAttrString(io, "BytesIO");
+    if(!bytesio_type) {
         goto failed;
     }
 
@@ -179,16 +181,16 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     Py_XDECREF(seq);
     Py_XDECREF(seq_ret);
 
-    state->def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
-    state->tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
-    state->tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
-    state->tltype_type = (PyTypeObject*)pyutl_TLTypeType;
-    state->py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
-    if(!state->py_def_pool || PyModule_AddObject(m, "def_pool", state->py_def_pool)) {
+    def_pool_type = (PyTypeObject*)pyutl_DefPoolType;
+    tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
+    tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
+    tltype_type = (PyTypeObject*)pyutl_TLTypeType;
+    py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
+    if(!py_def_pool || PyModule_AddObject(m, "def_pool", py_def_pool)) {
         goto failed;
     }
-    state->c_def_pool = ((Py_DefPool*)state->py_def_pool)->pool;
-    state->messages_cache = utl_Map_new_on_arena(state->c_def_pool->message_defs->buckets_num, &state->c_def_pool->arena);
+    c_def_pool = ((Py_DefPool*)py_def_pool)->pool;
+    state->messages_cache = utl_Map_new_on_arena(c_def_pool->message_defs->buckets_num, &c_def_pool->arena);
 
 #ifdef GDB_CHECK_AVAILABLE
     {
@@ -204,7 +206,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     return m;
 
 failed:
-    Py_XDECREF(state->bytesio_type);
+    Py_XDECREF(bytesio_type);
     Py_XDECREF(io);
     Py_XDECREF(collections);
     Py_XDECREF(seq);

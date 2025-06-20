@@ -126,12 +126,11 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
             break;
         }
         case VECTOR: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             void* vector = object_is_read_only
                                 ? (void*)utl_RoMessage_getVector(self->ro_message, field)
                                 : (void*)utl_Message_getVector(self->message, field);
 
-            result_obj = state->tlvector_type->tp_alloc(state->tlvector_type, 0);
+            result_obj = tlvector_type->tp_alloc(tlvector_type, 0);
             if(object_is_read_only) {
                 Py_TLVector_init_message_ro((Py_TLVector*)result_obj, vector);
                 PyObject* bytes = self->out_refs[self->ro_message->message_def->fields_num];
@@ -264,8 +263,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             break;
         }
         case TLOBJECT: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
-            if(!PyObject_TypeCheck(item, state->tlobject_type)) {
+            if(!PyObject_TypeCheck(item, tlobject_type)) {
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
                 return false;
             }
@@ -573,9 +571,7 @@ static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, 
         return Py_NotImplemented;
     }
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    // TODO: replace with `self->ob_base.ob_type`?
-    if(!PyObject_TypeCheck(other_, state->tlobject_type)) {
+    if(!PyObject_TypeCheck(other_, tlobject_type)) {
         return Py_False;
     }
 
@@ -614,7 +610,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             .size = 4,
         };
         const uint32_t tl_id = utl_decode_int32(&dbuf);
-        utl_MessageDef* def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
+        utl_MessageDef* def = utl_DefPool_getMessage(c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
             return NULL;
@@ -640,7 +636,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         utl_MessageDef* def = PyCapsule_GetPointer(def_capsule, NULL);
 
         Py_TLObject* obj = (Py_TLObject*)cls->tp_alloc(cls, 0);
-        obj->ro_message = utl_RoMessage_new(def, state->c_def_pool, buf, buf_len, bytes_read);
+        obj->ro_message = utl_RoMessage_new(def, c_def_pool, buf, buf_len, bytes_read);
         if(!obj->ro_message) {
             Py_DECREF(obj);
             PyErr_SetString(PyExc_TypeError, "Failed to read object (TODO: exact error)"); // TODO
@@ -657,7 +653,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
 
         utl_Status status;
-        const size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
+        const size_t read = utl_decode(obj->message, c_def_pool, buf, buf_len, &status);
         if(!status.ok) {
             PyErr_SetString(PyExc_ValueError, status.message);
             return NULL;
@@ -671,11 +667,9 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 }
 
 static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-
     PyObject* bio;
     bool read_only = false;
-    if (!PyArg_ParseTuple(args, "O!|p", state->bytesio_type, &bio, &read_only)) {
+    if (!PyArg_ParseTuple(args, "O!|p", bytesio_type, &bio, &read_only)) {
         return NULL;
     }
 
@@ -776,8 +770,6 @@ PyType_Spec pyutl_TLObjectType_spec = {
 };
 
 PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-
     const size_t alloc_size = 7 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size;
     char* name = malloc(alloc_size + 1);
     name[alloc_size] = '\0';
@@ -787,7 +779,7 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
     memcpy(name + 7 + message_def->namespace_.size, message_def->name.data, message_def->name.size);
 
     PyType_Slot slots[] = {
-        {Py_tp_base, state->tlobject_type},
+        {Py_tp_base, tlobject_type},
         {Py_tp_new, Py_TLObject_new},
         {0, NULL}
     };
