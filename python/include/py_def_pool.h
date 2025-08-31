@@ -9,6 +9,7 @@ typedef struct Py_DefPool {
     utl_DefPool* pool;
 } Py_DefPool;
 
+pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* message_def);
 PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args);
 PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args);
 PyObject* Py_DefPool_has_constructor(const Py_DefPool* self, PyObject* args);

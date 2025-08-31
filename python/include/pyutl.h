@@ -5,13 +5,19 @@
 
 typedef struct pyutl_MessageDef {
     PyTypeObject* python_cls;
-    // TODO: store attrs in sorted string array where each string index corresponds to `message_def->fields` index
-    //  instead of storing fields inside map entry
-    utl_StaticMap* fields;
+
+    char* field_names_buf;
+    char** field_names;
+    uint8_t* field_nums;
 } pyutl_MessageDef;
 
+typedef struct {
+    intptr_t key;
+    pyutl_MessageDef* value;
+} PyMessageDefPair;
+
 typedef struct pyutl_ModuleState {
-    utl_StaticMap* messages_cache;
+    PyMessageDefPair* messages_cache;
 } pyutl_ModuleState;
 
 PyMODINIT_FUNC PyInit__pyutl(void);
@@ -25,3 +31,5 @@ extern PyTypeObject* tltype_type;
 extern PyObject* bytesio_type;
 extern utl_DefPool* c_def_pool;
 extern PyObject* py_def_pool;
+
+int binary_search_str(char** arr, int arr_length, const char* key, int key_length);

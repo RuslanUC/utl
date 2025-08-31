@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-#include "string_view.h"
-
 typedef struct utl_Int128 {
     char value[16];
 } utl_Int128;

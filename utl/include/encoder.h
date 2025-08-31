@@ -12,5 +12,5 @@ typedef struct utl_EncodeBuf {
     size_t size;
 } utl_EncodeBuf;
 
-char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes);
+char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, size_t n_bytes);
 char* utl_encode(const utl_Message* message, size_t* out_size);

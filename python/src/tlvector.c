@@ -6,6 +6,7 @@
 
 #include "tlobject.h"
 #include "constants.h"
+#include "py_def_pool.h"
 
 static bool bitmap_bit_get(const uint64_t* bitmap, const size_t bitmap_size, const size_t bit_num) {
     const size_t byte_num = bit_num / 64;
@@ -100,7 +101,6 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
             break;
         }
         case TLOBJECT: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             void* message = vector_is_read_only
                                 ? (void*)utl_RoVector_getMessage(self->ro_vector, index)
                                 : (void*)utl_Vector_getMessage(self->vector, index);
@@ -108,11 +108,9 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
                                               ? ((utl_RoMessage*)message)->message_def
                                               : ((utl_Message*)message)->message_def;
 
-            pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
-            if(!cached_def) {
-                PyErr_SetString(PyExc_TypeError, "object type is not found");
+            pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(message_def);
+            if(!cached_def)
                 return NULL;
-            }
 
             result_obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
             if(vector_is_read_only) {

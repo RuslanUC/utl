@@ -4,7 +4,6 @@ add_library(utl STATIC
         src/arena.c
         src/status.c
         src/map_list.c
-        src/static_map.c
         src/string_view.c
         src/field_def.c
         src/type_def.c

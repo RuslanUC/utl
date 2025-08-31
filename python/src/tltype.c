@@ -1,3 +1,4 @@
+#include "stb_ds.h"
 #include "pyutl.h"
 #include "tltype.h"
 
@@ -15,12 +16,11 @@ PyType_Spec pyutl_TLTypeType_spec = {
 };
 
 PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
 
-    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)type_def);
-    if(cached_def) {
-        return (PyObject*)cached_def->python_cls;
-    }
+    const ptrdiff_t cached_def_idx = hmgeti(state->messages_cache, (intptr_t)type_def);
+    if(cached_def_idx >= 0)
+        return (PyObject*)state->messages_cache[cached_def_idx].value->python_cls;
 
     const size_t alloc_size = 7 + type_def->name.size;
     char* name = malloc(alloc_size + 1);
@@ -59,10 +59,12 @@ PyObject* Py_TLType_createType(utl_TypeDef* type_def) {
 
     Py_DECREF(typedef_capsule);
 
-    cached_def = utl_Arena_alloc(&c_def_pool->arena, sizeof(pyutl_MessageDef));
+    pyutl_MessageDef*cached_def = utl_Arena_alloc(&c_def_pool->arena, sizeof(pyutl_MessageDef));
     cached_def->python_cls = (PyTypeObject*)new_type;
-    cached_def->fields = NULL;
-    utl_Map_insert_uint64(state->messages_cache, (uint64_t)type_def, cached_def);
+    cached_def->field_names_buf = NULL;
+    cached_def->field_names = NULL;
+    cached_def->field_nums = NULL;
+    hmput(state->messages_cache, (intptr_t)type_def, cached_def);
 
     return new_type;
 

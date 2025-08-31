@@ -1,3 +1,4 @@
+#include "stb_ds.h"
 #include "pyutl.h"
 #include "py_def_pool.h"
 #include "tlobject.h"
@@ -13,6 +14,64 @@ static PyObject* Py_DefPool_new(PyTypeObject* cls, PyObject* Py_UNUSED(args), Py
     ((Py_DefPool*)self)->pool = utl_DefPool_new();
 
     return self;
+}
+
+static inline int qsort_strcmp(const void* a, const void* b) {
+    return strcmp(*(const char**)a, *(const char**)b);
+}
+
+pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* message_def) {
+    pyutl_ModuleState* state = pyutl_ModuleState_get();
+    const ptrdiff_t cached_def_idx = hmgeti(state->messages_cache, (intptr_t)message_def);
+
+    if(cached_def_idx >= 0)
+        return state->messages_cache[cached_def_idx].value;
+
+    PyObject* type = Py_TLObject_createType(message_def);
+
+    const size_t struct_size = sizeof(pyutl_MessageDef);
+    const size_t names_arr_size = sizeof(char*) * message_def->fields_num;
+    const size_t nums_arr_size = sizeof(uint8_t) * message_def->fields_num;
+    size_t names_buf_size = 0;
+
+    for(size_t i = 0; i < message_def->fields_num; ++i)
+        names_buf_size += message_def->fields[i].name.size + 1;
+
+    // Leaking memory, TODO: maybe free on python vm shutdown?
+    uint8_t* base_def_ptr = malloc(struct_size + names_buf_size + names_arr_size + nums_arr_size);
+    pyutl_MessageDef* cached_def = (pyutl_MessageDef*)base_def_ptr;
+    cached_def->python_cls = (PyTypeObject*)type;
+    cached_def->field_names_buf = (char*)(base_def_ptr + struct_size);
+    cached_def->field_names = (char**)(base_def_ptr + struct_size + names_buf_size);
+    cached_def->field_nums = (uint8_t*)(base_def_ptr + struct_size + names_buf_size + names_arr_size);
+
+    size_t names_buf_offset = 0;
+    for(size_t i = 0; i < message_def->fields_num; ++i) {
+        const utl_StringView field_name = message_def->fields[i].name;
+        char* dst = cached_def->field_names_buf + names_buf_offset;
+        dst[field_name.size] = '\0';
+        names_buf_offset += field_name.size + 1;
+
+        memcpy(dst, field_name.data, field_name.size);
+        cached_def->field_names[i] = dst;
+    }
+
+    qsort(cached_def->field_names, message_def->fields_num, sizeof(char*), qsort_strcmp);
+
+    for(size_t i = 0; i < message_def->fields_num; ++i) {
+        const utl_StringView field_name = message_def->fields[i].name;
+        const int index = binary_search_str(cached_def->field_names, message_def->fields_num, field_name.data, field_name.size);
+        if(index < 0) {
+            free(cached_def);
+            PyErr_SetString(PyExc_RuntimeError, "Failed to look up just inserted field name inside pyutl_MessageDef.");
+            return NULL;
+        }
+        cached_def->field_nums[index] = i;
+    }
+
+    hmput(state->messages_cache, (intptr_t)message_def, cached_def);
+
+    return cached_def;
 }
 
 PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
@@ -44,20 +103,9 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     message_def->layer = layer;
     message_def->section = (utl_MessageSection)section;
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
-    if(!cached_def) {
-        PyObject* type = Py_TLObject_createType(message_def);
-        cached_def = utl_Arena_alloc(&c_def_pool->arena, sizeof(pyutl_MessageDef));
-        cached_def->python_cls = (PyTypeObject*)type;
-        cached_def->fields = utl_Map_new_on_arena(message_def->fields_num / 2 + 1, &c_def_pool->arena);
-        for(size_t i = 0; i < message_def->fields_num; ++i) {
-            utl_FieldDef* field = &message_def->fields[i];
-            utl_Map_insert_str(cached_def->fields, field->name, field);
-        }
-
-        utl_Map_insert_uint64(state->messages_cache, (uint64_t)message_def, cached_def);
-    }
+    pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(message_def);
+    if(!cached_def)
+        return NULL;
 
     return (PyObject*)cached_def->python_cls;
 }
@@ -98,13 +146,11 @@ PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
     if(!message_def)
         Py_RETURN_NONE;
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
-    if(!cached) {
-        Py_RETURN_NONE;
-    }
+    pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(message_def);
+    if(!cached_def)
+        return NULL;
 
-    return (PyObject*)cached->python_cls;
+    return (PyObject*)cached_def->python_cls;
 }
 
 PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {

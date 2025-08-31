@@ -62,7 +62,7 @@ void test_MessageSimpleDecode() {
     TEST_ASSERT_EQUAL(123456789123, utl_Message_getInt64(message, &message_def->fields[0]));
     TEST_ASSERT_EQUAL(987654321321, utl_Message_getInt64(message, &message_def->fields[1]));
 
-    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes + 4, 20 - 4);
+    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes + 4, 20 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_EQUAL(123456789123, utl_RoMessage_getInt64(ro_message, &message_def->fields[0]));
     TEST_ASSERT_EQUAL(987654321321, utl_RoMessage_getInt64(ro_message, &message_def->fields[1]));
@@ -121,7 +121,7 @@ void test_MessageWithStringDecode() {
     TEST_ASSERT_EQUAL(test_big_string.size, utl_Message_getString(message, &message_def->fields[3]).size);
     TEST_ASSERT_EQUAL_STRING_LEN(test_big_string.data, utl_Message_getString(message, &message_def->fields[3]).data, test_big_string.size);
 
-    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes + 4, 316 - 4);
+    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes + 4, 316 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_EQUAL_INT64(123456789123, utl_RoMessage_getInt64(ro_message, &message_def->fields[0]));
     TEST_ASSERT_EQUAL_INT32(123123, utl_RoMessage_getInt32(ro_message, &message_def->fields[1]));
@@ -177,7 +177,7 @@ void test_MessageWithFlagsDecode() {
     TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_Message_getDouble(message, &message_def->fields[2]));
     TEST_ASSERT_FALSE(utl_Message_hasField(message, &message_def->fields[3]));
 
-    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4);
+    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_RoMessage_getDouble(ro_message, &message_def->fields[1]));
     TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_RoMessage_getDouble(ro_message, &message_def->fields[2]));
@@ -192,7 +192,7 @@ void test_MessageWithFlagsDecode() {
     TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[3]));
     TEST_ASSERT_EQUAL(456123, utl_Message_getInt32(message, &message_def->fields[3]));
 
-    ro_message = utl_RoMessage_new(message_def, pool, bytes2 + 4, 28 - 4);
+    ro_message = utl_RoMessage_new(message_def, pool, bytes2 + 4, 28 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_EQUAL_DOUBLE(42.24, utl_RoMessage_getDouble(ro_message, &message_def->fields[1]));
     TEST_ASSERT_EQUAL_DOUBLE(24.42, utl_RoMessage_getDouble(ro_message, &message_def->fields[2]));
@@ -244,7 +244,7 @@ void test_MessageWithBitBoolDecode() {
     TEST_ASSERT_FALSE(utl_Message_hasField(message, &message_def->fields[1]));
     TEST_ASSERT_FALSE(utl_Message_getBool(message, &message_def->fields[1]));
 
-    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4);
+    utl_RoMessage* ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_FALSE(utl_RoMessage_hasField(ro_message, &message_def->fields[1]));
     TEST_ASSERT_FALSE(utl_RoMessage_getBool(ro_message, &message_def->fields[1]));
@@ -256,7 +256,7 @@ void test_MessageWithBitBoolDecode() {
     TEST_ASSERT_TRUE(utl_Message_hasField(message, &message_def->fields[1]));
     TEST_ASSERT_TRUE(utl_Message_getBool(message, &message_def->fields[1]));
 
-    ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4);
+    ro_message = utl_RoMessage_new(message_def, pool, bytes1 + 4, 24 - 4, NULL);
     TEST_ASSERT_NOT_NULL(ro_message);
     TEST_ASSERT_FALSE(utl_RoMessage_hasField(ro_message, &message_def->fields[1]));
     TEST_ASSERT_FALSE(utl_RoMessage_getBool(ro_message, &message_def->fields[1]));

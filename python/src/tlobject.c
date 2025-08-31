@@ -4,6 +4,7 @@
 #include "encoder.h"
 #include "decoder.h"
 #include "constants.h"
+#include "py_def_pool.h"
 
 static bool bitmap_bit_get(const uint64_t bitmap[4], const size_t bit_num) {
     const size_t byte_num = bit_num / 64;
@@ -99,19 +100,16 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
             break;
         }
         case TLOBJECT: {
-            const pyutl_ModuleState* state = pyutl_ModuleState_get();
             void* message = object_is_read_only
                                 ? (void*)utl_RoMessage_getMessage(self->ro_message, field)
                                 : (void*)utl_Message_getMessage(self->message, field);
-            utl_MessageDef* message_def = object_is_read_only
+            const utl_MessageDef* message_def = object_is_read_only
                                               ? ((utl_RoMessage*)message)->message_def
                                               : ((utl_Message*)message)->message_def;
 
-            pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)message_def);
-            if(!cached_def) {
-                PyErr_SetString(PyExc_TypeError, "object type is not found");
+            pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(message_def);
+            if(!cached_def)
                 return NULL;
-            }
 
             result_obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
             if(object_is_read_only) {
@@ -433,11 +431,9 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
     const bool readonly = tlobject_is_readonly(self);
     const utl_MessageDef* def = readonly ? self->ro_message->message_def : self->message->message_def;
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)def);
-    if(!cached) {
+    pyutl_MessageDef* cached = Py_DefPool_get_or_create_cached_def(def);
+    if(!cached)
         return NULL;
-    }
 
     ssize_t len;
     char *buf = (char*)PyUnicode_AsUTF8AndSize(attr, &len);
@@ -445,11 +441,12 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
         return NULL;
     }
 
-    const utl_StringView field_name = { .data = buf, .size = len };
-    utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
-    if(!field) {
+    const int field_index = binary_search_str(cached->field_names, def->fields_num, buf, len);
+    if(field_index < 0) {
         return PyObject_GenericGetAttr((PyObject*)self, attr);
     }
+
+    const utl_FieldDef* field = def->fields + cached->field_nums[field_index];
 
     if(!(readonly ? utl_RoMessage_hasField(self->ro_message, field) : utl_Message_hasField(self->message, field))) {
         if(field->type == BIT_BOOL)
@@ -466,11 +463,10 @@ static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* val
         return -1;
     }
 
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-    pyutl_MessageDef* cached = utl_Map_search_uint64(state->messages_cache, (uint64_t)self->message->message_def);
-    if(!cached) {
+    utl_MessageDef* def = self->message->message_def;
+    pyutl_MessageDef* cached = Py_DefPool_get_or_create_cached_def(def);
+    if(!cached)
         return -1;
-    }
 
     ssize_t len;
     char *buf = (char*)PyUnicode_AsUTF8AndSize(attr, &len);
@@ -478,11 +474,12 @@ static int Py_TLObject_setattro(Py_TLObject* self, PyObject* attr, PyObject* val
         return -1;
     }
 
-    const utl_StringView field_name = { .data = buf, .size = len };
-    utl_FieldDef* field = utl_Map_search_str(cached->fields, field_name);
-    if(!field) {
+    const int field_index = binary_search_str(cached->field_names, def->fields_num, buf, len);
+    if(field_index < 0) {
         return -1;
     }
+
+    const utl_FieldDef* field = def->fields + cached->field_nums[field_index];
 
     return Py_TLObject_setitem(self, field, value) ? 0 : -1;
 }
@@ -596,8 +593,6 @@ static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, 
 }
 
 static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_len, size_t* bytes_read, const bool read_only) {
-    const pyutl_ModuleState* state = pyutl_ModuleState_get();
-
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
         if(buf_len < 4) {
@@ -616,11 +611,9 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             return NULL;
         }
 
-        pyutl_MessageDef* cached_def = utl_Map_search_uint64(state->messages_cache, (uint64_t)def);
-        if(!cached_def) {
-            PyErr_SetString(PyExc_TypeError, "object type is not found");
+        pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(def);
+        if(!cached_def)
             return NULL;
-        }
 
         cls = cached_def->python_cls;
         buf += 4;
@@ -769,7 +762,7 @@ PyType_Spec pyutl_TLObjectType_spec = {
     Py_TLObject_slots,
 };
 
-PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
+PyObject* Py_TLObject_createType(const utl_MessageDef* message_def) {
     const size_t alloc_size = 7 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size;
     char* name = malloc(alloc_size + 1);
     name[alloc_size] = '\0';
@@ -799,7 +792,7 @@ PyObject* Py_TLObject_createType(utl_MessageDef* message_def) {
         return 0;
     }
 
-    PyObject* msgdef_capsule = PyCapsule_New(message_def, NULL, NULL);
+    PyObject* msgdef_capsule = PyCapsule_New((void*)message_def, NULL, NULL);
     if (!msgdef_capsule) {
         goto failed;
     }

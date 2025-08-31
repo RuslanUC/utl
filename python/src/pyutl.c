@@ -190,7 +190,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
         goto failed;
     }
     c_def_pool = ((Py_DefPool*)py_def_pool)->pool;
-    state->messages_cache = utl_Map_new_on_arena(c_def_pool->message_defs->buckets_num, &c_def_pool->arena);
+    state->messages_cache = NULL;
 
 #ifdef GDB_CHECK_AVAILABLE
     {
@@ -217,4 +217,23 @@ failed:
     Py_XDECREF(pyutl_TLTypeType);
     Py_XDECREF(m);
     return NULL;
+}
+
+int binary_search_str(char** arr, const int arr_length, const char* key, const int key_length) {
+    int hi = arr_length -1;
+    int lo = 0;
+
+    while(lo <= hi) {
+        const int mid = (hi - lo) / 2 + lo;
+        const char* el = arr[mid];
+        const int cmp_res = strncmp(key, el, key_length);
+        if(cmp_res > 0)
+            lo = mid + 1;
+        else if(cmp_res < 0)
+            hi = mid - 1;
+        else
+            return mid;
+    }
+
+    return -1;
 }
