@@ -593,6 +593,8 @@ static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, 
 }
 
 static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_len, size_t* bytes_read, const bool read_only) {
+    const pyutl_ModuleState* state = pyutl_ModuleState_get();
+
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
         if(buf_len < 4) {
@@ -605,7 +607,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             .size = 4,
         };
         const uint32_t tl_id = utl_decode_int32(&dbuf);
-        utl_MessageDef* def = utl_DefPool_getMessage(c_def_pool, tl_id);
+        utl_MessageDef* def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
             return NULL;
@@ -629,7 +631,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         utl_MessageDef* def = PyCapsule_GetPointer(def_capsule, NULL);
 
         Py_TLObject* obj = (Py_TLObject*)cls->tp_alloc(cls, 0);
-        obj->ro_message = utl_RoMessage_new(def, c_def_pool, buf, buf_len, bytes_read);
+        obj->ro_message = utl_RoMessage_new(def, state->c_def_pool, buf, buf_len, bytes_read);
         if(!obj->ro_message) {
             Py_DECREF(obj);
             PyErr_SetString(PyExc_TypeError, "Failed to read object (TODO: exact error)"); // TODO
@@ -646,7 +648,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
 
         utl_Status status;
-        const size_t read = utl_decode(obj->message, c_def_pool, buf, buf_len, &status);
+        const size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
         if(!status.ok) {
             PyErr_SetString(PyExc_ValueError, status.message);
             return NULL;

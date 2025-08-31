@@ -20,12 +20,13 @@ static inline int qsort_strcmp(const void* a, const void* b) {
     return strcmp(*(const char**)a, *(const char**)b);
 }
 
+// TODO: check that ->type is PYUTL_CACHED_OBJECT or PYUTL_CACHED_TYPE in callers of this function
 pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* message_def) {
     pyutl_ModuleState* state = pyutl_ModuleState_get();
-    const ptrdiff_t cached_def_idx = hmgeti(state->messages_cache, (intptr_t)message_def);
+    const ptrdiff_t cached_def_idx = hmgeti(state->defs_cache, (intptr_t)message_def);
 
     if(cached_def_idx >= 0)
-        return state->messages_cache[cached_def_idx].value;
+        return state->defs_cache[cached_def_idx].value;
 
     PyObject* type = Py_TLObject_createType(message_def);
 
@@ -37,9 +38,9 @@ pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* mess
     for(size_t i = 0; i < message_def->fields_num; ++i)
         names_buf_size += message_def->fields[i].name.size + 1;
 
-    // Leaking memory, TODO: maybe free on python vm shutdown?
     uint8_t* base_def_ptr = malloc(struct_size + names_buf_size + names_arr_size + nums_arr_size);
     pyutl_MessageDef* cached_def = (pyutl_MessageDef*)base_def_ptr;
+    cached_def->type = PYUTL_CACHED_OBJECT;
     cached_def->python_cls = (PyTypeObject*)type;
     cached_def->field_names_buf = (char*)(base_def_ptr + struct_size);
     cached_def->field_names = (char**)(base_def_ptr + struct_size + names_buf_size);
@@ -69,7 +70,7 @@ pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* mess
         cached_def->field_nums[index] = i;
     }
 
-    hmput(state->messages_cache, (intptr_t)message_def, cached_def);
+    hmput(state->defs_cache, (intptr_t)message_def, cached_def);
 
     return cached_def;
 }

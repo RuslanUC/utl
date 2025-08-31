@@ -3,37 +3,36 @@
 #include "tlobject.h"
 #include "tlvector.h"
 #include "tltype.h"
+#include "stb_ds.h"
 
 PyTypeObject* def_pool_type;
 PyTypeObject* tlobject_type;
 PyTypeObject* tlvector_type;
 PyTypeObject* tltype_type;
 PyObject* bytesio_type;
-utl_DefPool* c_def_pool;
-PyObject* py_def_pool;
 
 PyObject* pyutl_parse_tl(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_parse((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_parse((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyObject* pyutl_has_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_has_type((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_has_type((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyObject* pyutl_get_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_get_type((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_get_type((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyObject* pyutl_create_type(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_create_type((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_create_type((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyObject* pyutl_has_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_has_constructor((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_has_constructor((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyObject* pyutl_get_constructor(PyObject* Py_UNUSED(self), PyObject* args) {
-    return Py_DefPool_get_constructor((const Py_DefPool*)py_def_pool, args);
+    return Py_DefPool_get_constructor((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
 }
 
 PyMethodDef method_table[] = {
@@ -46,12 +45,30 @@ PyMethodDef method_table[] = {
     {NULL, NULL, 0, NULL}
 };
 
+static void pyutl_module_free(void* state_) {
+    const pyutl_ModuleState* state = state_;
+
+    Py_DECREF(state->py_def_pool);
+
+    PyMessageDefPair* cache = state->defs_cache;
+    const size_t len = hmlen(cache);
+
+    for(size_t i = 0; i < len; ++i) {
+        pyutl_MessageDef* def = cache[i].value;
+        if(PYUTL_CACHED_OBJECT == def->type)
+            free(def);
+    }
+
+    hmfree(cache);
+}
+
 PyModuleDef _pyutl_module = {
     PyModuleDef_HEAD_INIT,
     "_pyutl",
     0,
     sizeof(pyutl_ModuleState),
     method_table,
+    .m_free = pyutl_module_free,
 };
 
 pyutl_ModuleState* pyutl_ModuleState_get() {
@@ -104,7 +121,7 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
 #ifdef GDB_CHECK_AVAILABLE
     {
         const char* wait_for_debugger = getenv("WAIT_FOR_DEBUGGER");
-        if(wait_for_debugger != NULL && !strcmp(wait_for_debugger, "true")) {
+        if(wait_for_debugger != NULL && !strcmp(wait_for_debugger, "early")) {
             printf("Waiting for debugger...\n");
             while(!gdb_check())
                 sleep(1);
@@ -185,12 +202,12 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     tlobject_type = (PyTypeObject*)pyutl_TLObjectType;
     tlvector_type = (PyTypeObject*)pyutl_TLVectorType;
     tltype_type = (PyTypeObject*)pyutl_TLTypeType;
-    py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
-    if(!py_def_pool || PyModule_AddObject(m, "def_pool", py_def_pool)) {
+
+    state->py_def_pool = PyObject_CallObject(pyutl_DefPoolType, 0);
+    if(!state->py_def_pool || PyModule_AddObject(m, "def_pool", state->py_def_pool))
         goto failed;
-    }
-    c_def_pool = ((Py_DefPool*)py_def_pool)->pool;
-    state->messages_cache = NULL;
+    state->c_def_pool = ((Py_DefPool*)state->py_def_pool)->pool;
+    state->defs_cache = NULL;
 
 #ifdef GDB_CHECK_AVAILABLE
     {
