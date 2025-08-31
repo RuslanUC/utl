@@ -18,7 +18,8 @@ add_library(utl STATIC
         src/vector_ro.c
         src/encoder.c
         src/decoder.c
-        src/parser.c)
+        src/parser.c
+        src/stb_ds.c)
 target_include_directories(utl PUBLIC include)
 target_compile_options(utl PUBLIC "-fPIC")
 
