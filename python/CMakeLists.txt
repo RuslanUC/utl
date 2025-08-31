@@ -22,7 +22,7 @@ if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif ()
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    target_compile_options(pyutl PUBLIC -Og -g -ggdb)
+    target_compile_options(pyutl PUBLIC -O0 -g3 -ggdb)
     #target_compile_options(pyutl PUBLIC -fPIC -fpermissive -fsanitize=address)
     #target_link_options(pyutl PRIVATE -fsanitize=address)
 

@@ -45,15 +45,15 @@ PyMethodDef method_table[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static void pyutl_module_free(void* state_) {
-    const pyutl_ModuleState* state = state_;
+static void pyutl_module_free(void* module) {
+    const pyutl_ModuleState* state = PyModule_GetState(module);
 
     Py_DECREF(state->py_def_pool);
 
     PyMessageDefPair* cache = state->defs_cache;
-    const size_t len = hmlen(cache);
+    const ptrdiff_t len = hmlen(cache);
 
-    for(size_t i = 0; i < len; ++i) {
+    for(ptrdiff_t i = 0; i < len; ++i) {
         pyutl_MessageDef* def = cache[i].value;
         if(PYUTL_CACHED_OBJECT == def->type)
             free(def);
