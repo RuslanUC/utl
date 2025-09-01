@@ -28,6 +28,7 @@ static void bitmap_bit_clr(uint64_t bitmap[4], const size_t bit_num) {
 static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* field) {
     if(self->out_refs[field->num] != NULL && bitmap_bit_get(self->refs_bitmap, field->num)) {
         PyObject* obj = self->out_refs[field->num];
+        _UTL_LOG("Found field %d (%.*s) in refs cache: %p", (int)field->num, (int)field->name.size, field->name.data, obj);
         Py_INCREF(obj);
         return obj;
     }
@@ -44,6 +45,10 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getInt32(self->ro_message, field)
                     : utl_Message_getInt32(self->message, field)
             );
+            _UTL_LOG("Get int32 field %d (%.*s) of object %p: %d", (int)field->num, (int)field->name.size, field->name.data, self,
+                object_is_read_only
+                    ? utl_RoMessage_getInt32(self->ro_message, field)
+                    : utl_Message_getInt32(self->message, field));
             break;
         }
         case INT64: {
@@ -52,6 +57,10 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getInt64(self->ro_message, field)
                     : utl_Message_getInt64(self->message, field)
             );
+            _UTL_LOG("Get int64 field %d (%.*s) of object %p: %ld", (int)field->num, (int)field->name.size, field->name.data, self,
+                object_is_read_only
+                    ? utl_RoMessage_getInt64(self->ro_message, field)
+                    : utl_Message_getInt64(self->message, field));
             break;
         }
         case INT128: {
@@ -59,6 +68,8 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getInt128(self->ro_message, field)
                     : utl_Message_getInt128(self->message, field);
             result_obj = _PyLong_FromByteArray(bytes.value, 16, true, true);
+            _UTL_LOG("Get int128 field %d (%.*s) of object %p: %08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
+                ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
             break;
         }
         case INT256: {
@@ -66,6 +77,8 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getInt256(self->ro_message, field)
                     : utl_Message_getInt256(self->message, field);
             result_obj = _PyLong_FromByteArray(bytes.value, 32, true, true);
+            _UTL_LOG("Get int256 field %d (%.*s) of object %p: %08lx%08lx%08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
+                ((uint64_t*)bytes.value)[3], ((uint64_t*)bytes.value)[2], ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
             break;
         }
         case DOUBLE: {
@@ -74,6 +87,10 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getDouble(self->ro_message, field)
                     : utl_Message_getDouble(self->message, field)
             );
+            _UTL_LOG("Get double field %d (%.*s) of object %p: %f", (int)field->num, (int)field->name.size, field->name.data, self,
+                object_is_read_only
+                    ? utl_RoMessage_getDouble(self->ro_message, field)
+                    : utl_Message_getDouble(self->message, field));
             break;
         }
         case FULL_BOOL:
@@ -81,6 +98,10 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
             const bool res = object_is_read_only
                     ? utl_RoMessage_getBool(self->ro_message, field)
                     : utl_Message_getBool(self->message, field);
+            _UTL_LOG("Get bool field %d (%.*s) of object %p: %d", (int)field->num, (int)field->name.size, field->name.data, self,
+                object_is_read_only
+                    ? utl_RoMessage_getBool(self->ro_message, field)
+                    : utl_Message_getBool(self->message, field));
             if(res)
                 Py_RETURN_TRUE;
             Py_RETURN_FALSE;
@@ -90,6 +111,8 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getBytes(self->ro_message, field)
                     : utl_Message_getBytes(self->message, field);
             result_obj = PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            _UTL_LOG("Get bytes field %d (%.*s) of object %p: <bytes of size %zu>", (int)field->num, (int)field->name.size, field->name.data, self,
+                bytes.size);
             break;
         }
         case STRING: {
@@ -97,6 +120,8 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                     ? utl_RoMessage_getString(self->ro_message, field)
                     : utl_Message_getString(self->message, field);
             result_obj = PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            _UTL_LOG("Get string field %d (%.*s) of object %p: \"%.*s\"", (int)field->num, (int)field->name.size, field->name.data, self,
+                (int)bytes.size, bytes.data);
             break;
         }
         case TLOBJECT: {
@@ -121,6 +146,9 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                 Py_TLObject_init_message((Py_TLObject*)result_obj, NULL, message);
             }
 
+            _UTL_LOG("Get object field %d (%.*s) of object %p: %p", (int)field->num, (int)field->name.size, field->name.data, self,
+                message);
+
             break;
         }
         case VECTOR: {
@@ -138,6 +166,9 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
                 Py_TLVector_init_message((Py_TLVector*)result_obj, vector);
             }
 
+            _UTL_LOG("Get vector field %d (%.*s) of object %p: %p", (int)field->num, (int)field->name.size, field->name.data, self,
+                vector);
+
             break;
         }
 
@@ -147,6 +178,7 @@ static PyObject* Py_TLObject_getitem(Py_TLObject* self, const utl_FieldDef* fiel
     if(result_obj != NULL) {
         Py_INCREF(result_obj);
         self->out_refs[field->num] = result_obj;
+        _UTL_LOG("Insert field %d (%.*s) in refs cache: %p", (int)field->num, (int)field->name.size, field->name.data, result_obj);
         bitmap_bit_set(self->refs_bitmap, field->num);
         return result_obj;
     }
@@ -163,6 +195,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             utl_Message_setInt32(self->message, field, PyLong_AsLong(item));
+            _UTL_LOG("Set field %d (%.*s) of object %p to int32 %d", (int)field->num, (int)field->name.size, field->name.data, self, (int)PyLong_AsLong(item));
             break;
         }
         case INT64: {
@@ -171,6 +204,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             utl_Message_setInt64(self->message, field, PyLong_AsLong(item));
+            _UTL_LOG("Set field %d (%.*s) of object %p to int64 %ld", (int)field->num, (int)field->name.size, field->name.data, self, (long)PyLong_AsLong(item));
             break;
         }
         case INT128: {
@@ -178,13 +212,15 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return false;
             }
-            utl_Int128 bytes;
+            utl_Int128 bytes = {{0}};
 #if PY_MINOR_VERSION < 13
             _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 16, true, true);
 #else
             _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 16, true, true, true);
 #endif
             utl_Message_setInt128(self->message, field, bytes);
+            _UTL_LOG("Set field %d (%.*s) of object %p to int128 %08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
+                ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
             break;
         }
         case INT256: {
@@ -199,6 +235,8 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             _PyLong_AsByteArray((PyLongObject*)item, bytes.value, 32, true, true, true);
 #endif
             utl_Message_setInt256(self->message, field, bytes);
+            _UTL_LOG("Set field %d (%.*s) of object %p to int256 %08lx%08lx%08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
+                ((uint64_t*)bytes.value)[3], ((uint64_t*)bytes.value)[2], ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
             break;
         }
         case DOUBLE: {
@@ -207,6 +245,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             utl_Message_setDouble(self->message, field, PyFloat_AsDouble(item));
+            _UTL_LOG("Set field %d (%.*s) of object %p to double %f", (int)field->num, (int)field->name.size, field->name.data, self, PyFloat_AsDouble(item));
             break;
         }
         case FULL_BOOL:
@@ -216,6 +255,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             utl_Message_setBool(self->message, field, item == Py_True);
+            _UTL_LOG("Set field %d (%.*s) of object %p to bool %d", (int)field->num, (int)field->name.size, field->name.data, self, item == Py_True);
             break;
         }
         case BYTES: {
@@ -237,6 +277,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 .data = buf,
             };
             utl_Message_setBytes(self->message, field, bytes);
+            _UTL_LOG("Set field %d (%.*s) of object %p to bytes of len %zu", (int)field->num, (int)field->name.size, field->name.data, self, len);
             break;
         }
         case STRING: {
@@ -258,6 +299,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 .data = (char*)buf,
             };
             utl_Message_setString(self->message, field, bytes);
+            _UTL_LOG("Set field %d (%.*s) of object %p to string \"%.*s\"", (int)field->num, (int)field->name.size, field->name.data, self, (int)len, buf);
             break;
         }
         case TLOBJECT: {
@@ -276,6 +318,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             }
 
             utl_Message_setMessage(self->message, field, message);
+            _UTL_LOG("Set field %d (%.*s) of object %p to object %p", (int)field->num, (int)field->name.size, field->name.data, self, message);
             break;
         }
         case VECTOR: {
@@ -303,6 +346,8 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             bitmap_bit_clr(self->refs_bitmap, field->num);
             self->out_refs[field->num] = vector;
 
+            _UTL_LOG("Set field %d (%.*s) of object %p to vector %p", (int)field->num, (int)field->name.size, field->name.data, self, vector);
+
             return true;
         }
 
@@ -314,9 +359,11 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
     } else if(item == Py_None) {
         Py_XDECREF(self->out_refs[field->num]);
         self->out_refs[field->num] = NULL;
+        _UTL_LOG("Delete field %d (%.*s) from refs cache", (int)field->num, (int)field->name.size, field->name.data);
     } else {
         Py_XDECREF(self->out_refs[field->num]);
         self->out_refs[field->num] = item;
+        _UTL_LOG("Insert field %d (%.*s) in refs cache: %p", (int)field->num, (int)field->name.size, field->name.data, item);
         bitmap_bit_set(self->refs_bitmap, field->num);
         Py_INCREF(item);
     }
@@ -443,6 +490,7 @@ static PyObject* Py_TLObject_getattro(Py_TLObject* self, PyObject* attr) {
 
     const int field_index = binary_search_str(cached->field_names, def->fields_num, buf, len);
     if(field_index < 0) {
+        _UTL_LOG("Failed to find field \"%.*s\" wtf", (int)len, buf);
         return PyObject_GenericGetAttr((PyObject*)self, attr);
     }
 

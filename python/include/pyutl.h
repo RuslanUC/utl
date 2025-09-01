@@ -36,5 +36,25 @@ extern PyTypeObject* tlobject_type;
 extern PyTypeObject* tlvector_type;
 extern PyTypeObject* tltype_type;
 extern PyObject* bytesio_type;
+#ifndef NDEBUG
+extern bool debug_logging;
+extern int logging_indent_level;
+#endif
 
 int binary_search_str(char** arr, int arr_length, const char* key, int key_length);
+
+#ifndef NDEBUG
+#    define _UTL_LOG(...) do { \
+            if(debug_logging) { \
+                fprintf(stderr, "%*s", logging_indent_level * 2, ""); \
+                fprintf(stderr, __VA_ARGS__); \
+                fprintf(stderr, "\n"); \
+            } \
+        } while(0)
+#    define _UTL_LOG_INCIND() do { ++logging_indent_level; } while(0)
+#    define _UTL_LOG_DECIND() do { --logging_indent_level; } while(0)
+#else
+#    define _UTL_LOG(...)
+#    define _UTL_LOG_INCIND()
+#    define _UTL_LOG_DECIND()
+#endif

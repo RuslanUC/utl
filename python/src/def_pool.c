@@ -57,12 +57,29 @@ pyutl_MessageDef* Py_DefPool_get_or_create_cached_def(const utl_MessageDef* mess
         cached_def->field_names[i] = dst;
     }
 
+    // @formatter:off
+    _UTL_LOG("->field_names before sorting:");
+    _UTL_LOG_INCIND();
+        for(size_t i = 0; i < message_def->fields_num; ++i)
+            _UTL_LOG("[%zu]: \"%s\"", i, cached_def->field_names[i]);
+    _UTL_LOG_DECIND();
+    // @formatter:on
+
     qsort(cached_def->field_names, message_def->fields_num, sizeof(char*), qsort_strcmp);
+
+    // @formatter:off
+    _UTL_LOG("->field_names after sorting:");
+    _UTL_LOG_INCIND();
+        for(size_t i = 0; i < message_def->fields_num; ++i)
+            _UTL_LOG("[%zu]: \"%s\"", i, cached_def->field_names[i]);
+    _UTL_LOG_DECIND();
+    // @formatter:on
 
     for(size_t i = 0; i < message_def->fields_num; ++i) {
         const utl_StringView field_name = message_def->fields[i].name;
         const int index = binary_search_str(cached_def->field_names, message_def->fields_num, field_name.data, field_name.size);
         if(index < 0) {
+            _UTL_LOG("Failed field look up: \"%.*s\"", (int)field_name.size, field_name.data);
             free(cached_def);
             PyErr_SetString(PyExc_RuntimeError, "Failed to look up just inserted field name inside pyutl_MessageDef.");
             return NULL;
@@ -103,6 +120,35 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
 
     message_def->layer = layer;
     message_def->section = (utl_MessageSection)section;
+
+    // @formatter:off
+    _UTL_LOG("Parsed tl constructor definition: \"%.*s\"", (int)str_len, str);
+    _UTL_LOG_INCIND();
+        _UTL_LOG("message_def->id = 0x%08x", message_def->id);
+        _UTL_LOG("message_def->name = \"%.*s\"", (int)message_def->name.size, message_def->name.data);
+        _UTL_LOG("message_def->namespace_ = \"%.*s\"", (int)message_def->namespace_.size, message_def->namespace_.data);
+        _UTL_LOG("message_def->type = \"%.*s\"", (int)message_def->type->name.size, message_def->type->name.data);
+        _UTL_LOG("message_def->section = %s", message_def->section == TYPES ? "types" : "functions");
+        _UTL_LOG("message_def->layer = %d", message_def->layer);
+        _UTL_LOG("message_def->fields_num = %d", message_def->fields_num);
+        _UTL_LOG("message_def->fields = [");
+        _UTL_LOG_INCIND();
+            for(size_t i = 0; i < message_def->fields_num; ++i) {
+                _UTL_LOG("message_def->fields[%zu].type = %d", i, message_def->fields[i].type);
+                _UTL_LOG("message_def->fields[%zu].num = %zu", i, message_def->fields[i].num);
+                _UTL_LOG("message_def->fields[%zu].offset = %zu", i, message_def->fields[i].offset);
+                _UTL_LOG("message_def->fields[%zu].name = \"%.*s\"", i, (int)message_def->fields[i].name.size, message_def->fields[i].name.data);
+                _UTL_LOG("message_def->fields[%zu].flag_info = %d", i, message_def->fields[i].flag_info);
+                if(i < (message_def->fields_num - 1))
+                    _UTL_LOG("");
+            }
+        _UTL_LOG_DECIND();
+        _UTL_LOG("]");
+        _UTL_LOG("message_def->flags_num = %d", message_def->flags_num);
+        _UTL_LOG("message_def->strings_num = %d", message_def->strings_num);
+        _UTL_LOG("message_def->size = %zu", message_def->size);
+    _UTL_LOG_DECIND();
+    // @formatter:on
 
     pyutl_MessageDef* cached_def = Py_DefPool_get_or_create_cached_def(message_def);
     if(!cached_def)

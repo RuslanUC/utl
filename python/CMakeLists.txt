@@ -29,7 +29,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_custom_command(
             TARGET pyutl
             POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PROJECT_SOURCE_DIR} CMAKE_POST_BUILD_TEST=1 ${Python3_EXECUTABLE} -m pytest test_everything.py
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PROJECT_SOURCE_DIR} CMAKE_POST_BUILD_TEST=1 UTL_DEBUG_ENABLE_LOGGING=true ${Python3_EXECUTABLE} -m pytest test_everything.py
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     )
 else()

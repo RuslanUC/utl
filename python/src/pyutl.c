@@ -10,6 +10,10 @@ PyTypeObject* tlobject_type;
 PyTypeObject* tlvector_type;
 PyTypeObject* tltype_type;
 PyObject* bytesio_type;
+#ifndef NDEBUG
+bool debug_logging;
+int logging_indent_level;
+#endif
 
 PyObject* pyutl_parse_tl(PyObject* Py_UNUSED(self), PyObject* args) {
     return Py_DefPool_parse((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
@@ -130,6 +134,15 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
     }
 #endif
 
+#ifndef NDEBUG
+    {
+        debug_logging = false;
+        const char* debug_logging_enabled = getenv("UTL_DEBUG_ENABLE_LOGGING");
+        if(debug_logging_enabled != NULL && !strcmp(debug_logging_enabled, "true"))
+            debug_logging = true;
+    }
+#endif
+
     PyObject* pyutl_DefPoolType = NULL;
     PyObject* pyutl_TLObjectType = NULL;
     PyObject* pyutl_TLVectorType = NULL;
@@ -237,6 +250,21 @@ failed:
     return NULL;
 }
 
+static inline int strncmp_l(const char* s1, const size_t l1, const char* s2) {
+    size_t i = 0;
+    for(; i < l1 && s2[i]; ++i)
+        if(s1[i] != s2[i])
+            return (unsigned char)s1[i] - (unsigned char)s2[i];
+
+    if(i < l1 && !s2[i])
+        return (unsigned char)s1[i];
+
+    if(i == l1 && s2[i])
+        return -(unsigned char)s2[i];
+
+    return 0;
+}
+
 int binary_search_str(char** arr, const int arr_length, const char* key, const int key_length) {
     int hi = arr_length -1;
     int lo = 0;
@@ -244,7 +272,7 @@ int binary_search_str(char** arr, const int arr_length, const char* key, const i
     while(lo <= hi) {
         const int mid = (hi - lo) / 2 + lo;
         const char* el = arr[mid];
-        const int cmp_res = strncmp(key, el, key_length);
+        const int cmp_res = strncmp_l(key, key_length, el);
         if(cmp_res > 0)
             lo = mid + 1;
         else if(cmp_res < 0)

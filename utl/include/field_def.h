@@ -15,6 +15,7 @@ typedef struct utl_FieldDef {
         struct utl_MessageDefVector* vector_def;
     } sub;
 
+    // TODO: set to uint16_t?
     size_t num;
     size_t offset;
     utl_StringView name;
