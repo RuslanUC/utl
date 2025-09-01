@@ -25,8 +25,6 @@ static void bitmap_bit_clr(uint64_t* bitmap, const size_t bitmap_size, const siz
         bitmap[byte_num] &= ~((uint64_t)1 << (bit_num % 64));
 }
 
-#define tlvector_is_readonly(OBJECT_PTR) (((OBJECT_PTR)->refs_bitmap[self->refs_bitmap_bytes - 1]) & ((uint64_t)1 << 63))
-
 static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index) {
     if(self->out_refs[index] != NULL && bitmap_bit_get(self->refs_bitmap, self->refs_bitmap_bytes, index)) {
         PyObject* obj = self->out_refs[index];
@@ -34,14 +32,13 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
         return obj;
     }
 
-    const bool vector_is_read_only = tlvector_is_readonly(self);
     PyObject* result_obj = NULL;
 
     switch (self->vector->message_def->type) {
         case FLAGS:
         case INT32: {
             result_obj = PyLong_FromLong(
-                vector_is_read_only
+                self->readonly
                     ? utl_RoVector_getInt32(self->ro_vector, index)
                     : utl_Vector_getInt32(self->vector, index)
             );
@@ -49,21 +46,21 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
         }
         case INT64: {
             result_obj = PyLong_FromLong(
-                vector_is_read_only
+                self->readonly
                     ? utl_RoVector_getInt64(self->ro_vector, index)
                     : utl_Vector_getInt64(self->vector, index)
             );
             break;
         }
         case INT128: {
-            const utl_Int128 value = vector_is_read_only
+            const utl_Int128 value = self->readonly
                     ? utl_RoVector_getInt128(self->ro_vector, index)
                     : utl_Vector_getInt128(self->vector, index);
             result_obj = _PyLong_FromByteArray(value.value, 16, true, true);
             break;
         }
         case INT256: {
-            const utl_Int256 value = vector_is_read_only
+            const utl_Int256 value = self->readonly
                     ? utl_RoVector_getInt256(self->ro_vector, index)
                     : utl_Vector_getInt256(self->vector, index);
             result_obj = _PyLong_FromByteArray(value.value, 32, true, true);
@@ -71,7 +68,7 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
         }
         case DOUBLE: {
             result_obj = PyFloat_FromDouble(
-                vector_is_read_only
+                self->readonly
                     ? utl_RoVector_getDouble(self->ro_vector, index)
                     : utl_Vector_getDouble(self->vector, index)
             );
@@ -79,7 +76,7 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
         }
         case FULL_BOOL:
         case BIT_BOOL: {
-            const bool res = vector_is_read_only
+            const bool res = self->readonly
                                 ? utl_RoVector_getBool(self->ro_vector, index)
                                 : utl_Vector_getBool(self->vector, index);
             if(res)
@@ -87,24 +84,24 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
             Py_RETURN_FALSE;
         }
         case BYTES: {
-            const utl_StringView bytes = vector_is_read_only
+            const utl_StringView bytes = self->readonly
                     ? utl_RoVector_getBytes(self->ro_vector, index)
                     : utl_Vector_getBytes(self->vector, index);
             result_obj = PyBytes_FromStringAndSize(bytes.data, bytes.size);
             break;
         }
         case STRING: {
-            const utl_StringView bytes = vector_is_read_only
+            const utl_StringView bytes = self->readonly
                     ? utl_RoVector_getString(self->ro_vector, index)
                     : utl_Vector_getString(self->vector, index);
             result_obj = PyUnicode_FromStringAndSize(bytes.data, bytes.size);
             break;
         }
         case TLOBJECT: {
-            void* message = vector_is_read_only
+            void* message = self->readonly
                                 ? (void*)utl_RoVector_getMessage(self->ro_vector, index)
                                 : (void*)utl_Vector_getMessage(self->vector, index);
-            utl_MessageDef* message_def = vector_is_read_only
+            utl_MessageDef* message_def = self->readonly
                                               ? ((utl_RoMessage*)message)->message_def
                                               : ((utl_Message*)message)->message_def;
 
@@ -113,7 +110,7 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
                 return NULL;
 
             result_obj = cached_def->python_cls->tp_alloc(cached_def->python_cls, 0);
-            if(vector_is_read_only) {
+            if(self->readonly) {
                 Py_TLObject_init_message_ro((Py_TLObject*)result_obj, message);
                 PyObject* bytes = self->out_refs[self->ro_vector->elements_count];
                 ((Py_TLObject*)result_obj)->out_refs[message_def->fields_num] = bytes;
@@ -125,12 +122,12 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
             break;
         }
         case VECTOR: {
-            void* vector = vector_is_read_only
+            void* vector = self->readonly
                                 ? (void*)utl_RoVector_getVector(self->ro_vector, index)
                                 : (void*)utl_Vector_getVector(self->vector, index);
 
             result_obj = tlvector_type->tp_alloc(tlvector_type, 0);
-            if(vector_is_read_only) {
+            if(self->readonly) {
                 Py_TLVector_init_message_ro((Py_TLVector*)result_obj, vector);
                 PyObject* bytes = self->out_refs[self->ro_vector->elements_count];
                 ((Py_TLObject*)result_obj)->out_refs[((utl_RoVector*)vector)->elements_count] = bytes;
@@ -299,11 +296,10 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index) {
 }
 
 static void Py_TLVector_dealloc(Py_TLVector* self) {
-    const bool vector_is_read_only = tlvector_is_readonly(self);
-    const utl_MessageDefVector* def = vector_is_read_only ? self->ro_vector->message_def : self->vector->message_def;
-    const size_t fields_count = vector_is_read_only ? self->ro_vector->elements_count : self->vector->size;
+    const utl_MessageDefVector* def = self->readonly ? self->ro_vector->message_def : self->vector->message_def;
+    const size_t fields_count = self->readonly ? self->ro_vector->elements_count : self->vector->size;
 
-    if(vector_is_read_only) {
+    if(self->readonly) {
         for (size_t i = 0; i < fields_count + 1; ++i) {
             if(self->out_refs[i] != NULL)
                 Py_DECREF(self->out_refs[i]);
@@ -329,6 +325,7 @@ static void Py_TLVector_dealloc(Py_TLVector* self) {
 }
 
 void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
+    self->readonly = 0;
     self->vector = vector;
 
     const size_t vec_size = utl_Vector_size(vector);
@@ -341,6 +338,7 @@ void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector) {
 }
 
 void Py_TLVector_init_message_ro(Py_TLVector* self, utl_RoVector* vector) {
+    self->readonly = 1;
     self->ro_vector = vector;
 
     const size_t vec_size = utl_RoVector_size(vector);
@@ -359,7 +357,7 @@ static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUS
 }
 
 static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t index) {
-    const size_t vector_size = tlvector_is_readonly(self) ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+    const size_t vector_size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
     if(index >= vector_size) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
         return NULL;
@@ -391,7 +389,7 @@ static void Py_TLVector_remove_at_index(const Py_TLVector* self, const size_t in
 }
 
 static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index, PyObject* value) {
-    if(tlvector_is_readonly(self)) {
+    if(self->readonly) {
         PyErr_SetString(PyExc_AttributeError, "Vector is read-only");
         return -1;
     }
@@ -432,7 +430,7 @@ static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index, 
 }
 
 static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
-    const size_t size = tlvector_is_readonly(self) ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+    const size_t size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
     const size_t alloc_size = size * 8;
 
     utl_EncodeBuf repr_buf = {
@@ -500,8 +498,8 @@ static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, 
     }
 
     const Py_TLVector* other = (Py_TLVector*)other_;
-    const bool this_ro = tlvector_is_readonly(self);
-    const bool other_ro = tlvector_is_readonly(other);
+    const bool this_ro = self->readonly;
+    const bool other_ro = other->readonly;
 
     bool eq;
     if (this_ro != other_ro)
@@ -520,8 +518,7 @@ static PyObject* Py_TLVector_compare(const Py_TLVector* self, PyObject* other_, 
 }
 
 static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
-    const bool readonly = tlvector_is_readonly(self);
-    if(readonly) {
+    if(self->readonly) {
         PyErr_SetString(PyExc_AttributeError, "Vector is read-only");
         return NULL;
     }
