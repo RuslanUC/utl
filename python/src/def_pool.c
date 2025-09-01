@@ -108,7 +108,9 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
     if(!cached_def)
         return NULL;
 
-    return (PyObject*)cached_def->python_cls;
+    PyObject* type = (PyObject*)cached_def->python_cls;
+    Py_INCREF(type);
+    return type;
 }
 
 PyObject* Py_DefPool_has_type(const Py_DefPool* self, PyObject* args) {
@@ -151,7 +153,9 @@ PyObject* Py_DefPool_get_constructor(const Py_DefPool* self, PyObject* args) {
     if(!cached_def)
         return NULL;
 
-    return (PyObject*)cached_def->python_cls;
+    PyObject* type = (PyObject*)cached_def->python_cls;
+    Py_INCREF(type);
+    return type;
 }
 
 PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
@@ -174,7 +178,9 @@ PyObject* Py_DefPool_create_type(const Py_DefPool* self, PyObject* args) {
         utl_DefPool_addType(self->pool, type_def);
     }
 
-    return Py_TLType_createType(type_def);
+    PyObject* type = Py_TLType_createType(type_def);
+    Py_INCREF(type);
+    return type;
 }
 
 PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
@@ -195,7 +201,9 @@ PyObject* Py_DefPool_get_type(const Py_DefPool* self, PyObject* args) {
         Py_RETURN_NONE;
     }
 
-    return Py_TLType_createType(type_def);
+    PyObject* type = Py_TLType_createType(type_def);
+    Py_INCREF(type);
+    return type;
 }
 
 static PyMethodDef Py_DefPool_methods[] = {

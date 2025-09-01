@@ -597,6 +597,19 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
     if(!result) {
+        PyObject* exc = PyErr_Occurred();
+        if(!exc) {
+            PyErr_SetString(PyExc_RuntimeError, "Getting __message_def__ from class failed, but exception is not set");
+            return NULL;
+        }
+
+        if(!PyErr_ExceptionMatches(PyExc_AttributeError)) {
+            PyErr_SetString(PyExc_RuntimeError, "Getting __message_def__ from class failed, but exception is not a \"AttributeError\"");
+            return NULL;
+        }
+
+        PyErr_Clear();
+
         if(buf_len < 4) {
             PyErr_SetString(PyExc_ValueError, "need at least 4 bytes");
             return NULL;

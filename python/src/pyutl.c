@@ -48,7 +48,8 @@ PyMethodDef method_table[] = {
 static void pyutl_module_free(void* module) {
     const pyutl_ModuleState* state = PyModule_GetState(module);
 
-    Py_DECREF(state->py_def_pool);
+    // TODO: is decref needed here?
+    //Py_DECREF(state->py_def_pool);
 
     PyMessageDefPair* cache = state->defs_cache;
     const ptrdiff_t len = hmlen(cache);

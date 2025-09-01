@@ -8,6 +8,9 @@ print(f"\nPid: {os.getpid()}")
 if os.environ.get("CMAKE_POST_BUILD_TEST") != "1" and os.environ.get("WAIT_FOR_DEBUGGER") not in ("early", "true"):
     input("Press enter to continue...")
 
+import tracemalloc
+tracemalloc.start(25)
+
 import pyutl
 
 SKIP_TESTS = 0
