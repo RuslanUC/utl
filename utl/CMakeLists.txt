@@ -1,9 +1,8 @@
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
 
 add_library(utl STATIC
         src/arena.c
         src/status.c
-        src/map_list.c
         src/string_view.c
         src/field_def.c
         src/type_def.c

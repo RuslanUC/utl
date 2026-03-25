@@ -6,18 +6,18 @@
 #include "constants.h"
 #include "py_def_pool.h"
 
-static bool bitmap_bit_get(const uint64_t bitmap[4], const size_t bit_num) {
+static inline bool bitmap_bit_get(const uint64_t bitmap[4], const size_t bit_num) {
     const size_t byte_num = bit_num / 64;
     return (byte_num >= 4) ? 0 : bitmap[byte_num] & ((uint64_t)1 << (bit_num % 64));
 }
 
-static void bitmap_bit_set(uint64_t bitmap[4], const size_t bit_num) {
+static inline void bitmap_bit_set(uint64_t bitmap[4], const size_t bit_num) {
     const size_t byte_num = bit_num / 64;
     if(byte_num < 4)
         bitmap[byte_num] |= (uint64_t)1 << (bit_num % 64);
 }
 
-static void bitmap_bit_clr(uint64_t bitmap[4], const size_t bit_num) {
+static inline void bitmap_bit_clr(uint64_t bitmap[4], const size_t bit_num) {
     const size_t byte_num = bit_num / 64;
     if(byte_num < 4)
         bitmap[byte_num] &= ~((uint64_t)1 << (bit_num % 64));

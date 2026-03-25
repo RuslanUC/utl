@@ -9,7 +9,7 @@
 #include "builtins.h"
 #include "string_pool.h"
 
-static size_t static_sizes[STATIC_FIELDS_END] = {
+static const size_t static_sizes[STATIC_FIELDS_END] = {
     /* INT32 */ 4,
     /* FLAGS */ 4,
     /* INT64 */ 8,

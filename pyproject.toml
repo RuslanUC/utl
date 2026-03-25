@@ -1,8 +1,10 @@
-[tool.poetry]
+[project]
 name = "utl"
 version = "0.1.0b1"
 description = "A small Telegram Type Language implementation"
-authors = ["RuslanUC <dev_ruslan_uc@protonmail.com>"]
+authors = [
+    { name = "RuslanUC", email = "dev_ruslan_uc@protonmail.com" }
+]
 license = "MIT"
 readme = "README.md"
 classifiers = [
@@ -23,10 +25,12 @@ classifiers = [
     "Topic :: Software Development",
     "Typing :: Typed",
 ]
+requires-python = ">=3.10,<4.0"
+
+[tool.poetry]
 packages = [
     {include = "pyutl"}
 ]
-
 include = [
     {format = "sdist", path = "CMakeLists.txt"},
     {format = "sdist", path = "ext/arena-allocator/CMakeLists.txt"},
@@ -40,20 +44,19 @@ include = [
     {format = "sdist", path = "python/include/*.h"},
 ]
 
-[tool.poetry.urls]
-Homepage = "https://github.com/RuslanUC/utl"
-Repository = "https://github.com/RuslanUC/utl"
+[project.urls]
+homepage = "https://github.com/RuslanUC/utl"
+repository = "https://github.com/RuslanUC/utl"
 
 [tool.poetry.build]
 generate-setup-file = true
 script = "build.py"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 cibuildwheel = "^2.22.0"
+pyrogram = "^2.0.106"
+py-spy = "^0.4.0"
 
 [build-system]
 requires = ["poetry-core", "setuptools"]
