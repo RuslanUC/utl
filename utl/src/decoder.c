@@ -2,11 +2,14 @@
 
 #include "decoder.h"
 
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "encoder.h"
 #include "builtins.h"
 #include "string_pool.h"
+#include "constants.h"
 
 uint8_t* utl_DecodeBuf_read(utl_DecodeBuf* buf, const size_t n) {
     if(buf->pos >= buf->size)
@@ -145,9 +148,13 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
             }
             case BYTES:
             case STRING: {
-                const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, status);
-                if(!status)
+                utl_Status tmp_status = { .ok = true };
+                const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, &tmp_status);
+                if(!tmp_status.ok) {
+                    if (status)
+                        *status = tmp_status;
                     return false;
+                }
                 field->type == BYTES ? utl_Vector_appendBytes(vector, bytes) : utl_Vector_appendString(vector, bytes);
                 break;
             }
@@ -162,6 +169,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                     return false;
                 }
 
+#if UTL_STRICT_TYPES
                 const utl_TypeDef* type = field->sub.type_def;
                 if (type && new_def->type != type) {
                     if(status) {
@@ -170,11 +178,16 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                     }
                     return false;
                 }
+#endif
 
                 utl_Message* new_message = utl_Message_new(new_def);
-                buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, status);
-                if(!status->ok)
+                utl_Status tmp_status = { .ok = true };
+                buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, &tmp_status);
+                if(!tmp_status.ok) {
+                    if (status)
+                        *status = tmp_status;
                     return false;
+                }
                 utl_Vector_appendMessage(vector, new_message);
                 break;
             }
@@ -193,6 +206,8 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 utl_Vector_appendVector(vector, new_vector);
                 break;
             }
+            case STATIC_FIELDS_END:
+                abort();
         }
 
         /*if(value == NULL) {
@@ -265,16 +280,24 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
             break;
         }
         case BYTES: {
-            const utl_StringView bytes = utl_decode_bytes(buf, &message->arena, status);
-            if(!status)
+            utl_Status tmp_status = { .ok = true };
+            const utl_StringView bytes = utl_decode_bytes(buf, &message->arena, &tmp_status);
+            if(!tmp_status.ok) {
+                if (status)
+                    *status = tmp_status;
                 return false;
+            }
             utl_Message_setBytes(message, field, bytes);
             break;
         }
         case STRING: {
-            const utl_StringView string = utl_decode_bytes(buf, &message->arena, status);
-            if(!status)
+            utl_Status tmp_status = { .ok = true };
+            const utl_StringView string = utl_decode_bytes(buf, &message->arena, &tmp_status);
+            if(!tmp_status.ok) {
+                if (status)
+                    *status = tmp_status;
                 return false;
+            }
             utl_Message_setString(message, field, string);
             break;
         }
@@ -289,6 +312,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
                 return false;
             }
 
+#if UTL_STRICT_TYPES
             const utl_TypeDef* type = field->sub.type_def;
             if (type && new_def->type != type) {
                 if(status) {
@@ -297,12 +321,17 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
                 }
                 return false;
             }
+#endif
 
             utl_Message* new_message = utl_Message_new(new_def);
             utl_Message_setMessage(message, field, new_message);
-            buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, status);
-            if(!status->ok)
+            utl_Status tmp_status = { .ok = true };
+            buf->pos += utl_decode(new_message, def_pool, buf->data + buf->pos, buf->size - buf->pos, &tmp_status);
+            if(!tmp_status.ok) {
+                if (status)
+                    *status = tmp_status;
                 return false;
+            }
             break;
         }
         case VECTOR: {
@@ -320,13 +349,16 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
                 return false;
             break;
         }
+        case STATIC_FIELDS_END:
+            abort();
     }
 
     return true;
 }
 
 size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, uint8_t* buf, const size_t size, utl_Status* status) {
-    status->ok = true;
+    if (status)
+        status->ok = true;
 
     utl_DecodeBuf buffer = {
         .data = buf,
