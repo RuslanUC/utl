@@ -14,7 +14,7 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initia
     vector->userdata = NULL;
     vector->size = 0;
     vector->capacity = initial_size;
-    vector->data = malloc(vector_def->element_size * initial_size);
+    vector->data = calloc(initial_size, vector_def->element_size);
     vector->arena = arena;
     return vector;
 }
@@ -43,8 +43,11 @@ void utl_Vector_resize(utl_Vector* vector, const bool force) {
     const size_t capacity = utl_Vector_capacity(vector);
 
     if (force || vector->size >= capacity) {
+        const size_t element_size = vector->message_def->element_size;
+        const size_t old_capacity = vector->capacity;
         vector->capacity = capacity * 1.25 + 1;
-        vector->data = realloc(vector->data, sizeof(void*) * vector->capacity);
+        vector->data = realloc(vector->data, element_size * vector->capacity);
+        memset(vector->data + vector->size * element_size, 0, element_size * (vector->capacity - old_capacity));
     }
 }
 

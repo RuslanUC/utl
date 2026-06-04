@@ -6,3 +6,6 @@ cmake-build-*
 /wheelhouse
 /pyutl/_pyutl.*.so
 /pyutl/_pyutl.*.dll
+/vgcore.*
+/memcheck.log
+/memcheck.log.*

@@ -13,10 +13,6 @@ typedef struct utl_DefPool {
     utl_Arena arena;
     utl_TlIdMessageDefPair* message_defs;
     utl_NameTypeDefPair* types;
-    struct {
-        size_t capacity;
-        char* data;
-    } tmp_string_buffer;
 } utl_DefPool;
 
 utl_DefPool* utl_DefPool_new();
