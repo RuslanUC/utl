@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 #include "string.h"
-#include "vector.h"
 #include "builtins.h"
 #include "string_pool.h"
 #include "def_pool.h"
@@ -15,6 +14,7 @@
 utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size, size_t* bytes_read) {
     utl_RoMessage* message = malloc(sizeof(utl_RoMessage) + sizeof(ssize_t) * message_def->fields_num);
     message->message_def = message_def;
+    message->userdata = NULL;
     message->def_pool = def_pool;
     message->data = data;
     message->size = size;

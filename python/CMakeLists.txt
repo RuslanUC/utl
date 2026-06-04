@@ -1,7 +1,9 @@
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
 
 set(Python_FIND_STRATEGY LOCATION)
-set(Python3_ROOT_DIR /usr)
+if(NOT DEFINED Python3_ROOT_DIR)
+    set(Python3_ROOT_DIR /usr)
+endif()
 set(Python3_FIND_VIRTUALENV ONLY)
 
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
@@ -22,9 +24,9 @@ if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 endif ()
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    target_compile_options(pyutl PUBLIC -O0 -g3 -ggdb)
-    #target_compile_options(pyutl PUBLIC -fPIC -fpermissive -fsanitize=address)
-    #target_link_options(pyutl PRIVATE -fsanitize=address)
+    target_compile_options(pyutl PUBLIC -O0)
+#    target_compile_options(pyutl PUBLIC -fPIC -fpermissive -fsanitize=address)
+#    target_link_options(pyutl PRIVATE -fsanitize=address)
 
     add_custom_command(
             TARGET pyutl

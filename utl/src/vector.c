@@ -1,5 +1,3 @@
-
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,6 +11,7 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initia
     utl_Arena arena = utl_Arena_new(4096);
     utl_Vector* vector = utl_Arena_alloc(&arena, sizeof(utl_Vector));
     vector->message_def = vector_def;
+    vector->userdata = NULL;
     vector->size = 0;
     vector->capacity = initial_size;
     vector->data = malloc(vector_def->element_size * initial_size);

@@ -3,13 +3,15 @@
 #include <stdbool.h>
 
 #include "message_def.h"
+#include "vector_hdr.h"
 #include "builtins.h"
 
 struct utl_Message;
 
 typedef struct utl_Vector {
+    UTL_VECTOR_HEADER;
+
     utl_Arena arena;
-    utl_MessageDefVector* message_def;
     size_t size;
     size_t capacity;
     void* data;

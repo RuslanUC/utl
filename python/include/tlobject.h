@@ -12,12 +12,8 @@ typedef struct Py_TLObject {
     };
     // If object is read-only, then actual out_refs size is <number of message fields>+1,
     //  extra one for "bytes" object from which object was created
-    void** out_refs;
-    // If a bit at <field num> is set - then out_refs[<field num>] is PyObject* (always if object is read-only),
-    //  if not set - then out_refs[<field num>] is utl_Message* or utl_Vector*
-    // If object is read-only, a last bit of last byte (refs_bitmap[3] & (1 << 63)) is set
-    // NOTE: I think 256 bits is enough for now, since there is no tl object (yet) with >= 255 fields
-    uint64_t refs_bitmap[4];
+    PyObject** out_refs;
+    bool readonly;
 } Py_TLObject;
 
 extern PyType_Spec pyutl_TLObjectType_spec;

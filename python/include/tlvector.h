@@ -12,12 +12,8 @@ typedef struct Py_TLVector {
     };
     // If object is read-only, then actual out_refs size is <elements_count>+1,
     //  extra one for "bytes" object from which vector was created
-    void** out_refs;
-    // If a bit at <index> is set - then out_refs[<index>] is PyObject* (always if vector is read-only),
-    //  if not set - then out_refs[<index>] is utl_Message* or utl_Vector*
-    uint64_t* refs_bitmap;
-    uint32_t readonly : 1;
-    uint32_t refs_bitmap_bytes : 31;
+    PyObject** out_refs;
+    bool readonly;
 } Py_TLVector;
 
 extern PyType_Spec pyutl_TLVectorType_spec;

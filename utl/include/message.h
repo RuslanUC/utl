@@ -1,12 +1,14 @@
 #pragma once
 #include <stdbool.h>
 #include "message_def.h"
+#include "message_hdr.h"
 #include "vector.h"
 #include "builtins.h"
 
 typedef struct utl_Message {
+    UTL_MESSAGE_HEADER;
+
     utl_Arena arena;
-    utl_MessageDef* message_def;
     void* data;
 } utl_Message;
 
@@ -27,7 +29,9 @@ void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, 
 void utl_Message_setBytes(const utl_Message* message, const utl_FieldDef* field, utl_StringView value);
 void utl_Message_setString(const utl_Message* message, const utl_FieldDef* field, utl_StringView value);
 void utl_Message_setMessage(const utl_Message* message, const utl_FieldDef* field, utl_Message* value);
+utl_Message* utl_Message_swapMessage(const utl_Message* message, const utl_FieldDef* field, utl_Message* value);
 void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value);
+utl_Vector* utl_Message_swapVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value);
 
 int32_t utl_Message_getInt32(const utl_Message* message, const utl_FieldDef* field);
 int64_t utl_Message_getInt64(const utl_Message* message, const utl_FieldDef* field);

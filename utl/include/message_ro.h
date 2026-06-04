@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include "def_pool.h"
 #include "message_def.h"
+#include "message_hdr.h"
 #include "vector_ro.h"
 #include "builtins.h"
 
 // Read-only zero-copy version of utl_Message
 typedef struct utl_RoMessage {
-    utl_MessageDef* message_def;
+    UTL_MESSAGE_HEADER;
+
     utl_DefPool* def_pool;
     uint8_t* data;
     size_t size;

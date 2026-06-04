@@ -4,13 +4,15 @@
 #include <stdlib.h>
 
 #include "message_def.h"
+#include "vector_hdr.h"
 #include "builtins.h"
 #include "def_pool.h"
 
 struct utl_RoMessage;
 
 typedef struct utl_RoVector {
-    utl_MessageDefVector* message_def;
+    UTL_VECTOR_HEADER;
+
     utl_DefPool* def_pool;
     size_t elements_count;
     size_t element_size;

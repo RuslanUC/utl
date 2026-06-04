@@ -13,6 +13,7 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
     utl_Arena arena = utl_Arena_new(4096);
     utl_Message* message = utl_Arena_alloc(&arena, sizeof(utl_Message));
     message->message_def = message_def;
+    message->userdata = NULL;
     message->data = malloc(message_def->size);
     memset(message->data, 0, message_def->size);
     message->arena = arena;
@@ -92,7 +93,7 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
                 const void* value_a = a->data + field.offset;
                 const void* value_b = b->data + field.offset;
 
-                if (memcmp(value_a, value_b, item_size))
+                if (memcmp(value_a, value_b, item_size) != 0)
                     return false;
                 break;
             }
@@ -115,6 +116,7 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
                     return false;
                 break;
             }
+            default: return false;
         }
     }
 
@@ -207,6 +209,19 @@ void utl_Message_setMessage(const utl_Message* message, const utl_FieldDef* fiel
     *(utl_Message**)(message->data + field->offset) = value;
 }
 
+utl_Message* utl_Message_swapMessage(const utl_Message* message, const utl_FieldDef* field, utl_Message* value) {
+    if (field->type != TLOBJECT) {
+        return NULL;
+    }
+
+    utl_Message* old = utl_Message_getMessage(message, field);
+
+    utl_Message_setFlag(message, field);
+    *(utl_Message**)(message->data + field->offset) = value;
+
+    return old;
+}
+
 void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value) {
     if (field->type != VECTOR) {
         return;
@@ -214,6 +229,19 @@ void utl_Message_setVector(const utl_Message* message, const utl_FieldDef* field
 
     utl_Message_setFlag(message, field);
     *(utl_Vector**)(message->data + field->offset) = value;
+}
+
+utl_Vector* utl_Message_swapVector(const utl_Message* message, const utl_FieldDef* field, utl_Vector* value) {
+    if (field->type != VECTOR) {
+        return NULL;
+    }
+
+    utl_Vector* old = utl_Message_getVector(message, field);
+
+    utl_Message_setFlag(message, field);
+    *(utl_Vector**)(message->data + field->offset) = value;
+
+    return old;
 }
 
 int32_t utl_Message_getInt32(const utl_Message* message, const utl_FieldDef* field) {
@@ -233,7 +261,7 @@ int64_t utl_Message_getInt64(const utl_Message* message, const utl_FieldDef* fie
 }
 
 utl_Int128 utl_Message_getInt128(const utl_Message* message, const utl_FieldDef* field) {
-    utl_Int128 result;
+    utl_Int128 result = {0};
     if (field->type != INT128) {
         return result;
     }
@@ -243,7 +271,7 @@ utl_Int128 utl_Message_getInt128(const utl_Message* message, const utl_FieldDef*
 }
 
 utl_Int256 utl_Message_getInt256(const utl_Message* message, const utl_FieldDef* field) {
-    utl_Int256 result;
+    utl_Int256 result = {0};
     if (field->type != INT256) {
         return result;
     }
@@ -263,7 +291,8 @@ double utl_Message_getDouble(const utl_Message* message, const utl_FieldDef* fie
 bool utl_Message_getBool(const utl_Message* message, const utl_FieldDef* field) {
     if(field->type == FULL_BOOL) {
         return *(bool*)(message->data + field->offset);
-    } else if (field->type == BIT_BOOL) {
+    }
+    if (field->type == BIT_BOOL) {
         return utl_Message_hasField(message, field);
     }
     return false;

@@ -25,6 +25,7 @@ utl_RoVector* utl_RoVector_new(utl_MessageDefVector* message_def, utl_DefPool* d
 
     utl_RoVector* vector = malloc(sizeof(utl_RoVector) + (const_element_size ? 0 : sizeof(size_t) * elements_count));
     vector->message_def = message_def;
+    vector->userdata = NULL;
     vector->def_pool = def_pool;
     vector->data = data;
     vector->elements_count = elements_count;
