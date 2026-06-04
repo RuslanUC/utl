@@ -427,12 +427,12 @@ static void Py_TLObject_dealloc(Py_TLObject* self) {
                 utl_FieldDef field = def->fields[i];
                 if(field.type == TLOBJECT) {
                     utl_Message* message = utl_Message_getMessage(self->message, &field);
-                    if(message->userdata == NULL) {
+                    if(message != NULL && message->userdata == NULL) {
                         utl_Message_free(message);
                     }
                 } else if(field.type == VECTOR) {
                     utl_Vector* vector = utl_Message_getVector(self->message, &field);
-                    if(vector->userdata == NULL) {
+                    if(vector != NULL && vector->userdata == NULL) {
                         utl_Vector_free(vector);
                     }
                 }
@@ -862,9 +862,11 @@ PyObject* Py_TLObject_createType(const utl_MessageDef* message_def) {
     char* name = malloc(alloc_size + 1);
     name[alloc_size] = '\0';
     memcpy(name, "_pyutl.", 7);
-    if(message_def->namespace_.size)
+    if(message_def->namespace_.size) {
         memcpy(name + 7, message_def->namespace_.data, message_def->namespace_.size);
-    memcpy(name + 7 + message_def->namespace_.size, message_def->name.data, message_def->name.size);
+        name[7 + message_def->namespace_.size] = '.';
+    }
+    memcpy(name + 7 + message_def->namespace_.size + 1, message_def->name.data, message_def->name.size);
 
     PyType_Slot slots[] = {
         {Py_tp_base, tlobject_type},

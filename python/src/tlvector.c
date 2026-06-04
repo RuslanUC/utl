@@ -312,6 +312,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t inde
             } else {
                 utl_Vector_appendMessage(vector, message);
             }
+            break;
         }
         case VECTOR: {
             if(!PyList_Check(item)) {
@@ -339,6 +340,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t inde
             } else {
                 utl_Vector_appendVector(vector, new_vector);
             }
+            break;
         }
 
         case STATIC_FIELDS_END: return false;
