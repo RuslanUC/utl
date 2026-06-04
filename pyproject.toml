@@ -2,11 +2,10 @@
 name = "utl"
 version = "0.1.0b1"
 description = "A small Telegram Type Language implementation"
-authors = [
-    { name = "RuslanUC", email = "dev_ruslan_uc@protonmail.com" }
-]
-license = "MIT"
+authors = [{ name = "RuslanUC", email = "dev_ruslan_uc@protonmail.com" }]
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
+license = "MIT"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -25,42 +24,41 @@ classifiers = [
     "Topic :: Software Development",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10,<4.0"
-
-[tool.poetry]
-packages = [
-    {include = "pyutl"}
-]
-include = [
-    {format = "sdist", path = "CMakeLists.txt"},
-    {format = "sdist", path = "ext/arena-allocator/CMakeLists.txt"},
-    {format = "sdist", path = "ext/arena-allocator/src/*.c"},
-    {format = "sdist", path = "ext/arena-allocator/include/*.h"},
-    {format = "sdist", path = "utl/CMakeLists.txt"},
-    {format = "sdist", path = "utl/src/*.c"},
-    {format = "sdist", path = "utl/include/*.h"},
-    {format = "sdist", path = "python/CMakeLists.txt"},
-    {format = "sdist", path = "python/src/*.c"},
-    {format = "sdist", path = "python/include/*.h"},
-]
 
 [project.urls]
 homepage = "https://github.com/RuslanUC/utl"
 repository = "https://github.com/RuslanUC/utl"
 
-[tool.poetry.build]
-generate-setup-file = true
-script = "build.py"
+[dependency-groups]
+dev = [
+    "pytest>=8.3.3,<9",
+    "cibuildwheel>=2.22.0,<3",
+    "pyrogram>=2.0.106,<3",
+    "py-spy>=0.4.0,<0.5",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
-cibuildwheel = "^2.22.0"
-pyrogram = "^2.0.106"
-py-spy = "^0.4.0"
+[tool.uv]
+default-groups = "all"
+
+[tool.uv.build-backend]
+module-name = ["pyutl"]
+module-root = ""
+source-include = [
+    "CMakeLists.txt",
+    "ext/arena-allocator/CMakeLists.txt/**",
+    "ext/arena-allocator/src/*.c",
+    "ext/arena-allocator/include/*.h",
+    "utl/CMakeLists.txt",
+    "utl/src/*.c",
+    "utl/include/*.h",
+    "python/CMakeLists.txt",
+    "python/src/*.c",
+    "python/include/*.h",
+]
 
 [build-system]
-requires = ["poetry-core", "setuptools"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.6,<0.12.0"]
+build-backend = "uv_build"
 
 [tool.cibuildwheel]
 build = "{cp310,cp311,cp312,cp313,pp310}-{many,musl}linux_{x86_64,i686,aarch64,armv7l}"
