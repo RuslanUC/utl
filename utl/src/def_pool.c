@@ -50,7 +50,7 @@ void utl_DefPool_addMessage(utl_DefPool* pool, utl_MessageDef* message) {
 }
 
 void utl_DefPool_removeMessage(utl_DefPool* pool, const uint32_t tl_id) {
-    hmdel(pool->message_defs,tl_id);
+    hmdel(pool->message_defs, tl_id);
 }
 
 // TODO: check if stb_ds stores given pointer to the string or it copies the string and uses the new one

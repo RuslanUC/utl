@@ -1,8 +1,5 @@
 #include "parser.h"
 
-#include <builtins.h>
-#include <errno.h>
-#include <stdio.h>
 #include <string.h>
 
 void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, utl_FieldDef* field, size_t* offset) {
@@ -105,6 +102,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         // no name/namespace
         if(status) {
             status->ok = false;
+            status->pos = pos;
             strncpy(status->message, "Expected name or namespace", UTL_STATUS_MAX_MESSAGE_SIZE);
         }
         utl_Arena_restore(&def_pool->arena, original_state);
@@ -124,6 +122,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             // tl id (after namespace) not found, probably end of string is reached
             if(status) {
                 status->ok = false;
+                status->pos = pos;
                 strncpy(status->message, "Expected tl id", UTL_STATUS_MAX_MESSAGE_SIZE);
             }
             utl_Arena_restore(&def_pool->arena, original_state);
@@ -139,6 +138,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         // neither namespace nor tl id found, probably end of string is reached
         if(status) {
             status->ok = false;
+            status->pos = pos;
             strncpy(status->message, "Expected namespace or tl id", UTL_STATUS_MAX_MESSAGE_SIZE);
         }
         utl_Arena_restore(&def_pool->arena, original_state);
@@ -156,6 +156,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             // invalid hex character
             if(status) {
                 status->ok = false;
+                status->pos = pos;
                 strncpy(status->message, "Invalid tl id, not hex", UTL_STATUS_MAX_MESSAGE_SIZE);
             }
             utl_Arena_restore(&def_pool->arena, original_state);
@@ -168,6 +169,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         utl_Arena_restore(&def_pool->arena, original_state);
         if(status) {
             status->ok = true;
+            status->pos = 0;
         }
         return utl_DefPool_getMessage(def_pool, message_def->id);
     }
@@ -186,6 +188,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         // type (after "=") expected, but end of string is reached
         if(status) {
             status->ok = false;
+            status->pos = pos;
             strncpy(status->message, "Expected type", UTL_STATUS_MAX_MESSAGE_SIZE);
         }
         utl_Arena_restore(&def_pool->arena, original_state);
@@ -201,6 +204,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         // ";" expected, but end of string is reached
         if(status) {
             status->ok = false;
+            status->pos = pos;
             strncpy(status->message, "Expected \";\"", UTL_STATUS_MAX_MESSAGE_SIZE);
         }
         utl_Arena_restore(&def_pool->arena, original_state);
@@ -211,6 +215,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         // no type
         if(status) {
             status->ok = false;
+            status->pos = pos;
             strncpy(status->message, "Expected type", UTL_STATUS_MAX_MESSAGE_SIZE);
         }
         utl_Arena_restore(&def_pool->arena, original_state);
@@ -231,6 +236,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
     pos = 0;
 
     if(message_def->fields_num)
+        // TODO: fix utl_Arena_alloc not able to allocate more than 73 (4096/45) fields
         message_def->fields = (utl_FieldDef*)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef) * message_def->fields_num);
 
     size_t offset = 0;
@@ -258,6 +264,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
                 // "flags.X" expected, but end of string is reached
                 if(status) {
                     status->ok = false;
+                    status->pos = pos;
                     strncpy(status->message, "Field is optional, but doesn't have valid flagsX.X", UTL_STATUS_MAX_MESSAGE_SIZE);
                 }
                 utl_Arena_restore(&def_pool->arena, original_state);
@@ -277,6 +284,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             } else {
                 if(status) {
                     status->ok = false;
+                    status->pos = pos;
                     strncpy(status->message, "Invalid flagsX.X", UTL_STATUS_MAX_MESSAGE_SIZE);
                 }
                 utl_Arena_restore(&def_pool->arena, original_state);
@@ -303,6 +311,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             // Field type expected, but end of string is reached
             if(status) {
                 status->ok = false;
+                status->pos = pos;
                 strncpy(status->message, "Field expected", UTL_STATUS_MAX_MESSAGE_SIZE);
             }
             utl_Arena_restore(&def_pool->arena, original_state);
@@ -341,6 +350,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
 
     if(status) {
         status->ok = true;
+        status->pos = 0;
     }
 
     utl_DefPool_addMessage(def_pool, message_def);
