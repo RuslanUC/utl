@@ -7,6 +7,7 @@
 #include "string.h"
 #include "vector.h"
 #include "builtins.h"
+#include "logging.h"
 #include "string_pool.h"
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def) {
@@ -21,6 +22,8 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 }
 
 void utl_Message_free(utl_Message* message) {
+    //_UTL_LOG("Freeing tlobject %p", message);
+
     for(int i = 0; i < message->message_def->strings_num; ++i) {
         const utl_FieldDef* field = message->message_def->string_fields[i];
         const utl_StringView string = field->type == STRING ? utl_Message_getString(message, field) : utl_Message_getBytes(message, field);
@@ -44,13 +47,22 @@ bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field)
     return (flag & flag_bit) == flag_bit;
 }
 
-void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field) {
+void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field, const bool flag_only) {
     if (field->flag_info == 0)
         return;
 
-    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const utl_MessageDef* def = message->message_def;
+
+    const utl_FieldDef* flags_field = def->flags_fields[(field->flag_info >> 5) - 1];
     const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
     *(uint32_t*)(message->data + flags_field->offset) &= ~flag_bit;
+
+    if(!flag_only) {
+        const size_t field_size = UTL_SIZES[field->type];
+        if(field_size <= 0)
+            return;
+        memset(message->data + field->offset, 0, field_size);
+    }
 }
 
 void utl_Message_setFlag(const utl_Message* message, const utl_FieldDef* field) {
@@ -176,7 +188,7 @@ void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, 
         if(value)
             utl_Message_setFlag(message, field);
         else
-            utl_Message_clearField(message, field);
+            utl_Message_clearField(message, field, false);
     }
 }
 

@@ -16,7 +16,7 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def);
 void utl_Message_free(utl_Message* message);
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field);
-void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field);
+void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field, bool flag_only);
 
 bool utl_Message_equals(const utl_Message* a, const utl_Message* b);
 

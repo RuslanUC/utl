@@ -21,4 +21,6 @@ typedef enum utl_FieldType {
     STRING,
     TLOBJECT,
     VECTOR,
+
+    ALL_FIELDS_END,
 } utl_FieldType;

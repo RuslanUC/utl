@@ -5,6 +5,7 @@
 #include <string.h>
 #include "vector.h"
 #include "builtins.h"
+#include "logging.h"
 
 char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes) {
     if(buf->pos + n_bytes > buf->size) {
@@ -27,12 +28,16 @@ void utl_encode_int32(int32_t value, utl_EncodeBuf* buf) {
     utl_encode_intX((char*)&value, buf, 4);
 }
 
+void utl_encode_uint32(uint32_t value, utl_EncodeBuf* buf) {
+    utl_encode_intX((char*)&value, buf, 4);
+}
+
 void utl_encode_int64(int64_t value, utl_EncodeBuf* buf) {
     utl_encode_intX((char*)&value, buf, 8);
 }
 
 void utl_encode_double(double value, utl_EncodeBuf* buf) {
-    utl_encode_int64(*(uint64_t*)&value, buf);
+    utl_encode_int64(*(int64_t*)&value, buf);
 }
 
 void utl_encode_bool(const bool value, utl_EncodeBuf* buf) {
@@ -41,26 +46,26 @@ void utl_encode_bool(const bool value, utl_EncodeBuf* buf) {
 }
 
 void utl_encode_bytes(const utl_StringView value, utl_EncodeBuf* buf) {
-    char* tmp;
+    uint8_t* tmp;
     size_t total_size = value.size;
     if(value.size >= 254) {
-        tmp = utl_EncodeBuf_alloc(buf, 4);
+        tmp = (uint8_t*)utl_EncodeBuf_alloc(buf, 4);
         tmp[0] = 254;
         tmp[1] = value.size & 0xFF;
         tmp[2] = (value.size >> 8) & 0xFF;
         tmp[3] = (value.size >> 16) & 0xFF;
     } else {
-        tmp = utl_EncodeBuf_alloc(buf, 1);
-        tmp[0] = value.size;
+        tmp = (uint8_t*)utl_EncodeBuf_alloc(buf, 1);
+        tmp[0] = value.size & 0xFF;
         ++total_size;
     }
 
-    tmp = utl_EncodeBuf_alloc(buf, value.size);
+    tmp = (uint8_t*)utl_EncodeBuf_alloc(buf, value.size);
     memcpy(tmp, value.data, value.size);
     uint8_t padding = total_size % 4;
     if(padding) {
         padding = 4 - padding;
-        tmp = utl_EncodeBuf_alloc(buf, padding);
+        tmp = (uint8_t*)utl_EncodeBuf_alloc(buf, padding);
         memset(tmp, 0, padding);
     }
 }
@@ -94,14 +99,15 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             break;
         }
         case TLOBJECT: {
+            //_UTL_LOG("Serializing tlobject %p", *(utl_Message**)value);
             utl_encode_internal(*(utl_Message**)value, buf);
             break;
         }
         case VECTOR: {
             const utl_Vector* vector = *(utl_Vector**)value;
-            utl_encode_int32(VECTOR_CONSTR, buf);
+            utl_encode_uint32(VECTOR_CONSTR, buf);
             utl_encode_int32(utl_Vector_size(vector), buf);
-            for(size_t i = 0; i < utl_Vector_size(vector); i++) {
+            for(int32_t i = 0; i < utl_Vector_size(vector); i++) {
                 utl_encode_field((utl_FieldDef*)vector->message_def, utl_Vector_rawValue(vector, i), buf, vector->message_def->element_size);
             }
             break;

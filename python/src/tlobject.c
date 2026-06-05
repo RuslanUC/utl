@@ -365,12 +365,36 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
 
-            const size_t len = PyList_Size(item);
-            utl_Vector* vector = utl_Vector_new(field->sub.vector_def, len);
+            utl_MessageDefVector* def = field->sub.vector_def;
+
+            const ssize_t len = PyList_Size(item);
+            utl_Vector* vector = utl_Vector_new(def, len);
             for(ssize_t i = 0; i < len; i++) {
                 if(!Py_TLVector_item_set(vector, PyList_GetItem(item, i), -1)) {
                     utl_Vector_free(vector);
                     return false;
+                }
+            }
+
+            PyObject* result_obj = tlvector_type->tp_alloc(tlvector_type, 0);
+            Py_TLVector* result_vec = (Py_TLVector*)result_obj;
+            Py_TLVector_init_message(result_vec, vector);
+
+            if(def->type == TLOBJECT) {
+                for(ssize_t i = 0; i < len; i++) {
+                    const utl_Message* vec_item = utl_Vector_getMessage(vector, i);
+                    if(vec_item != NULL) {
+                        Py_XINCREF(vec_item->userdata);
+                        result_vec->out_refs[i] = vec_item->userdata;
+                    }
+                }
+            } else if(def->type == VECTOR) {
+                for(ssize_t i = 0; i < len; i++) {
+                    const utl_Vector* vec_item = utl_Vector_getVector(vector, i);
+                    if(vec_item != NULL) {
+                        Py_XINCREF(vec_item->userdata);
+                        result_vec->out_refs[i] = vec_item->userdata;
+                    }
                 }
             }
 
@@ -382,9 +406,8 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
 
             _UTL_LOG("Set field %d (%.*s) of object %p to vector %p", (int)field->num, (int)field->name.size, field->name.data, self, vector);
 
-            Py_XDECREF(self->out_refs[field->num]);
-            self->out_refs[field->num] = NULL;
-            return true;
+            item = result_obj;
+            break;
         }
 
         case STATIC_FIELDS_END: return NULL;
@@ -499,7 +522,7 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
                 PyErr_SetString(PyExc_TypeError, "field is not optional");
                 return -1;
             }
-            utl_Message_clearField(self->message, &field);
+            utl_Message_clearField(self->message, &field, false);
             continue;
         }
 

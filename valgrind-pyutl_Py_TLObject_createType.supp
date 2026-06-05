@@ -1,0 +1,394 @@
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:__strrchr_sse2
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:__strlen_sse2
+   fun:PyUnicode_FromString
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:__strlen_sse2
+   fun:PyUnicode_FromString
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+
+
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:is_overlap
+   fun:is_overlap
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:__strlen_sse2
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:PyUnicode_FromStringAndSize
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:malloc
+   fun:_PyMem_RawMalloc
+   fun:PyMem_RawMalloc
+   fun:_PyObject_Malloc
+   fun:PyObject_Malloc
+   fun:PyUnicode_New
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:PyUnicode_New
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Conditional jump or move depends on uninitialised value(s)
+   Memcheck:Cond
+   fun:memcpy@GLIBC_2.2.5
+   fun:memcpy
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}
+
+{
+   Use of uninitialised value of size 8
+   Memcheck:Value8
+   fun:load_unaligned
+   fun:find_first_nonascii
+   fun:unicode_decode_utf8.lto_priv.0
+   fun:PyType_FromMetaclass
+   fun:Py_TLObject_createType
+}

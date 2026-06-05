@@ -10,10 +10,6 @@ PyTypeObject* tlobject_type;
 PyTypeObject* tlvector_type;
 PyTypeObject* tltype_type;
 PyObject* bytesio_type;
-#ifndef NDEBUG
-bool debug_logging;
-int logging_indent_level;
-#endif
 
 PyObject* pyutl_parse_tl(PyObject* Py_UNUSED(self), PyObject* args) {
     return Py_DefPool_parse((const Py_DefPool*)pyutl_ModuleState_get()->py_def_pool, args);
@@ -136,10 +132,10 @@ PyMODINIT_FUNC PyInit__pyutl(void) {
 
 #ifndef NDEBUG
     {
-        debug_logging = false;
+        utl_debug_logging = false;
         const char* debug_logging_enabled = getenv("UTL_DEBUG_ENABLE_LOGGING");
         if(debug_logging_enabled != NULL && !strcmp(debug_logging_enabled, "true"))
-            debug_logging = true;
+            utl_debug_logging = true;
     }
 #endif
 

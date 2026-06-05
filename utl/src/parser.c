@@ -236,7 +236,6 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
     pos = 0;
 
     if(message_def->fields_num)
-        // TODO: fix utl_Arena_alloc not able to allocate more than 73 (4096/45) fields
         message_def->fields = (utl_FieldDef*)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef) * message_def->fields_num);
 
     size_t offset = 0;

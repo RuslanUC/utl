@@ -6,8 +6,9 @@
 #include "builtins.h"
 #include "string_pool.h"
 #include "constants.h"
+#include "logging.h"
 
-utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initial_size) {
+utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const int32_t initial_size) {
     utl_Arena arena = utl_Arena_new(4096);
     utl_Vector* vector = utl_Arena_alloc(&arena, sizeof(utl_Vector));
     vector->message_def = vector_def;
@@ -19,9 +20,11 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const size_t initia
     return vector;
 }
 
-utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size_t index, const utl_FieldType check_type);
+utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, int32_t index, utl_FieldType check_type);
 
 void utl_Vector_free(utl_Vector* vector) {
+    //_UTL_LOG("Freeing tlvector %p", vector);
+
     if(vector->message_def->type == STRING || vector->message_def->type == BYTES) {
         for(int i = 0; i < vector->size; i++) {
             utl_StringView string = ((utl_StringView*)vector->data)[i];
@@ -35,23 +38,23 @@ void utl_Vector_free(utl_Vector* vector) {
     utl_Arena_free(&vector->arena);
 }
 
-size_t utl_Vector_capacity(const utl_Vector* vector) {
+int32_t utl_Vector_capacity(const utl_Vector* vector) {
     return vector->capacity;
 }
 
 void utl_Vector_resize(utl_Vector* vector, const bool force) {
-    const size_t capacity = utl_Vector_capacity(vector);
+    const int32_t capacity = utl_Vector_capacity(vector);
 
     if (force || vector->size >= capacity) {
         const size_t element_size = vector->message_def->element_size;
-        const size_t old_capacity = vector->capacity;
+        const int32_t old_capacity = vector->capacity;
         vector->capacity = capacity * 1.25 + 1;
         vector->data = realloc(vector->data, element_size * vector->capacity);
         memset(vector->data + vector->size * element_size, 0, element_size * (vector->capacity - old_capacity));
     }
 }
 
-void utl_Vector_remove(utl_Vector* vector, const size_t index) {
+void utl_Vector_remove(utl_Vector* vector, const int32_t index) {
     if (index >= vector->size) {
         return;
     }
@@ -64,7 +67,7 @@ void utl_Vector_remove(utl_Vector* vector, const size_t index) {
     memcpy(vector->data + dst_offset, vector->data + src_offset, (vector->size - index) * el_size);
 }
 
-void* utl_Vector_rawValue(const utl_Vector* vector, const size_t index) {
+void* utl_Vector_rawValue(const utl_Vector* vector, const int32_t index) {
     if(index >= vector->size) {
         return 0;
     }
@@ -72,7 +75,7 @@ void* utl_Vector_rawValue(const utl_Vector* vector, const size_t index) {
     return vector->data + vector->message_def->element_size * index;
 }
 
-inline size_t utl_Vector_size(const utl_Vector* vector) {
+inline int32_t utl_Vector_size(const utl_Vector* vector) {
     return vector->size;
 }
 
@@ -178,7 +181,7 @@ void utl_Vector_appendInt256(utl_Vector* vector, utl_Int256 value) {
     memcpy(vector->data + item_offset, value.value, 32);
 }
 
-void utl_Vector_setBytes_internal(utl_Vector* vector, const size_t index, const utl_StringView value) {
+void utl_Vector_setBytes_internal(utl_Vector* vector, const int32_t index, const utl_StringView value) {
     if(value.size > UTL_MAX_STRINT_LENGTH)
         return;
 
@@ -205,7 +208,7 @@ void utl_Vector_appendString(utl_Vector* vector, utl_StringView value) {
     utl_Vector_setBytes_internal(vector, vector->size++, value);
 }
 
-#define UTL_VECTOR_SET(NAME, TL_TYPE, C_TYPE) void utl_Vector_set##NAME(const utl_Vector* vector, const size_t index, C_TYPE value) { \
+#define UTL_VECTOR_SET(NAME, TL_TYPE, C_TYPE) void utl_Vector_set##NAME(const utl_Vector* vector, const int32_t index, C_TYPE value) { \
         if (vector->message_def->type != TL_TYPE || index >= vector->size) \
             return; \
         const size_t item_offset = vector->message_def->element_size * index; \
@@ -219,7 +222,7 @@ UTL_VECTOR_SET(Bool, FULL_BOOL, bool)
 UTL_VECTOR_SET(Message, TLOBJECT, utl_Message*)
 UTL_VECTOR_SET(Vector, VECTOR, utl_Vector*)
 
-void utl_Vector_setInt128(const utl_Vector* vector, const size_t index, utl_Int128 value) {
+void utl_Vector_setInt128(const utl_Vector* vector, const int32_t index, utl_Int128 value) {
     if (vector->message_def->type != INT128 || index >= vector->size)
         return;
 
@@ -227,7 +230,7 @@ void utl_Vector_setInt128(const utl_Vector* vector, const size_t index, utl_Int1
     memcpy(vector->data + item_offset, value.value, 16);
 }
 
-void utl_Vector_setInt256(const utl_Vector* vector, const size_t index, utl_Int256 value) {
+void utl_Vector_setInt256(const utl_Vector* vector, const int32_t index, utl_Int256 value) {
     if (vector->message_def->type != INT256 || index >= vector->size)
         return;
 
@@ -235,21 +238,21 @@ void utl_Vector_setInt256(const utl_Vector* vector, const size_t index, utl_Int2
     memcpy(vector->data + item_offset, value.value, 32);
 }
 
-void utl_Vector_setBytes(utl_Vector* vector, const size_t index, utl_StringView value) {
+void utl_Vector_setBytes(utl_Vector* vector, const int32_t index, utl_StringView value) {
     if (vector->message_def->type != BYTES || index >= vector->size)
         return;
 
     utl_Vector_setBytes_internal(vector, index, value);
 }
 
-void utl_Vector_setString(utl_Vector* vector, const size_t index, utl_StringView value) {
+void utl_Vector_setString(utl_Vector* vector, const int32_t index, utl_StringView value) {
     if (vector->message_def->type != STRING || index >= vector->size)
         return;
 
     utl_Vector_setBytes_internal(vector, index, value);
 }
 
-#define UTL_VECTOR_GET(NAME, TL_TYPE, C_TYPE) C_TYPE utl_Vector_get##NAME(const utl_Vector* vector, const size_t index) { \
+#define UTL_VECTOR_GET(NAME, TL_TYPE, C_TYPE) C_TYPE utl_Vector_get##NAME(const utl_Vector* vector, const int32_t index) { \
         if (vector->message_def->type != TL_TYPE || index >= vector->size) \
             return 0; \
         const size_t item_offset = vector->message_def->element_size * index; \
@@ -263,8 +266,8 @@ UTL_VECTOR_GET(Bool, FULL_BOOL, bool)
 UTL_VECTOR_GET(Message, TLOBJECT, utl_Message*)
 UTL_VECTOR_GET(Vector, VECTOR, utl_Vector*)
 
-utl_Int128 utl_Vector_getInt128(const utl_Vector* vector, const size_t index) {
-    utl_Int128 result;
+utl_Int128 utl_Vector_getInt128(const utl_Vector* vector, const int32_t index) {
+    utl_Int128 result = {0};
     if (vector->message_def->type != INT128 || index >= vector->size) {
         return result;
     }
@@ -273,8 +276,8 @@ utl_Int128 utl_Vector_getInt128(const utl_Vector* vector, const size_t index) {
     return result;
 }
 
-utl_Int256 utl_Vector_getInt256(const utl_Vector* vector, const size_t index) {
-    utl_Int256 result;
+utl_Int256 utl_Vector_getInt256(const utl_Vector* vector, const int32_t index) {
+    utl_Int256 result = {0};
     if (vector->message_def->type != INT256 || index >= vector->size) {
         return result;
     }
@@ -283,7 +286,7 @@ utl_Int256 utl_Vector_getInt256(const utl_Vector* vector, const size_t index) {
     return result;
 }
 
-utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size_t index, const utl_FieldType check_type) {
+utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const int32_t index, const utl_FieldType check_type) {
     const utl_StringView empty = {.size = 0, .data = NULL};
     if (vector->message_def->type != check_type || index >= vector->size)
         return empty;
@@ -296,10 +299,10 @@ utl_StringView utl_Vector_getBytes_internal(const utl_Vector* vector, const size
     return *bytes;
 }
 
-utl_StringView utl_Vector_getBytes(const utl_Vector* vector, const size_t index) {
+utl_StringView utl_Vector_getBytes(const utl_Vector* vector, const int32_t index) {
     return utl_Vector_getBytes_internal(vector, index, BYTES);
 }
 
-utl_StringView utl_Vector_getString(const utl_Vector* vector, const size_t index) {
+utl_StringView utl_Vector_getString(const utl_Vector* vector, const int32_t index) {
     return utl_Vector_getBytes_internal(vector, index, STRING);
 }
