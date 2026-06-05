@@ -4,8 +4,6 @@
 
 #include "type_def.h"
 
-#define START_POOL_SIZE DEFAULT_MAP_SIZE
-
 typedef struct utl_TlIdMessageDefPair_s utl_TlIdMessageDefPair;
 typedef struct utl_NameTypeDefPair_s utl_NameTypeDefPair;
 

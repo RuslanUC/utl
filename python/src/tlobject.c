@@ -48,12 +48,12 @@ static PyObject* Py_TLObject_getitem_regular(Py_TLObject* self, const utl_FieldD
         case BYTES: {
             const utl_StringView bytes = utl_Message_getBytes(self->message, field);
             _UTL_LOG("Get bytes field %d (%.*s) of object %p: <bytes of size %zu>", (int)field->num, (int)field->name.size, field->name.data, self, bytes.size);
-            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            return PyBytes_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case STRING: {
             const utl_StringView bytes = utl_Message_getString(self->message, field);
             _UTL_LOG("Get string field %d (%.*s) of object %p: \"%.*s\"", (int)field->num, (int)field->name.size, field->name.data, self, (int)bytes.size, bytes.data);
-            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            return PyUnicode_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case TLOBJECT: {
             utl_Message* message = utl_Message_getMessage(self->message, field);
@@ -137,13 +137,12 @@ static PyObject* Py_TLObject_getitem_readonly(Py_TLObject* self, const utl_Field
         case BYTES: {
             const utl_StringView bytes = utl_RoMessage_getBytes(self->ro_message, field);
             _UTL_LOG("Get bytes field %d (%.*s) of object %p: <bytes of size %zu>", (int)field->num, (int)field->name.size, field->name.data, self, bytes.size);
-            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            return PyBytes_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case STRING: {
             const utl_StringView bytes = utl_RoMessage_getString(self->ro_message, field);
-            _UTL_LOG("Get string field %d (%.*s) of object %p: \"%.*s\"", (int)field->num, (int)field->name.size, field->name.data, self,
-                (int)bytes.size, bytes.data);
-            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            _UTL_LOG("Get string field %d (%.*s) of object %p: \"%.*s\"", (int)field->num, (int)field->name.size, field->name.data, self, (int)bytes.size, bytes.data);
+            return PyUnicode_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case TLOBJECT: {
             utl_RoMessage* message = utl_RoMessage_getMessage(self->ro_message, field);
@@ -227,7 +226,12 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
                 return false;
             }
-            utl_Message_setInt32(self->message, field, (int32_t)PyLong_AsLong(item));
+            const int64_t num = PyLong_AsLong(item);
+            if(num > INT32_MAX || num < INT32_MIN) {
+                PyErr_SetString(PyExc_TypeError, "number size exceeds 32 bits");
+                return false;
+            }
+            utl_Message_setInt32(self->message, field, (int32_t)num);
             _UTL_LOG("Set field %d (%.*s) of object %p to int32 %d", (int)field->num, (int)field->name.size, field->name.data, self, (int)PyLong_AsLong(item));
             break;
         }
@@ -365,9 +369,15 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
 
+            const ssize_t len_ssize = PyList_Size(item);
+            if(len_ssize >= INT32_MAX) {
+                PyErr_SetString(PyExc_ValueError, "number of vector elements must fit in int32 number");
+                return false;
+            }
+
             utl_MessageDefVector* def = field->sub.vector_def;
 
-            const ssize_t len = PyList_Size(item);
+            const int32_t len = (int32_t)len_ssize;
             utl_Vector* vector = utl_Vector_new(def, len);
             for(ssize_t i = 0; i < len; i++) {
                 if(!Py_TLVector_item_set(vector, PyList_GetItem(item, i), -1)) {
@@ -381,7 +391,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             Py_TLVector_init_message(result_vec, vector);
 
             if(def->type == TLOBJECT) {
-                for(ssize_t i = 0; i < len; i++) {
+                for(int32_t i = 0; i < len; i++) {
                     const utl_Message* vec_item = utl_Vector_getMessage(vector, i);
                     if(vec_item != NULL) {
                         Py_XINCREF(vec_item->userdata);
@@ -389,7 +399,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                     }
                 }
             } else if(def->type == VECTOR) {
-                for(ssize_t i = 0; i < len; i++) {
+                for(int32_t i = 0; i < len; i++) {
                     const utl_Vector* vec_item = utl_Vector_getVector(vector, i);
                     if(vec_item != NULL) {
                         Py_XINCREF(vec_item->userdata);
@@ -777,10 +787,12 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
     }
 }
 
-static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
+static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
     PyObject* bio;
     bool read_only = false;
-    if (!PyArg_ParseTuple(args, "O!|p", bytesio_type, &bio, &read_only)) {
+
+    static char *kwlist[] = {"buf", "read_only", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!|p", kwlist, bytesio_type, &bio, &read_only)) {
         return NULL;
     }
 
@@ -811,18 +823,21 @@ static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args) {
     return result;
 }
 
-static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args) {
+static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
     uint8_t* buf;
     size_t buf_len;
     int read_only = 0;
-    if (!PyArg_ParseTuple(args, "y#|p", &buf, &buf_len, &read_only)) {
+
+    static char *kwlist[] = {"buf", "read_only", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "y#|p", kwlist, &buf, &buf_len, &read_only)) {
         return NULL;
     }
 
     PyObject* result = Py_TLObject_read(cls, buf, buf_len, NULL, read_only);
     if(result && read_only) {
         PyObject* bytes;
-        if (!PyArg_ParseTuple(args, "O!|p", &PyBytes_Type, &bytes, &read_only)) {
+        if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!|p", kwlist, &PyBytes_Type, &bytes, &read_only)) {
             return NULL;
         }
 
@@ -853,8 +868,8 @@ static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(
 }
 
 static PyMethodDef Py_TLObject_methods[] = {
-    {"read", (PyCFunction)Py_TLObject_read_bytesio, METH_VARARGS | METH_CLASS, 0,},
-    {"read_bytes", (PyCFunction)Py_TLObject_read_bytes, METH_VARARGS | METH_CLASS, 0,},
+    {"read", (PyCFunction)Py_TLObject_read_bytesio, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
+    {"read_bytes", (PyCFunction)Py_TLObject_read_bytes, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
     {"write", (PyCFunction)Py_TLObject_write, METH_NOARGS, 0,},
     {NULL}
 };
