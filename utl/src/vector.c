@@ -9,14 +9,12 @@
 #include "logging.h"
 
 utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const int32_t initial_size) {
-    utl_Arena arena = utl_Arena_new(4096);
-    utl_Vector* vector = utl_Arena_alloc(&arena, sizeof(utl_Vector));
+    utl_Vector* vector = malloc(sizeof(utl_Vector));
     vector->message_def = vector_def;
     vector->userdata = NULL;
     vector->size = 0;
     vector->capacity = initial_size;
     vector->data = calloc(initial_size, vector_def->element_size);
-    vector->arena = arena;
     return vector;
 }
 
@@ -35,7 +33,7 @@ void utl_Vector_free(utl_Vector* vector) {
     }
 
     free(vector->data);
-    utl_Arena_free(&vector->arena);
+    free(vector);
 }
 
 int32_t utl_Vector_capacity(const utl_Vector* vector) {

@@ -77,7 +77,7 @@ utl_StringView emptyStringView = {
     .data = NULL,
 };
 
-utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Arena* arena, utl_Status* status) {
+utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Status* status) {
     if(!check_not_eof(buffer, status, 1)) {
         return emptyStringView;
     }
@@ -149,7 +149,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
             case BYTES:
             case STRING: {
                 utl_Status tmp_status = { .ok = true };
-                const utl_StringView bytes = utl_decode_bytes(buf, &vector->arena, &tmp_status);
+                const utl_StringView bytes = utl_decode_bytes(buf, &tmp_status);
                 if(!tmp_status.ok) {
                     if (status)
                         *status = tmp_status;
@@ -279,26 +279,19 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
         case BIT_BOOL: {
             break;
         }
-        case BYTES: {
-            utl_Status tmp_status = { .ok = true };
-            const utl_StringView bytes = utl_decode_bytes(buf, &message->arena, &tmp_status);
-            if(!tmp_status.ok) {
-                if (status)
-                    *status = tmp_status;
-                return false;
-            }
-            utl_Message_setBytes(message, field, bytes);
-            break;
-        }
+        case BYTES:
         case STRING: {
             utl_Status tmp_status = { .ok = true };
-            const utl_StringView string = utl_decode_bytes(buf, &message->arena, &tmp_status);
+            const utl_StringView string = utl_decode_bytes(buf, &tmp_status);
             if(!tmp_status.ok) {
                 if (status)
                     *status = tmp_status;
                 return false;
             }
-            utl_Message_setString(message, field, string);
+            if(field->type == BYTES)
+                utl_Message_setBytes(message, field, string);
+            else
+                utl_Message_setString(message, field, string);
             break;
         }
         case TLOBJECT: {

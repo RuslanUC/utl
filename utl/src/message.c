@@ -7,17 +7,15 @@
 #include "string.h"
 #include "vector.h"
 #include "builtins.h"
-#include "logging.h"
 #include "string_pool.h"
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def) {
-    utl_Arena arena = utl_Arena_new(4096);
-    utl_Message* message = utl_Arena_alloc(&arena, sizeof(utl_Message));
+    utl_Message* message = malloc(sizeof(utl_Message) + message_def->size);
+
     message->message_def = message_def;
     message->userdata = NULL;
-    message->data = malloc(message_def->size);
+    message->data = (void*)(message + 1);
     memset(message->data, 0, message_def->size);
-    message->arena = arena;
     return message;
 }
 
@@ -32,8 +30,7 @@ void utl_Message_free(utl_Message* message) {
         utl_StringPool_free(string);
     }
 
-    free(message->data);
-    utl_Arena_free(&message->arena);
+    free(message);
 }
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field) {

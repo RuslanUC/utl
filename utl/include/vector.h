@@ -11,7 +11,6 @@ struct utl_Message;
 typedef struct utl_Vector {
     UTL_VECTOR_HEADER;
 
-    utl_Arena arena;
     int32_t size;
     int32_t capacity;
     void* data;

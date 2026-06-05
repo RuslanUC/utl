@@ -8,7 +8,6 @@
 typedef struct utl_Message {
     UTL_MESSAGE_HEADER;
 
-    utl_Arena arena;
     void* data;
 } utl_Message;
 

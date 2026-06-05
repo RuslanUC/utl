@@ -13,6 +13,11 @@ typedef struct utl_DefPool {
     utl_Arena arena;
     utl_TlIdMessageDefPair* message_defs;
     utl_NameTypeDefPair* types;
+    struct {
+        uint8_t* data;
+        size_t size;
+        size_t capacity;
+    } scratch;
 } utl_DefPool;
 
 utl_DefPool* utl_DefPool_new();

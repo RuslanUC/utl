@@ -18,7 +18,8 @@ add_library(utl STATIC
         src/decoder.c
         src/parser.c
         src/stb_ds.c
-        src/logging.c)
+        src/logging.c
+        src/scratch_alloc.c)
 target_include_directories(utl PUBLIC include)
 target_compile_options(utl PUBLIC "-fPIC")
 
