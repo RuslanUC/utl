@@ -62,6 +62,7 @@ SomeConstructor = pyutl.parse_tl("SomeConstructor#12345678 some_string_field:str
 ### TL object definition via python type-annotated class
 Also, you can define tl object using python type-annotated class:
 ```python
+# TODO: update this example
 import pyutl
 
 # TL type inside AnnotatedTLObject[...] may be string or TLType subclass that you got from pyutl.create_type or pyutl.get_type

@@ -1,6 +1,6 @@
 import inspect
 from types import ModuleType
-from typing import TypeVar, Generic, Optional, Annotated, get_origin, get_args, Union, ForwardRef
+from typing import TypeVar, Generic, Optional, Annotated, get_origin, get_args, Union, ForwardRef, Any
 
 from ._pyutl import *
 
@@ -13,55 +13,86 @@ T = TypeVar("T", bound=TLType)
 TAny = TypeVar("TAny")
 
 
-class TLFlags(int):
-    ...
+# TODO: rename to _TLFieldDef
+class _TLType:
+    NAME: str | None
 
 
-class TLInt(int):
-    ...
+class TLFlags(_TLType):
+    NAME = "#"
 
 
-class TLLong(int):
-    ...
+class TLInt(_TLType):
+    NAME = "int"
 
 
-class TLInt128(int):
-    ...
+class TLLong(_TLType):
+    NAME = "long"
 
 
-class TLInt256(int):
-    ...
+class TLInt128(_TLType):
+    NAME = "int128"
 
 
-class _TLOptionalMeta(type):
-    def __getitem__(self, params: tuple[type[TAny], int] | tuple[type[TAny], int, int] | tuple[str, int] | tuple[str, int, int] | int | tuple[int, int]):
-        if isinstance(params, int):
-            params = (params,)
-
-        is_true = self is TLTrue
-        base_args = 1 if is_true else 2
-
-        if not isinstance(params, tuple) or len(params) < base_args or len(params) > (base_args + 1):
-            raise TypeError(f"{self.__name__}[...] should be used with {base_args} or {base_args + 1} arguments.")
-
-        if len(params) == base_args:
-            metadata = (params[base_args - 1], 1)
-        else:
-            metadata = (params[base_args - 1], params[base_args])
-
-        if is_true:
-            return Annotated[bool, metadata]
-        else:
-            origin = params[0]
-            return Annotated[Optional[origin], metadata]
+class TLInt256(_TLType):
+    NAME = "int256"
 
 
-class TLOptional(Generic[TAny], metaclass=_TLOptionalMeta):
-    pass
+class TLFloat(_TLType):
+    NAME = "double"
 
 
-class TLTrue(Generic[TAny], metaclass=_TLOptionalMeta):
-    pass
+class TLBool(_TLType):
+    NAME = "Bool"
+
+
+class TLTrue(_TLType):
+    NAME = "true"
+
+
+class TLString(_TLType):
+    NAME = "string"
+
+
+class TLBytes(_TLType):
+    NAME = "bytes"
+
+
+class TLObj(_TLType):
+    NAME = None
+
+    __slots__ = ("name",)
+
+    def __init__(self, typ: str | type[TLObject]) -> None:
+        if isinstance(typ, type) and issubclass(typ, TLObject):
+            raise NotImplementedError("Passing tl types to pyutl.TLObject is not supported yet")
+        self.name = typ
+
+
+class TLVec(_TLType):
+    NAME = None
+
+    __slots__ = ("inner_type",)
+
+    def __init__(self, inner_type: _TLType) -> None:
+        if isinstance(inner_type, TLOpt):
+            raise ValueError("pyutl.TLVec can't contain pyutl.TLOpt")
+        if isinstance(inner_type, TLTrue):
+            raise ValueError("pyutl.TLVec can't contain pyutl.TLTrue")
+        self.inner_type = inner_type
+
+
+class TLOpt(_TLType):
+    NAME = None
+
+    __slots__ = ("inner_type", "bit", "flags_num",)
+
+    def __init__(self, inner_type: _TLType, bit: int, flags_num: int | None = None) -> None:
+        if isinstance(inner_type, TLOpt):
+            raise ValueError("pyutl.TLOpt can't contain another pyutl.TLOpt")
+        self.inner_type = inner_type
+        self.bit = bit
+        self.flags_num = flags_num
 
 
 class _FieldAccumulatorDict(dict):
@@ -72,47 +103,25 @@ class _FieldAccumulatorDict(dict):
         self.__fields = fields
         super().__init__()
 
-    def __setitem__(self, key, value):
-        if not key.startswith("__"):
-            self.__fields.append(key)
-        elif key == "__annotations__":
-            value = _FieldAccumulatorDict(self.__fields)
+    def __setitem__(self, key: str, value: Any) -> None:
+        if not key.startswith("__") and isinstance(value, _TLType):
+            self.__fields.append((key, value))
         super().__setitem__(key, value)
 
 
-_type_to_tl = {
-    TLInt: "int",
-    TLLong: "long",
-    TLInt128: "int128",
-    TLInt256: "int256",
-    TLFlags: "#",
-    float: "double",
-    str: "string",
-    bytes: "bytes",
-    bool: "Bool",
-}
+def _resolve_field_type(field_def: _TLType, flags_count: int = 0) -> str:
+    if field_def.NAME is not None:
+        return field_def.NAME
 
+    if isinstance(field_def, TLObj):
+        return field_def.name
+    if isinstance(field_def, TLVec):
+        return f"vector<{_resolve_field_type(field_def.inner_type)}>"
+    if isinstance(field_def, TLOpt):
+        flags_num = field_def.flags_num or flags_count
+        return f"flags{flags_num if flags_num > 1 else ''}.{field_def.bit}?{_resolve_field_type(field_def.inner_type)}"
 
-def _resolve_annotation(annotation) -> str:
-    tl_type = _type_to_tl.get(annotation)
-    if tl_type is not None:
-        return tl_type
-    elif isinstance(annotation, type) and issubclass(annotation, TLType):
-       return annotation.__name__
-    elif get_origin(annotation) is list:
-        return f"vector<{_resolve_annotation(get_args(annotation)[0])}>"
-    elif get_origin(annotation) is Annotated:
-        args = get_args(annotation)
-        flag_bit, flag_num = args[1]
-        if args[0] is bool:
-            resolved = "true"
-        else:
-            arg = get_args(args[0])[0]
-            if isinstance(arg, ForwardRef):
-                resolved = arg.__forward_arg__
-            else:
-                resolved = _resolve_annotation(arg)
-        return f"flags{flag_num if flag_num > 1 else ''}.{flag_bit}?{resolved}"
+    raise RuntimeError("Unreachable")
 
 
 class _AnnotatedTLObjectMeta(type):
@@ -124,9 +133,6 @@ class _AnnotatedTLObjectMeta(type):
             tl_obj_type = parse_tl(class_dict["__tl__"], class_dict["__layer__"], class_dict.get("__section__", TLSection.TYPES))
             setattr(tl_obj_type, "__tl__", class_dict["__tl__"])
             return tl_obj_type
-
-        if "__annotations__" not in class_dict:
-            class_dict["__annotations__"] = {}
 
         orig_bases = class_dict.get("__orig_bases__")
         if orig_bases and get_origin(orig_bases[0]) is Generic:
@@ -143,18 +149,13 @@ class _AnnotatedTLObjectMeta(type):
         else:
             raise ValueError(f"Class {name} has invalid __orig_bases__")
 
-        tmp_module = ModuleType("__tmp__")
-        setattr(tmp_module, "__annotations__", class_dict["__annotations__"])
-        annotations = inspect.get_annotations(tmp_module, eval_str=True)
-
         tl_def = f"{name}#{hex(class_dict['__tl_id__'])[2:]}"
 
-        for field_name in class_dict["__fields"]:
-            annotation = annotations[field_name]
-            tl_type = _resolve_annotation(annotation)
-            if tl_type is None:
-                raise ValueError(f"Failed to resolve field {field_name} in class {name}!")
-
+        fields: list[tuple[str, _TLType]] = class_dict["__fields"]
+        flags_count = 0
+        for field_name, field_def in fields:
+            flags_count += isinstance(field_def, TLFlags)
+            tl_type = _resolve_field_type(field_def, flags_count)
             tl_def += f" {field_name}:{tl_type}"
 
         tl_def += f" = {base_type};"

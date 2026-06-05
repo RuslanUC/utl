@@ -1,6 +1,6 @@
 import os
 from io import BytesIO
-from typing import Annotated, cast
+from typing import cast, Optional
 
 import pytest
 
@@ -224,45 +224,45 @@ def test_creation_from_python_type_annotated_class() -> None:
         # if None - then after parsing it will be set to generated tl definition
         __tl__ = None
 
-        some_int: pyutl.TLInt
-        some_long: pyutl.TLLong
-        some_int128: pyutl.TLInt128
-        some_int256: pyutl.TLInt256
-        some_double: float
-        some_string: str
-        some_bytes: bytes
-        some_bool: bool
-        some_object: IdkBase
-        some_primitive_vector: list[pyutl.TLInt]
-        some_object_vector: list[IdkBase]
+        some_int: int = pyutl.TLInt()
+        some_long: int = pyutl.TLLong()
+        some_int128: int = pyutl.TLInt128()
+        some_int256: int = pyutl.TLInt256()
+        some_double: float = pyutl.TLFloat()
+        some_string: str = pyutl.TLString()
+        some_bytes: bytes = pyutl.TLBytes()
+        some_bool: bool = pyutl.TLBool()
+        some_object: IdkBase = pyutl.TLObj("IdkBase")
+        some_primitive_vector: list[pyutl.TLInt] = pyutl.TLVec(pyutl.TLInt())
+        some_object_vector: list[IdkBase] = pyutl.TLVec(pyutl.TLObj("IdkBase"))
 
-        flags: pyutl.TLFlags
-        some_optional_int: pyutl.TLOptional[pyutl.TLInt, 1]
-        some_optional_long: pyutl.TLOptional[pyutl.TLLong, 2]
-        some_optional_int128: pyutl.TLOptional[pyutl.TLInt128, 3]
-        some_optional_int256: pyutl.TLOptional[pyutl.TLInt256, 4]
-        some_optional_double: pyutl.TLOptional[float, 5]
-        some_optional_string: pyutl.TLOptional[str, 6]
-        some_optional_bytes: pyutl.TLOptional[bytes, 7]
-        some_optional_object: pyutl.TLOptional[IdkBase, 8]
-        some_optional_primitive_vector: pyutl.TLOptional[list[pyutl.TLInt], 9]
-        some_optional_object_vector: pyutl.TLOptional[list[IdkBase], 10]
-        some_optional_bool: pyutl.TLOptional[bool, 11]
-        some_optional_true: pyutl.TLTrue[12]
+        flags: int = pyutl.TLFlags()
+        some_optional_int: Optional[int] = pyutl.TLOpt(pyutl.TLInt(), 1)
+        some_optional_long: Optional[int] = pyutl.TLOpt(pyutl.TLLong(), 2)
+        some_optional_int128: Optional[int] = pyutl.TLOpt(pyutl.TLInt128(), 3)
+        some_optional_int256: Optional[int] = pyutl.TLOpt(pyutl.TLInt256(), 4)
+        some_optional_double: Optional[float] = pyutl.TLOpt(pyutl.TLFloat(), 5)
+        some_optional_string: Optional[str] = pyutl.TLOpt(pyutl.TLString(), 6)
+        some_optional_bytes: Optional[bytes] = pyutl.TLOpt(pyutl.TLBytes(), 7)
+        some_optional_object: Optional[IdkBase] = pyutl.TLOpt(pyutl.TLObj("IdkBase"), 8)
+        some_optional_primitive_vector: Optional[list[int]] = pyutl.TLOpt(pyutl.TLVec(pyutl.TLInt()), 9)
+        some_optional_object_vector: Optional[list[IdkBase]] = pyutl.TLOpt(pyutl.TLVec(pyutl.TLObj("IdkBase")), 10)
+        some_optional_bool: Optional[bool] = pyutl.TLOpt(pyutl.TLBool(), 11)
+        some_optional_true: Optional[bool] = pyutl.TLOpt(pyutl.TLTrue(), 12)
 
-        flags2: pyutl.TLFlags
-        some_another_optional_int: pyutl.TLOptional[pyutl.TLInt, 1, 2]
-        some_another_optional_long: pyutl.TLOptional[pyutl.TLLong, 2, 2]
-        some_another_optional_int128: pyutl.TLOptional[pyutl.TLInt128, 3, 2]
-        some_another_optional_int256: pyutl.TLOptional[pyutl.TLInt256, 4, 2]
-        some_another_optional_double: pyutl.TLOptional[float, 5, 2]
-        some_another_optional_string: pyutl.TLOptional[str, 6, 2]
-        some_another_optional_bytes: pyutl.TLOptional[bytes, 7, 2]
-        some_another_optional_object: pyutl.TLOptional[IdkBase, 8, 2]
-        some_another_optional_primitive_vector: pyutl.TLOptional[list[pyutl.TLInt], 9, 2]
-        some_another_optional_object_vector: pyutl.TLOptional[list[IdkBase], 10, 2]
-        some_another_optional_bool: pyutl.TLOptional[bool, 11, 2]
-        some_another_optional_true: pyutl.TLTrue[12, 2]
+        flags2: int = pyutl.TLFlags()
+        some_another_optional_int: Optional[int] = pyutl.TLOpt(pyutl.TLInt(), 1)
+        some_another_optional_long: Optional[int] = pyutl.TLOpt(pyutl.TLLong(), 2)
+        some_another_optional_int128: Optional[int] = pyutl.TLOpt(pyutl.TLInt128(), 3)
+        some_another_optional_int256: Optional[int] = pyutl.TLOpt(pyutl.TLInt256(), 4)
+        some_another_optional_double: Optional[float] = pyutl.TLOpt(pyutl.TLFloat(), 5)
+        some_another_optional_string: Optional[str] = pyutl.TLOpt(pyutl.TLString(), 6)
+        some_another_optional_bytes: Optional[bytes] = pyutl.TLOpt(pyutl.TLBytes(), 7)
+        some_another_optional_object: Optional[IdkBase] = pyutl.TLOpt(pyutl.TLObj("IdkBase"), 8)
+        some_another_optional_primitive_vector: Optional[list[int]] = pyutl.TLOpt(pyutl.TLVec(pyutl.TLInt()), 9)
+        some_another_optional_object_vector: Optional[list[IdkBase]] = pyutl.TLOpt(pyutl.TLVec(pyutl.TLObj("IdkBase")), 10)
+        some_another_optional_bool: Optional[bool] = pyutl.TLOpt(pyutl.TLBool(), 11)
+        some_another_optional_true: Optional[bool] = pyutl.TLOpt(pyutl.TLTrue(), 12)
 
     assert issubclass(Something, pyutl.TLObject)
     assert Something.__tl__ == "Something#12345678 some_int:int some_long:long some_int128:int128 some_int256:int256 some_double:double some_string:string some_bytes:bytes some_bool:Bool some_object:IdkBase some_primitive_vector:vector<int> some_object_vector:vector<IdkBase> flags:# some_optional_int:flags.1?int some_optional_long:flags.2?long some_optional_int128:flags.3?int128 some_optional_int256:flags.4?int256 some_optional_double:flags.5?double some_optional_string:flags.6?string some_optional_bytes:flags.7?bytes some_optional_object:flags.8?IdkBase some_optional_primitive_vector:flags.9?vector<int> some_optional_object_vector:flags.10?vector<IdkBase> some_optional_bool:flags.11?Bool some_optional_true:flags.12?true flags2:# some_another_optional_int:flags2.1?int some_another_optional_long:flags2.2?long some_another_optional_int128:flags2.3?int128 some_another_optional_int256:flags2.4?int256 some_another_optional_double:flags2.5?double some_another_optional_string:flags2.6?string some_another_optional_bytes:flags2.7?bytes some_another_optional_object:flags2.8?IdkBase some_another_optional_primitive_vector:flags2.9?vector<int> some_another_optional_object_vector:flags2.10?vector<IdkBase> some_another_optional_bool:flags2.11?Bool some_another_optional_true:flags2.12?true = SomethingBase;"
