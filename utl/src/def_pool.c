@@ -16,7 +16,7 @@ typedef struct utl_NameTypeDefPair_s {
 
 utl_DefPool* utl_DefPool_new() {
     utl_DefPool* result = malloc(sizeof(utl_DefPool));
-    result->arena = utl_Arena_new(128 * 1024);
+    result->arena = utl_Arena_new(512 * 1024);
     result->message_defs = NULL;
     result->types = NULL;
 
