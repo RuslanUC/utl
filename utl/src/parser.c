@@ -64,7 +64,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
         *offset += sizeof(utl_StringView);
     } else if(type_len == 4 && !memcmp(type_str, "Bool", 4)) {
         field_type = FULL_BOOL;
-        *offset += sizeof(bool);
+        *offset += 4;
     } else if(type_len == 4 && !memcmp(type_str, "true", 4)) {
         field_type = BIT_BOOL;
         *offset += 0;

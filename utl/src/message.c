@@ -58,7 +58,7 @@ void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* fiel
         const size_t field_size = UTL_SIZES[field->type];
         if(field_size <= 0)
             return;
-        memset(message->data + field->offset, 0, field_size);
+        memset((uint8_t*)message->data + field->offset, 0, field_size);
     }
 }
 
@@ -180,7 +180,7 @@ void utl_Message_setDouble(const utl_Message* message, const utl_FieldDef* field
 void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, const bool value) {
     if(field->type == FULL_BOOL) {
         utl_Message_setFlag(message, field);
-        *(bool*)(message->data + field->offset) = value;
+        *(int*)(message->data + field->offset) = value;
     } else if (field->type == BIT_BOOL) {
         if(value)
             utl_Message_setFlag(message, field);
@@ -299,7 +299,7 @@ double utl_Message_getDouble(const utl_Message* message, const utl_FieldDef* fie
 
 bool utl_Message_getBool(const utl_Message* message, const utl_FieldDef* field) {
     if(field->type == FULL_BOOL) {
-        return *(bool*)(message->data + field->offset);
+        return *(int*)(message->data + field->offset);
     }
     if (field->type == BIT_BOOL) {
         return utl_Message_hasField(message, field);
