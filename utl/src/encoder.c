@@ -1,15 +1,14 @@
 #include "encoder.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "vector.h"
-#include "builtins.h"
 #include "logging.h"
 
 char* utl_EncodeBuf_alloc(utl_EncodeBuf* buf, const size_t n_bytes) {
     if(buf->pos + n_bytes > buf->size) {
-        buf->size = (buf->pos + n_bytes) * 1.25;
+        _UTL_LOG("[enc] Realloc %zu -> %zu", buf->size, (buf->pos + n_bytes) * 2);
+        buf->size = (buf->pos + n_bytes) * 2;
         buf->data = realloc(buf->data, buf->size);
     }
 
@@ -134,7 +133,10 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
 }
 
 char* utl_encode(const utl_Message* message, size_t* out_size) {
-    const size_t alloc_size = 4 + message->message_def->fields_num * 8;
+    size_t alloc_size = 4 + message->message_def->fields_num * 8;
+    if(alloc_size < 4096)
+        alloc_size = 4096;
+    _UTL_LOG("[enc] Alloc %zu", alloc_size);
     utl_EncodeBuf buf = {
         .data = malloc(alloc_size),
         .pos = 0,

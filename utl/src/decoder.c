@@ -199,7 +199,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                     }
                     return false;
                 }
-                const size_t new_size = utl_decode_int32(buf);
+                const int32_t new_size = utl_decode_int32(buf);
                 utl_Vector* new_vector = utl_Vector_new(field->sub.vector_def, new_size);
                 if(!utl_decode_vector(new_vector, def_pool, field->sub.vector_def, buf, new_size, status))
                     return false;
@@ -207,7 +207,13 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 break;
             }
             case STATIC_FIELDS_END:
-                abort();
+            case ALL_FIELDS_END: {
+                if(status) {
+                    status->ok = false;
+                    snprintf(status->message, UTL_STATUS_MAX_MESSAGE_SIZE, "Internal error: tried to serialize field type %d", field->type);
+                }
+                return false;
+            }
         }
 
         /*if(value == NULL) {
@@ -222,7 +228,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
     return true;
 }
 
-bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
+bool utl_decode_field(const utl_Message* message, utl_DefPool* def_pool, const utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
     if(field->flag_info && field->type != FLAGS) {
         const uint8_t flag_bit = field->flag_info & 0b11111;
         const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
@@ -335,7 +341,7 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
                 }
                 return false;
             }
-            const size_t size = utl_decode_int32(buf);
+            const int32_t size = utl_decode_int32(buf);
             utl_Vector* vector = utl_Vector_new(field->sub.vector_def, size);
             utl_Message_setVector(message, field, vector);
             if(!utl_decode_vector(vector, def_pool, field->sub.vector_def, buf, size, status))
@@ -343,7 +349,13 @@ bool utl_decode_field(utl_Message* message, utl_DefPool* def_pool, const utl_Fie
             break;
         }
         case STATIC_FIELDS_END:
-            abort();
+        case ALL_FIELDS_END: {
+            if(status) {
+                status->ok = false;
+                snprintf(status->message, UTL_STATUS_MAX_MESSAGE_SIZE, "Internal error: tried to serialize field type %d", field->type);
+            }
+            return false;
+        }
     }
 
     return true;

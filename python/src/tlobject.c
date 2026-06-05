@@ -341,6 +341,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case TLOBJECT: {
             if(!PyObject_TypeCheck(item, tlobject_type)) {
+                // TODO: use PyType_GetName(Py_TYPE(item))
                 PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
                 return false;
             }
@@ -789,7 +790,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 
 static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
     PyObject* bio;
-    bool read_only = false;
+    int read_only = false;
 
     static char *kwlist[] = {"buf", "read_only", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!|p", kwlist, bytesio_type, &bio, &read_only)) {
@@ -860,7 +861,7 @@ static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(
     } else {
         size_t written_bytes;
         char* bytes = utl_encode(self->message, &written_bytes);
-        result = PyBytes_FromStringAndSize(bytes, written_bytes);
+        result = PyBytes_FromStringAndSize(bytes, (ssize_t)written_bytes);
         free(bytes);
     }
 
