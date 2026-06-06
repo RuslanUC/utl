@@ -86,7 +86,7 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             break;
         }
         case FULL_BOOL: {
-            utl_encode_bool(*(bool*)value, buf);
+            utl_encode_bool((*(uint32_t*)value & 0b10) == 0, buf);
             break;
         }
         case BIT_BOOL: {
