@@ -32,14 +32,11 @@ typedef struct utl_FieldDef {
         struct utl_MessageDefVector* vector_def;
     } sub;
 
-    // TODO: set to uint16_t?
-    size_t num;
-    size_t offset;
     utl_StringView name;
-    // if fields is optional, 3 higher bits represent flag_num (flags, flags2, flags3, etc.), 5 lower bits
-    //   represent flag_bit (max value is 31 since flags field type is int32)
-    // if fields is not optional, flag_info is 0
-    uint8_t flag_info;
+    uint16_t num;
+    uint16_t offset;
+    uint8_t flag_num : 3;
+    uint8_t flag_info : 5;
 } utl_FieldDef;
 
 utl_FieldDef* utl_FieldDef_new(utl_Arena* arena);

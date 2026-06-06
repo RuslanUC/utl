@@ -242,9 +242,9 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
 }
 
 bool utl_decode_field(const utl_Message* message, utl_DefPool* def_pool, const utl_FieldDef* field, utl_DecodeBuf* buf, utl_Status* status) {
-    if(field->flag_info && field->type != FLAGS) {
-        const uint8_t flag_bit = field->flag_info & 0b11111;
-        const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    if(field->flag_num && field->type != FLAGS) {
+        const uint8_t flag_bit = field->flag_info;
+        const utl_FieldDef* flags_field = message->message_def->flags_fields[field->flag_num - 1];
         const uint32_t flags = utl_Message_getInt32(message, flags_field);
         const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
         if(field->type == BIT_BOOL)

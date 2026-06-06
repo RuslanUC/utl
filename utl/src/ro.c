@@ -122,9 +122,9 @@ bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl
     for (int i = 0; i < def->fields_num; i++) {
         const utl_FieldDef field = def->fields[i];
 
-        if (field.flag_info && field.type != FLAGS) {
-            const uint8_t flag_bit = field.flag_info & 0b11111;
-            const uint32_t flags = flags_fields[(field.flag_info >> 5) - 1];
+        if (field.flag_num && field.type != FLAGS) {
+            const uint8_t flag_bit = field.flag_info;
+            const uint32_t flags = flags_fields[field.flag_num - 1];
             const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
             if (field.type == BIT_BOOL && positions != NULL)
                 positions[i] = -1;

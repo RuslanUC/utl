@@ -35,24 +35,24 @@ void utl_Message_free(utl_Message* message) {
 }
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field) {
-    if (field->flag_info == 0)
+    if (field->flag_num == 0)
         return true;
 
-    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[field->flag_num - 1];
     const uint32_t flag = *(uint32_t*)(message->data + flags_field->offset);
-    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    const uint32_t flag_bit = 1 << field->flag_info;
 
     return (flag & flag_bit) == flag_bit;
 }
 
 void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* field, const bool flag_only) {
-    if (field->flag_info == 0)
+    if (field->flag_num == 0)
         return;
 
     const utl_MessageDef* def = message->message_def;
 
-    const utl_FieldDef* flags_field = def->flags_fields[(field->flag_info >> 5) - 1];
-    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    const utl_FieldDef* flags_field = def->flags_fields[field->flag_num - 1];
+    const uint32_t flag_bit = 1 << field->flag_info;
     *(uint32_t*)(message->data + flags_field->offset) &= ~flag_bit;
 
     if(!flag_only) {
@@ -64,11 +64,11 @@ void utl_Message_clearField(const utl_Message* message, const utl_FieldDef* fiel
 }
 
 void utl_Message_setFlag(const utl_Message* message, const utl_FieldDef* field) {
-    if (field->flag_info == 0)
+    if (field->flag_num == 0)
         return;
 
-    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
-    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[field->flag_num - 1];
+    const uint32_t flag_bit = 1 << field->flag_info;
     *(uint32_t*)(message->data + flags_field->offset) |= flag_bit;
 }
 
@@ -82,7 +82,7 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
 
     for (int i = 0; i < a->message_def->fields_num; i++) {
         utl_FieldDef field = a->message_def->fields[i];
-        if (field.flag_info != 0 && field.type != FLAGS) {
+        if (field.flag_num != 0 && field.type != FLAGS) {
             const bool has_a = utl_Message_hasField(a, &field);
             const bool has_b = utl_Message_hasField(a, &field);
 

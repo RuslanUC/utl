@@ -549,14 +549,14 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
         PyObject* item = PyDict_GetItemString(kwargs, field.name.data);
 
         if(!item) {
-            if(!field.flag_info) {
+            if(!field.flag_num) {
                 PyErr_SetString(PyExc_TypeError, "missing required keyword-only argument");
                 return -1;
             }
             continue;
         }
         if(Py_IsNone(item)) {
-            if(!field.flag_info) {
+            if(!field.flag_num) {
                 PyErr_SetString(PyExc_TypeError, "field is not optional");
                 return -1;
             }

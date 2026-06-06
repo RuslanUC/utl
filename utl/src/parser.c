@@ -36,9 +36,9 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
     if(type_len == 1 && !memcmp(type_str, "#", 1)) {
         field_type = FLAGS;
         if(field->name.size > 5) {
-            field->flag_info = (field->name.data[5] - '0') << 5;
+            field->flag_num = field->name.data[5] - '0';
         } else {
-            field->flag_info = 1 << 5;
+            field->flag_num = 1;
         }
         *offset += 4;
     } else if(type_len == 3 && !memcmp(type_str, "int", 3)) {
@@ -243,6 +243,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         utl_FieldDef* field = &message_def->fields[i];
         field->num = i;
         field->offset = offset;
+        field->flag_num = 0;
         field->flag_info = 0;
 
         while(pos < size && line[pos] == ' ') ++pos;
@@ -296,7 +297,7 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
                 flag_info += line[last + flag_bit_offset + 1] - '0';
             }
 
-            flag_info |= flag_num << 5;
+            field->flag_num = flag_num;
             field->flag_info = flag_info;
 
             ++pos;

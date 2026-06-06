@@ -22,6 +22,8 @@ typedef struct utl_MessageDef {
     uint8_t objects_num;
     uint8_t vectors_num;
     uint8_t fully_static : 1;
+    // TODO: change to u16 : 15?
+    //  thats 32768 bytes, or 1024 int256 fields, or 4096 tlobject fields;
     uint32_t size : 31;
     utl_FieldDef** flags_fields;
     utl_FieldDef** string_fields;
@@ -36,6 +38,7 @@ typedef struct utl_MessageDefVector {
         struct utl_TypeDef* type_def;
         struct utl_MessageDefVector* vector_def;
     } sub;
+    // TODO: change to uint8_t
     size_t element_size;
 } utl_MessageDefVector;
 

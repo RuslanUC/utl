@@ -138,7 +138,7 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
     const utl_FieldDef* fields = def.fields;
     for(int i = 0; i < def.fields_num; i++) {
         const utl_FieldDef field = fields[i];
-        if(field.flag_info && field.type != FLAGS && !utl_Message_hasField(message, &field))
+        if(field.flag_num && field.type != FLAGS && !utl_Message_hasField(message, &field))
             continue;
 
         if(field.type != BIT_BOOL) {

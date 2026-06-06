@@ -42,12 +42,12 @@ void utl_RoMessage_free(utl_RoMessage* message) {
 }
 
 bool utl_RoMessage_hasField(const utl_RoMessage* message, const utl_FieldDef* field) {
-    if (field->flag_info == 0)
+    if (field->flag_num == 0)
         return true;
 
-    const utl_FieldDef* flags_field = message->message_def->flags_fields[(field->flag_info >> 5) - 1];
+    const utl_FieldDef* flags_field = message->message_def->flags_fields[field->flag_num - 1];
     const uint32_t flag = *(uint32_t*)(message->data + message->field_positions[flags_field->num]);
-    const uint32_t flag_bit = 1 << (field->flag_info & 0b11111);
+    const uint32_t flag_bit = 1 << field->flag_info;
 
     return (flag & flag_bit) == flag_bit;
 }

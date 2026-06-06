@@ -167,27 +167,33 @@ void test_MessageWithFlags() {
 
     TEST_ASSERT_EQUAL(0, message_def->fields[0].num);
     TEST_ASSERT_EQUAL(FLAGS, message_def->fields[0].type);
-    TEST_ASSERT_EQUAL(0b00100000, message_def->fields[0].flag_info);
+    TEST_ASSERT_EQUAL(1, message_def->fields[0].flag_num);
+    TEST_ASSERT_EQUAL(0, message_def->fields[0].flag_info);
 
     TEST_ASSERT_EQUAL(1, message_def->fields[1].num);
     TEST_ASSERT_EQUAL(INT32, message_def->fields[1].type);
-    TEST_ASSERT_EQUAL(0b00100000, message_def->fields[1].flag_info);
+    TEST_ASSERT_EQUAL(1, message_def->fields[1].flag_num);
+    TEST_ASSERT_EQUAL(0, message_def->fields[1].flag_info);
 
     TEST_ASSERT_EQUAL(2, message_def->fields[2].num);
     TEST_ASSERT_EQUAL(INT64, message_def->fields[2].type);
-    TEST_ASSERT_EQUAL(0b00101111, message_def->fields[2].flag_info);
+    TEST_ASSERT_EQUAL(1, message_def->fields[2].flag_num);
+    TEST_ASSERT_EQUAL(15, message_def->fields[2].flag_info);
 
     TEST_ASSERT_EQUAL(3, message_def->fields[3].num);
     TEST_ASSERT_EQUAL(FLAGS, message_def->fields[3].type);
-    TEST_ASSERT_EQUAL(0b01000000, message_def->fields[3].flag_info);
+    TEST_ASSERT_EQUAL(2, message_def->fields[3].flag_num);
+    TEST_ASSERT_EQUAL(0, message_def->fields[3].flag_info);
 
     TEST_ASSERT_EQUAL(4, message_def->fields[4].num);
     TEST_ASSERT_EQUAL(INT128, message_def->fields[4].type);
-    TEST_ASSERT_EQUAL(0b01000011, message_def->fields[4].flag_info);
+    TEST_ASSERT_EQUAL(2, message_def->fields[4].flag_num);
+    TEST_ASSERT_EQUAL(3, message_def->fields[4].flag_info);
 
     TEST_ASSERT_EQUAL(5, message_def->fields[5].num);
     TEST_ASSERT_EQUAL(BIT_BOOL, message_def->fields[5].type);
-    TEST_ASSERT_EQUAL(0b01000100, message_def->fields[5].flag_info);
+    TEST_ASSERT_EQUAL(2, message_def->fields[5].flag_num);
+    TEST_ASSERT_EQUAL(4, message_def->fields[5].flag_info);
 
     utl_DefPool_free(pool);
 }
