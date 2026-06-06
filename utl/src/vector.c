@@ -6,6 +6,7 @@
 #include "builtins.h"
 #include "string_pool.h"
 #include "constants.h"
+#include "encoder.h"
 #include "logging.h"
 
 utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const int32_t initial_size) {
@@ -216,9 +217,17 @@ void utl_Vector_appendString(utl_Vector* vector, utl_StringView value) {
 UTL_VECTOR_SET(Int32, INT32, int32_t)
 UTL_VECTOR_SET(Int64, INT64, int64_t)
 UTL_VECTOR_SET(Double, DOUBLE, double)
-UTL_VECTOR_SET(Bool, FULL_BOOL, bool)
 UTL_VECTOR_SET(Message, TLOBJECT, utl_Message*)
 UTL_VECTOR_SET(Vector, VECTOR, utl_Vector*)
+
+void utl_Vector_setBool(const utl_Vector* vector, const int32_t index, bool value) {
+    static const uint32_t full_bools[2] = {BOOL_FALSE_CONSTR, BOOL_TRUE_CONSTR};
+    if(vector->message_def->type != FULL_BOOL || index >= vector->size)
+        return;
+
+    const size_t item_offset = vector->message_def->element_size * index;
+    *(uint32_t*)(vector->data + item_offset) = full_bools[value != 0];
+}
 
 void utl_Vector_setInt128(const utl_Vector* vector, const int32_t index, utl_Int128 value) {
     if (vector->message_def->type != INT128 || index >= vector->size)
@@ -260,9 +269,19 @@ void utl_Vector_setString(utl_Vector* vector, const int32_t index, utl_StringVie
 UTL_VECTOR_GET(Int32, INT32, int32_t)
 UTL_VECTOR_GET(Int64, INT64, int64_t)
 UTL_VECTOR_GET(Double, DOUBLE, double)
-UTL_VECTOR_GET(Bool, FULL_BOOL, bool)
 UTL_VECTOR_GET(Message, TLOBJECT, utl_Message*)
 UTL_VECTOR_GET(Vector, VECTOR, utl_Vector*)
+
+bool utl_Vector_getBool(const utl_Vector* vector, const int32_t index) {
+    if(vector->message_def->type != FULL_BOOL || index >= vector->size)
+        return 0;
+    const size_t item_offset = vector->message_def->element_size * index;
+
+    const uint32_t value = *(uint32_t*)(vector->data + item_offset);
+    // True  = 0x997275b5; lower byte is 0b10110101 -> lower two bits are 01 -> &0b10 mask = 00
+    // False = 0xbc799737; lower byte is 0b00110111 -> lower two bits are 11 -> &0b10 mask = 10
+    return (value & 0b10) == 0;
+}
 
 utl_Int128 utl_Vector_getInt128(const utl_Vector* vector, const int32_t index) {
     utl_Int128 result = {0};

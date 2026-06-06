@@ -7,6 +7,7 @@
 #include "string.h"
 #include "vector.h"
 #include "builtins.h"
+#include "encoder.h"
 #include "string_pool.h"
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def) {
@@ -178,9 +179,11 @@ void utl_Message_setDouble(const utl_Message* message, const utl_FieldDef* field
 }
 
 void utl_Message_setBool(const utl_Message* message, const utl_FieldDef* field, const bool value) {
+    static const uint32_t full_bools[2] = {BOOL_FALSE_CONSTR, BOOL_TRUE_CONSTR};
+
     if(field->type == FULL_BOOL) {
         utl_Message_setFlag(message, field);
-        *(int*)(message->data + field->offset) = value;
+        *(uint32_t*)(message->data + field->offset) = full_bools[value != 0];
     } else if (field->type == BIT_BOOL) {
         if(value)
             utl_Message_setFlag(message, field);
@@ -299,7 +302,10 @@ double utl_Message_getDouble(const utl_Message* message, const utl_FieldDef* fie
 
 bool utl_Message_getBool(const utl_Message* message, const utl_FieldDef* field) {
     if(field->type == FULL_BOOL) {
-        return *(int*)(message->data + field->offset);
+        const uint32_t value = *(uint32_t*)(message->data + field->offset);
+        // True =  0x997275b5; lower byte is 0b10110101 -> lower two bits are 01 -> &0b10 mask = 00
+        // False = 0xbc799737; lower byte is 0b00110111 -> lower two bits are 11 -> &0b10 mask = 10
+        return (value & 0b10) == 0;
     }
     if (field->type == BIT_BOOL) {
         return utl_Message_hasField(message, field);

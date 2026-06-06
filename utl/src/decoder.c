@@ -107,6 +107,19 @@ utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Status* status) {
 }
 
 bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_MessageDefVector* field, utl_DecodeBuf* buf, const size_t size, utl_Status* status) {
+    if(field->type < STATIC_FIELDS_END) {
+        const uint8_t* src = utl_DecodeBuf_read(buf, size * field->element_size);
+        if(src == NULL) {
+            if(status) {
+                status->ok = false;
+                strncpy(status->message, "Unexpected end of buffer", UTL_STATUS_MAX_MESSAGE_SIZE);
+            }
+            return 0;
+        }
+        memcpy(vector->data, src, size * field->element_size);
+        return true;
+    }
+
     for(size_t i = 0; i < size; i++) {
         if(!check_not_eof(buf, status, vector->message_def->element_size))
             return false;

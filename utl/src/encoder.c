@@ -104,9 +104,19 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
         }
         case VECTOR: {
             const utl_Vector* vector = *(utl_Vector**)value;
+            const utl_MessageDefVector def = *vector->message_def;
+            const int32_t vec_size = utl_Vector_size(vector);
+
             utl_encode_uint32(VECTOR_CONSTR, buf);
-            utl_encode_int32(utl_Vector_size(vector), buf);
-            for(int32_t i = 0; i < utl_Vector_size(vector); i++) {
+            utl_encode_int32(vec_size, buf);
+
+            if(def.type < STATIC_FIELDS_END) {
+                uint8_t* dst = (uint8_t*)utl_EncodeBuf_alloc(buf, vec_size * def.element_size);
+                memcpy(dst, vector->data, vec_size * def.element_size);
+                return;
+            }
+
+            for(int32_t i = 0; i < vec_size; i++) {
                 utl_encode_field((utl_FieldDef*)vector->message_def, utl_Vector_rawValue(vector, i), buf, vector->message_def->element_size);
             }
             break;
@@ -120,8 +130,8 @@ void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
     utl_encode_intX((char*)&def.id, buf, 4);
 
     if(def.fully_static) {
-        uint8_t* src = (uint8_t*)utl_EncodeBuf_alloc(buf, def.size);
-        memcpy(src, message->data, def.size);
+        uint8_t* dst = (uint8_t*)utl_EncodeBuf_alloc(buf, def.size);
+        memcpy(dst, message->data, def.size);
         return;
     }
 
