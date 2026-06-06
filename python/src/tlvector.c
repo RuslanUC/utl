@@ -407,7 +407,14 @@ static void Py_TLVector_dealloc(Py_TLVector* self) {
             }
         }
     }
-    pyutl_internal_tlvector_free_recursive(self->vector_hdr, self->readonly);
+
+    self->vector_hdr->userdata = NULL;
+
+    if(is_readonly) {
+        utl_RoVector_free(self->ro_vector);
+    } else {
+        utl_Vector_free(self->vector);
+    }
 
     free(self->out_refs);
     ((PyObject*)self)->ob_type->tp_free(self);

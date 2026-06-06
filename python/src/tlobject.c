@@ -427,14 +427,20 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
     if(item == Py_True || item == Py_False)
         return true;
 
-    Py_XDECREF(self->out_refs[field->num]);
+    PyObject* old_ref = self->out_refs[field->num];
 
     if(item == Py_None) {
         self->out_refs[field->num] = NULL;
     } else {
         self->out_refs[field->num] = item;
-        Py_INCREF(item);
+        if(field->type != VECTOR)
+            // Vectors are only accepted as lists.
+            // New pyutl.Vector object is always created when list is assigned to vector field.
+            // So doing incref here is leaking memory.
+            Py_INCREF(item);
     }
+
+    Py_XDECREF(old_ref);
 
     return true;
 }
@@ -494,7 +500,14 @@ static void Py_TLObject_dealloc(Py_TLObject* self) {
             }
         }
     }
-    pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)self->message, self->readonly);
+
+    self->message_hdr->userdata = NULL;
+
+    if(is_readonly) {
+        utl_RoMessage_free(self->ro_message);
+    } else {
+        utl_Message_free(self->message);
+    }
 
     free(self->out_refs);
     ((PyObject*)self)->ob_type->tp_free(self);
@@ -537,6 +550,7 @@ static int Py_TLObject_init(Py_TLObject* self, PyObject* Py_UNUSED(args), PyObje
     for(size_t i = 0; i < self->message->message_def->fields_num; ++i) {
         utl_FieldDef field = self->message->message_def->fields[i];
         if(field.type == FLAGS) {
+            // TODO: raise an error?
             continue;
         }
 
