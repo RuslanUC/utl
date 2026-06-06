@@ -10,18 +10,23 @@
 
 typedef struct utl_MessageDef {
     uint32_t id;
+    uint16_t layer;
+    uint16_t fields_num;
     utl_StringView name;
     utl_StringView namespace_;
     utl_TypeDef* type;
     utl_MessageSection section;
-    uint16_t layer;
-    uint16_t fields_num;
     utl_FieldDef* fields;
     uint8_t flags_num;
-    utl_FieldDef** flags_fields;
     uint8_t strings_num;
+    uint8_t objects_num;
+    uint8_t vectors_num;
+    uint8_t fully_static : 1;
+    uint32_t size : 31;
+    utl_FieldDef** flags_fields;
     utl_FieldDef** string_fields;
-    size_t size;
+    utl_FieldDef** object_fields;
+    utl_FieldDef** vector_fields;
 } utl_MessageDef;
 
 // NOTE: If refactoring this structure, keep in mind, that .type and .sub should have same offsets as ones in utl_FieldDef

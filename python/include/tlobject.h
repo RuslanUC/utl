@@ -21,3 +21,5 @@ extern PyType_Spec pyutl_TLObjectType_spec;
 void Py_TLObject_init_message(Py_TLObject* self, utl_MessageDef* def, utl_Message* message);
 void Py_TLObject_init_message_ro(Py_TLObject* self, utl_RoMessage* message);
 PyObject* Py_TLObject_createType(const utl_MessageDef* message_def);
+
+void pyutl_internal_tlobject_free_recursive(utl_MessageHeader* obj, bool is_readonly);

@@ -351,6 +351,40 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t inde
     return false;
 }
 
+void pyutl_internal_tlvector_free_recursive(utl_VectorHeader* obj, const bool is_readonly) {
+    if(obj == NULL || obj->userdata != NULL)
+        return;
+
+    const utl_MessageDefVector* def = obj->message_def;
+    if(is_readonly) {
+        utl_RoVector* tlvec = (utl_RoVector*)obj;
+        const int32_t size = utl_RoVector_size(tlvec);
+        if(def->type == TLOBJECT) {
+            for(int32_t i = 0; i < size; ++i) {
+                pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_RoVector_getMessage(tlvec, i), true);
+            }
+        } else if(def->type == VECTOR) {
+            for(int32_t i = 0; i < size; ++i) {
+                pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_RoVector_getVector(tlvec, i), true);
+            }
+        }
+        utl_RoVector_free(tlvec);
+    } else {
+        utl_Vector* tlvec = (utl_Vector*)obj;
+        const int32_t size = utl_Vector_size(tlvec);
+        if(def->type == TLOBJECT) {
+            for(int32_t i = 0; i < size; ++i) {
+                pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_Vector_getMessage(tlvec, i), false);
+            }
+        } else if(def->type == VECTOR) {
+            for(int32_t i = 0; i < size; ++i) {
+                pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_Vector_getVector(tlvec, i), false);
+            }
+        }
+        utl_Vector_free(tlvec);
+    }
+}
+
 static void Py_TLVector_dealloc(Py_TLVector* self) {
     const utl_MessageDefVector* def = ((utl_VectorHeader*)self->vector)->message_def;
     const size_t fields_count = self->readonly ? self->ro_vector->elements_count : self->vector->size;

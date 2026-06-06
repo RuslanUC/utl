@@ -1,6 +1,5 @@
 #pragma once
 #include <stdbool.h>
-#include <stdio.h>
 #include "def_pool.h"
 #include "message_def.h"
 #include "message_hdr.h"
@@ -14,7 +13,7 @@ typedef struct utl_RoMessage {
     utl_DefPool* def_pool;
     uint8_t* data;
     size_t size;
-    ssize_t* field_positions;
+    int32_t* field_positions;
 } utl_RoMessage;
 
 utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, size_t size, size_t* bytes_read);

@@ -115,16 +115,24 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
 }
 
 void utl_encode_internal(const utl_Message* message, utl_EncodeBuf* buf) {
-    utl_encode_intX((char*)&message->message_def->id, buf, 4);
+    const utl_MessageDef def = *message->message_def;
 
-    const utl_FieldDef* fields = message->message_def->fields;
-    for(int i = 0; i < message->message_def->fields_num; i++) {
+    utl_encode_intX((char*)&def.id, buf, 4);
+
+    if(def.fully_static) {
+        uint8_t* src = (uint8_t*)utl_EncodeBuf_alloc(buf, def.size);
+        memcpy(src, message->data, def.size);
+        return;
+    }
+
+    const utl_FieldDef* fields = def.fields;
+    for(int i = 0; i < def.fields_num; i++) {
         const utl_FieldDef field = fields[i];
         if(field.flag_info && field.type != FLAGS && !utl_Message_hasField(message, &field))
             continue;
 
         if(field.type != BIT_BOOL) {
-            const size_t next_offset = (i == (message->message_def->fields_num - 1)) ? message->message_def->size : message->message_def->fields[i + 1].offset;
+            const size_t next_offset = (i == (def.fields_num - 1)) ? def.size : def.fields[i + 1].offset;
             const size_t item_size = next_offset - field.offset;
             void* value = message->data + field.offset;
             utl_encode_field(&field, value, buf, item_size);

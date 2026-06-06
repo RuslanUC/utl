@@ -22,3 +22,5 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index);
 void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector);
 void Py_TLVector_init_message_ro(Py_TLVector* self, utl_RoVector* vector);
 PyObject* Py_TLVector_createType(utl_MessageDefVector* message_def);
+
+void pyutl_internal_tlvector_free_recursive(utl_VectorHeader* obj, bool is_readonly);

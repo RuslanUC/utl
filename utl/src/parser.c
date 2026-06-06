@@ -321,6 +321,10 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
             message_def->flags_num++;
         else if(field->type == STRING || field->type == BYTES)
             message_def->strings_num++;
+        else if(field->type == TLOBJECT)
+            message_def->objects_num++;
+        else if(field->type == VECTOR)
+            message_def->vectors_num++;
     }
 
     message_def->size = offset;
@@ -329,22 +333,37 @@ utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, u
         message_def->flags_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->flags_num);
     if(message_def->strings_num)
         message_def->string_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->strings_num);
+    if(message_def->objects_num)
+        message_def->object_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->objects_num);
+    if(message_def->vectors_num)
+        message_def->vector_fields = (utl_FieldDef**)utl_Arena_alloc(&def_pool->arena, sizeof(utl_FieldDef*) * message_def->vectors_num);
 
-    if(message_def->flags_num || message_def->strings_num) {
-        size_t field_i = 0;
-
-        for(int i = 0; i < message_def->fields_num && field_i < message_def->flags_num; i++) {
+    if(message_def->flags_num || message_def->strings_num || message_def->objects_num || message_def->vectors_num) {
+        for(int i = 0, field_i = 0; i < message_def->fields_num && field_i < message_def->flags_num; i++) {
             if(message_def->fields[i].type != FLAGS)
                 continue;
             message_def->flags_fields[field_i++] = &message_def->fields[i];
         }
 
-        field_i = 0;
-        for(int i = 0; i < message_def->fields_num && field_i < message_def->strings_num; i++) {
+        for(int i = 0, field_i = 0; i < message_def->fields_num && field_i < message_def->strings_num; i++) {
             if(message_def->fields[i].type != STRING && message_def->fields[i].type != BYTES)
                 continue;
             message_def->string_fields[field_i++] = &message_def->fields[i];
         }
+
+        for(int i = 0, field_i = 0; i < message_def->fields_num && field_i < message_def->objects_num; i++) {
+            if(message_def->fields[i].type != TLOBJECT)
+                continue;
+            message_def->object_fields[field_i++] = &message_def->fields[i];
+        }
+
+        for(int i = 0, field_i = 0; i < message_def->fields_num && field_i < message_def->vectors_num; i++) {
+            if(message_def->fields[i].type != VECTOR)
+                continue;
+            message_def->vector_fields[field_i++] = &message_def->fields[i];
+        }
+    } else {
+        message_def->fully_static = true;
     }
 
     if(status) {

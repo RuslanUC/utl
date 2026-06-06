@@ -54,7 +54,7 @@ static bool skip_vector(utl_DecodeBuf* buffer, utl_DefPool* def_pool, utl_Messag
     return true;
 }
 
-bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, size_t elements_count, ssize_t* positions) {
+bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, size_t elements_count, int32_t* positions) {
     const size_t buffer_start = buffer->pos;
 
     for(size_t i = 0; i < elements_count; i++) {
@@ -114,7 +114,7 @@ bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool
     return true;
 }
 
-bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, ssize_t* positions) {
+bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, int32_t* positions) {
     const size_t buffer_start = buffer->pos;
     uint32_t flags_fields[4] = {0};
     size_t flags_num = 0;

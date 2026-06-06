@@ -371,8 +371,23 @@ size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, uint8_t* buf,
         .size = size,
     };
 
-    const utl_FieldDef* fields = out_message->message_def->fields;
-    for(int i = 0; i < out_message->message_def->fields_num; i++) {
+    const utl_MessageDef def = *out_message->message_def;
+
+    if(def.fully_static) {
+        const uint8_t* src = utl_DecodeBuf_read(&buffer, def.size);
+        if(src == NULL) {
+            if(status) {
+                status->ok = false;
+                strncpy(status->message, "Unexpected end of buffer", UTL_STATUS_MAX_MESSAGE_SIZE);
+            }
+            return 0;
+        }
+        memcpy(out_message->data, src, def.size);
+        return def.size;
+    }
+
+    const utl_FieldDef* fields = def.fields;
+    for(int i = 0; i < def.fields_num; i++) {
         utl_FieldDef field = fields[i];
         if(!utl_decode_field(out_message, def_pool, &field, &buffer, status))
             return 0;

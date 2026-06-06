@@ -12,13 +12,13 @@
 #include "ro.h"
 
 utl_RoMessage* utl_RoMessage_new(utl_MessageDef* message_def, utl_DefPool* def_pool, uint8_t* data, const size_t size, size_t* bytes_read) {
-    utl_RoMessage* message = malloc(sizeof(utl_RoMessage) + sizeof(ssize_t) * message_def->fields_num);
+    utl_RoMessage* message = malloc(sizeof(utl_RoMessage) + sizeof(int32_t) * message_def->fields_num);
     message->message_def = message_def;
     message->userdata = NULL;
     message->def_pool = def_pool;
     message->data = data;
     message->size = size;
-    message->field_positions = (ssize_t*)(message + 1);
+    message->field_positions = (int32_t*)(message + 1);
 
     utl_DecodeBuf buffer = {
         .data = data,
@@ -67,7 +67,7 @@ int32_t utl_RoMessage_getInt32(const utl_RoMessage* message, const utl_FieldDef*
     if (field->type != INT32 && field->type != FLAGS)
         return 0;
 
-    const ssize_t pos = message->field_positions[field->num];
+    const int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return 0;
 
@@ -78,7 +78,7 @@ int64_t utl_RoMessage_getInt64(const utl_RoMessage* message, const utl_FieldDef*
     if (field->type != INT64)
         return 0;
 
-    const ssize_t pos = message->field_positions[field->num];
+    const int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return 0;
 
@@ -90,7 +90,7 @@ utl_Int128 utl_RoMessage_getInt128(const utl_RoMessage* message, const utl_Field
     if (field->type != INT128)
         return result;
 
-    const ssize_t pos = message->field_positions[field->num];
+    const int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return result;
 
@@ -103,7 +103,7 @@ utl_Int256 utl_RoMessage_getInt256(const utl_RoMessage* message, const utl_Field
     if (field->type != INT256)
         return result;
 
-    const ssize_t pos = message->field_positions[field->num];
+    const int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return result;
 
@@ -115,7 +115,7 @@ double utl_RoMessage_getDouble(const utl_RoMessage* message, const utl_FieldDef*
     if (field->type != DOUBLE)
         return 0;
 
-    const ssize_t pos = message->field_positions[field->num];
+    const int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return 0;
 
@@ -124,7 +124,7 @@ double utl_RoMessage_getDouble(const utl_RoMessage* message, const utl_FieldDef*
 
 bool utl_RoMessage_getBool(const utl_RoMessage* message, const utl_FieldDef* field) {
     if(field->type == FULL_BOOL) {
-        const ssize_t pos = message->field_positions[field->num];
+        const int32_t pos = message->field_positions[field->num];
         if(pos < 0)
             return 0;
         return !memcmp(BOOL_TRUE, message->data + pos, 4);
@@ -141,7 +141,7 @@ utl_StringView utl_RoMessage_getBytes_internal(const utl_RoMessage* message, con
     if (field->type != check_type)
         return empty;
 
-    ssize_t pos = message->field_positions[field->num];
+    int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return empty;
 
@@ -169,7 +169,7 @@ utl_RoMessage* utl_RoMessage_getMessage(const utl_RoMessage* message, const utl_
     if (field->type != TLOBJECT)
         return 0;
 
-    ssize_t pos = message->field_positions[field->num];
+    int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return 0;
 
@@ -194,7 +194,7 @@ utl_RoVector* utl_RoMessage_getVector(const utl_RoMessage* message, const utl_Fi
         return 0;
     }
 
-    ssize_t pos = message->field_positions[field->num];
+    int32_t pos = message->field_positions[field->num];
     if(pos < 0)
         return 0;
 
@@ -205,7 +205,7 @@ utl_RoVector* utl_RoMessage_getVector(const utl_RoMessage* message, const utl_Fi
         size = message->field_positions[field->num + 1] - pos;
 
     pos += 4;
-    const uint32_t elements_count = *(uint32_t*)(message->data + pos);
+    const int32_t elements_count = *(int32_t*)(message->data + pos);
     pos += 4;
 
     return utl_RoVector_new(field->sub.vector_def, message->def_pool, message->data + pos, size - 8, elements_count);

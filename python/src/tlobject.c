@@ -439,6 +439,33 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
     return true;
 }
 
+void pyutl_internal_tlobject_free_recursive(utl_MessageHeader* obj, const bool is_readonly) {
+    if(obj == NULL || obj->userdata != NULL)
+        return;
+
+    const utl_MessageDef* def = obj->message_def;
+    const uint16_t obj_fields_num = def->objects_num;
+    const uint16_t vec_fields_num = def->vectors_num;
+    utl_FieldDef** obj_fields = def->object_fields;
+    utl_FieldDef** vec_fields = def->vector_fields;
+
+    if(is_readonly) {
+        utl_RoMessage* tlobj = (utl_RoMessage*)obj;
+        for(uint16_t i = 0; i < obj_fields_num; ++i)
+            pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_RoMessage_getMessage(tlobj, obj_fields[i]), true);
+        for(uint16_t i = 0; i < vec_fields_num; ++i)
+            pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_RoMessage_getVector(tlobj, vec_fields[i]), true);
+        utl_RoMessage_free(tlobj);
+    } else {
+        utl_Message* tlobj = (utl_Message*)obj;
+        for(uint16_t i = 0; i < obj_fields_num; ++i)
+            pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_Message_getMessage(tlobj, obj_fields[i]), false);
+        for(uint16_t i = 0; i < vec_fields_num; ++i)
+            pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_Message_getVector(tlobj, vec_fields[i]), false);
+        utl_Message_free(tlobj);
+    }
+}
+
 static void Py_TLObject_dealloc(Py_TLObject* self) {
     if(self->message == NULL) {
         ((PyObject*)self)->ob_type->tp_free(self);
@@ -452,7 +479,7 @@ static void Py_TLObject_dealloc(Py_TLObject* self) {
         for (size_t i = 0; i < fields_count + 1; ++i) {
             Py_XDECREF(self->out_refs[i]);
         }
-        utl_RoMessage_free(self->ro_message);
+        pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)self->ro_message, true);
     } else {
         for (size_t i = 0; i < fields_count; ++i) {
             Py_XDECREF(self->out_refs[i]);
@@ -472,7 +499,7 @@ static void Py_TLObject_dealloc(Py_TLObject* self) {
                 }
             }
         }
-        utl_Message_free(self->message);
+        pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)self->message, false);
     }
 
     free(self->out_refs);
