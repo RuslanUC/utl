@@ -7,6 +7,7 @@
 typedef struct Py_TLVector {
     PyObject_HEAD;
     union {
+        utl_VectorHeader* vector_hdr;
         utl_Vector* vector;
         utl_RoVector* ro_vector;
     };

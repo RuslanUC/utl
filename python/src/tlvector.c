@@ -355,15 +355,15 @@ void pyutl_internal_tlvector_free_recursive(utl_VectorHeader* obj, const bool is
     if(obj == NULL || obj->userdata != NULL)
         return;
 
-    const utl_MessageDefVector* def = obj->message_def;
+    const utl_MessageDefVector def = *obj->message_def;
     if(is_readonly) {
         utl_RoVector* tlvec = (utl_RoVector*)obj;
         const int32_t size = utl_RoVector_size(tlvec);
-        if(def->type == TLOBJECT) {
+        if(def.type == TLOBJECT) {
             for(int32_t i = 0; i < size; ++i) {
                 pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_RoVector_getMessage(tlvec, i), true);
             }
-        } else if(def->type == VECTOR) {
+        } else if(def.type == VECTOR) {
             for(int32_t i = 0; i < size; ++i) {
                 pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_RoVector_getVector(tlvec, i), true);
             }
@@ -372,11 +372,11 @@ void pyutl_internal_tlvector_free_recursive(utl_VectorHeader* obj, const bool is
     } else {
         utl_Vector* tlvec = (utl_Vector*)obj;
         const int32_t size = utl_Vector_size(tlvec);
-        if(def->type == TLOBJECT) {
+        if(def.type == TLOBJECT) {
             for(int32_t i = 0; i < size; ++i) {
                 pyutl_internal_tlobject_free_recursive((utl_MessageHeader*)utl_Vector_getMessage(tlvec, i), false);
             }
-        } else if(def->type == VECTOR) {
+        } else if(def.type == VECTOR) {
             for(int32_t i = 0; i < size; ++i) {
                 pyutl_internal_tlvector_free_recursive((utl_VectorHeader*)utl_Vector_getVector(tlvec, i), false);
             }
@@ -386,34 +386,28 @@ void pyutl_internal_tlvector_free_recursive(utl_VectorHeader* obj, const bool is
 }
 
 static void Py_TLVector_dealloc(Py_TLVector* self) {
-    const utl_MessageDefVector* def = ((utl_VectorHeader*)self->vector)->message_def;
-    const size_t fields_count = self->readonly ? self->ro_vector->elements_count : self->vector->size;
+    const utl_MessageDefVector def = *self->vector_hdr->message_def;
+    const bool is_readonly = self->readonly;
+    const int32_t fields_count = is_readonly ? self->ro_vector->elements_count : self->vector->size;
 
-    if(self->readonly) {
-        for(size_t i = 0; i < fields_count + 1; ++i) {
-            Py_XDECREF(self->out_refs[i]);
-        }
-        utl_RoVector_free(self->ro_vector);
-    } else {
-        for (size_t i = 0; i < fields_count; ++i) {
-            Py_XDECREF(self->out_refs[i]);
+    for(int32_t i = 0; i < fields_count + is_readonly; ++i) {
+        Py_XDECREF(self->out_refs[i]);
 
-            if(self->out_refs[i] == NULL) {
-                if(def->type) {
-                    utl_Message* message = utl_Vector_getMessage(self->vector, i);
-                    if(message->userdata == NULL) {
-                        utl_Message_free(message);
-                    }
-                } else if(def->type) {
-                    utl_Vector* vector = utl_Vector_getVector(self->vector, i);
-                    if(vector->userdata == NULL) {
-                        utl_Vector_free(vector);
-                    }
-                }
+        if(self->out_refs[i] == NULL) {
+            if(def.type == TLOBJECT) {
+                utl_MessageHeader* hdr = is_readonly
+                                             ? (utl_MessageHeader*)utl_RoVector_getMessage(self->ro_vector, i)
+                                             : (utl_MessageHeader*)utl_Vector_getMessage(self->vector, i);
+                pyutl_internal_tlobject_free_recursive(hdr, is_readonly);
+            } else if(def.type == VECTOR) {
+                utl_VectorHeader* hdr = is_readonly
+                                             ? (utl_VectorHeader*)utl_RoVector_getVector(self->ro_vector, i)
+                                             : (utl_VectorHeader*)utl_Vector_getVector(self->vector, i);
+                pyutl_internal_tlvector_free_recursive(hdr, is_readonly);
             }
         }
-        utl_Vector_free(self->vector);
     }
+    pyutl_internal_tlvector_free_recursive(self->vector_hdr, self->readonly);
 
     free(self->out_refs);
     ((PyObject*)self)->ob_type->tp_free(self);

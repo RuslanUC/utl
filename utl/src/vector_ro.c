@@ -48,7 +48,7 @@ utl_RoVector* utl_RoVector_new(utl_MessageDefVector* message_def, utl_DefPool* d
 }
 
 void utl_RoVector_free(utl_RoVector* vector) {
-    free(vector->data);
+    free(vector);
 }
 
 void* utl_RoVector_rawValue(const utl_RoVector* vector, const int32_t index) {

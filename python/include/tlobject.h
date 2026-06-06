@@ -7,6 +7,7 @@
 typedef struct Py_TLObject {
     PyObject_HEAD;
     union {
+        utl_MessageHeader* message_hdr;
         utl_Message* message;
         utl_RoMessage* ro_message;
     };
