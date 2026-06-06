@@ -117,6 +117,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
             return 0;
         }
         memcpy(vector->data, src, size * field->element_size);
+        vector->size = size;
         return true;
     }
 
