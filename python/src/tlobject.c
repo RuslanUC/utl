@@ -984,10 +984,8 @@ PyObject* Py_TLObject_createType(const utl_MessageDef* message_def) {
     };
 
     PyObject* new_type = PyType_FromSpec(&spec);
-    // TODO: i have no idea what to do with this memory, if i free it - it breaks type name in python, if dont - then it is a memory leak
-    // free(name);
+    free(name);
     if(!new_type) {
-        free(name);
         return 0;
     }
 
