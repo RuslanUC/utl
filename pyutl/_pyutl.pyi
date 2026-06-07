@@ -11,6 +11,7 @@ class TLType:
 
 
 class TLObject:
+    # TODO: expose type name
     __tl_id__: int
     __layer__: int
     __section__: int
@@ -28,11 +29,11 @@ class TLObject:
     @classmethod
     def read_bytes(cls, buf: bytes, read_only: bool = False, /) -> TLObject: ...
 
-    # TODO:
-    #  @classmethod
-    #  def deserialize(cls, buf: BytesIO, read_only: bool = False, /) -> TLObject: ...
-    #  @classmethod
-    #  def deserialize_bytes(cls, buf: bytes, read_only: bool = False, /) -> TLObject: ...
+    @classmethod
+    def deserialize(cls, buf: BytesIO, read_only: bool = False, /) -> TLObject: ...
+
+    @classmethod
+    def deserialize_bytes(cls, buf: bytes, read_only: bool = False, /) -> TLObject: ...
 
     def write(self) -> bytes: ...
 

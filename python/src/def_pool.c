@@ -135,8 +135,8 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
         _UTL_LOG_INCIND();
             for(size_t i = 0; i < message_def->fields_num; ++i) {
                 _UTL_LOG("message_def->fields[%zu].type = %d", i, message_def->fields[i].type);
-                _UTL_LOG("message_def->fields[%zu].num = %zu", i, message_def->fields[i].num);
-                _UTL_LOG("message_def->fields[%zu].offset = %zu", i, message_def->fields[i].offset);
+                _UTL_LOG("message_def->fields[%zu].num = %hu", i, message_def->fields[i].num);
+                _UTL_LOG("message_def->fields[%zu].offset = %hu", i, message_def->fields[i].offset);
                 _UTL_LOG("message_def->fields[%zu].name = \"%.*s\"", i, (int)message_def->fields[i].name.size, message_def->fields[i].name.data);
                 _UTL_LOG("message_def->fields[%zu].flag_info = %d", i, message_def->fields[i].flag_info);
                 if(i < (message_def->fields_num - 1))
@@ -146,7 +146,7 @@ PyObject* Py_DefPool_parse(const Py_DefPool* self, PyObject* args) {
         _UTL_LOG("]");
         _UTL_LOG("message_def->flags_num = %d", message_def->flags_num);
         _UTL_LOG("message_def->strings_num = %d", message_def->strings_num);
-        _UTL_LOG("message_def->size = %zu", message_def->size);
+        _UTL_LOG("message_def->size = %u", message_def->size);
     _UTL_LOG_DECIND();
     // @formatter:on
 

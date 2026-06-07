@@ -75,23 +75,23 @@ def test_decode_object() -> None:
     assert cls
 
     bytes1 = bytes([0x0, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40])
-    obj = cls.read_bytes(bytes1)
+    obj = cls.deserialize_bytes(bytes1)
     assert obj.lat == 42.24
     assert obj.long == 24.42
     assert obj.accuracy_radius is None
 
-    obj_ro = cls.read_bytes(bytes1, True)
+    obj_ro = cls.deserialize_bytes(bytes1, True)
     assert obj_ro.lat == 42.24
     assert obj_ro.long == 24.42
     assert obj_ro.accuracy_radius is None
 
     bytes2 = bytes([0x01, 0x0, 0x0, 0x0, 0x1f, 0x85, 0xeb, 0x51, 0xb8, 0x1e, 0x45, 0x40, 0xec, 0x51, 0xb8, 0x1e, 0x85, 0x6b, 0x38, 0x40, 0xbb, 0xf5, 0x06, 0x00])
-    obj = cls.read_bytes(bytes2)
+    obj = cls.deserialize_bytes(bytes2)
     assert obj.lat == 42.24
     assert obj.long == 24.42
     assert obj.accuracy_radius == 456123
 
-    obj_ro = cls.read_bytes(bytes2, True)
+    obj_ro = cls.deserialize_bytes(bytes2, True)
     assert obj_ro.lat == 42.24
     assert obj_ro.long == 24.42
     assert obj_ro.accuracy_radius == 456123
@@ -136,7 +136,7 @@ def test_nested_message() -> None:
     serialized = b'\xe2H\xa4\x1dL\xa5\xe8\xdd{\x00\x00\x00\x00\x00\x00\x00\xc8\x01\x00\x00\x00\x00\x00\x00\x15\x03\x00\x00\xf3\xe0\x01\x00\x00\x00\x00\x00'
     assert obj.write() == serialized
 
-    obj2 = inputUserFromMessage.read_bytes(serialized[4:])
+    obj2 = inputUserFromMessage.read_bytes(serialized)
     assert obj2.msg_id == obj.msg_id
     assert obj2.user_id == obj.user_id
     assert obj2.peer.user_id == obj.peer.user_id
@@ -196,7 +196,7 @@ def test_vector() -> None:
     assert obj.write() == serialized
 
     bio = BytesIO(serialized[4:])
-    obj2 = photoSizeProgressive.read(bio)
+    obj2 = photoSizeProgressive.deserialize(bio)
     assert obj2.type == obj.type
     assert obj2.w == obj.w
     assert obj2.h == obj.h
@@ -362,7 +362,7 @@ def test_creation_from_python_type_annotated_class() -> None:
     _check_obj(obj2)
     assert obj2 == obj
 
-    obj3 = Something.read_bytes(obj.write()[4:])
+    obj3 = Something.deserialize_bytes(obj.write()[4:])
     _check_obj(obj3)
     assert obj3 == obj
 
@@ -378,3 +378,42 @@ def test_long_string() -> None:
 
     with pytest.raises(ValueError):
         cls(some_string="a" * 1024 * 1024 * 17)
+
+
+@pytest.mark.skipif(SKIP_TESTS >= 10, reason="")
+def test_read_deserialize() -> None:
+    inputPeerUser = pyutl.parse_tl("inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;", 177, pyutl.TLSection.TYPES)
+    assert inputPeerUser
+
+    inputPeerUser2 = pyutl.parse_tl("inputPeerUser#dde8a54d user_id:long access_hash:long = InputPeer;", 177, pyutl.TLSection.TYPES)
+    assert inputPeerUser2
+
+    obj = inputPeerUser(user_id=123, access_hash=456)
+
+    serialized = obj.write()
+    obj2 = inputPeerUser.read(BytesIO(serialized))
+    assert obj2 == obj
+
+    obj3 = inputPeerUser.read_bytes(serialized)
+    assert obj3 == obj
+
+    obj4 = inputPeerUser.deserialize(BytesIO(serialized[4:]))
+    assert obj4 == obj
+
+    obj5 = inputPeerUser.deserialize_bytes(serialized[4:])
+    assert obj5 == obj
+
+    with pytest.raises(ValueError, match="Invalid object id"):
+        inputPeerUser2.read(BytesIO(serialized))
+
+    with pytest.raises(ValueError, match="Invalid object id"):
+        inputPeerUser2.read_bytes(serialized)
+
+    other_obj1 = inputPeerUser2.deserialize(BytesIO(serialized[4:]))
+    assert other_obj1.user_id == obj.user_id
+    assert other_obj1.access_hash == obj.access_hash
+
+    other_obj2 = inputPeerUser2.deserialize_bytes(serialized[4:])
+    assert other_obj2.user_id == obj.user_id
+    assert other_obj2.access_hash == obj.access_hash
+

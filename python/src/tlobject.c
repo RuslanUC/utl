@@ -745,11 +745,14 @@ static PyObject* Py_TLObject_compare(const Py_TLObject* self, PyObject* other_, 
     Py_RETURN_FALSE;
 }
 
-static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_len, size_t* bytes_read, const bool read_only) {
+static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_len, size_t* bytes_read, const bool read_only, const bool deserialize) {
     const pyutl_ModuleState* state = pyutl_ModuleState_get();
 
+    utl_MessageDef* def;
     PyObject* result = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
-    if(!result) {
+    if(result) {
+        def = PyCapsule_GetPointer(result, NULL);
+    } else {
         PyObject* exc = PyErr_Occurred();
         if(!exc) {
             PyErr_SetString(PyExc_RuntimeError, "Getting __message_def__ from class failed, but exception is not set");
@@ -763,17 +766,18 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 
         PyErr_Clear();
 
+        if(deserialize) {
+            PyErr_SetString(PyExc_NotImplementedError, "TLObject.deserialize and TLObject.deserialize_bytes are not implemented");
+            return NULL;
+        }
+
         if(buf_len < 4) {
             PyErr_SetString(PyExc_ValueError, "need at least 4 bytes");
             return NULL;
         }
-        utl_DecodeBuf dbuf = {
-            .data = buf,
-            .pos = 0,
-            .size = 4,
-        };
+        utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
         const uint32_t tl_id = utl_decode_int32(&dbuf);
-        utl_MessageDef* def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
+        def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
             return NULL;
@@ -784,18 +788,21 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             return NULL;
 
         cls = cached_def->python_cls;
+    }
+
+    if(!deserialize) {
+        utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
+        const uint32_t tl_id = utl_decode_int32(&dbuf);
+        if(tl_id != def->id) {
+            PyErr_SetString(PyExc_ValueError, "Invalid object id");
+            return NULL;
+        }
+
         buf += 4;
         buf_len -= 4;
     }
 
     if(read_only) {
-        PyObject* def_capsule = PyObject_GetAttrString((PyObject*)cls, "__message_def__");
-        if(!def_capsule) {
-            PyErr_SetString(PyExc_NotImplementedError, "Object of type \"TLObject\" cannot be instantiated.");
-            return 0;
-        }
-        utl_MessageDef* def = PyCapsule_GetPointer(def_capsule, NULL);
-
         utl_RoMessage* message = utl_RoMessage_new(def, state->c_def_pool, buf, buf_len, bytes_read);
         if(!message) {
             PyErr_SetString(PyExc_TypeError, "Failed to read object (TODO: exact error)"); // TODO
@@ -823,7 +830,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
     }
 }
 
-static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+static PyObject* pyutl_internal_tlobject_read_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs, const bool deserialize) {
     PyObject* bio;
     int read_only = false;
 
@@ -844,7 +851,7 @@ static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyO
     }
 
     size_t read = 0;
-    PyObject* result = Py_TLObject_read(cls, view->buf, view->len, &read, read_only);
+    PyObject* result = Py_TLObject_read(cls, view->buf, view->len, &read, read_only, deserialize);
     if(read_only) {
         const Py_TLObject* tl_result = (Py_TLObject*)result;
         tl_result->out_refs[tl_result->ro_message->message_def->fields_num] = memoryview;
@@ -859,7 +866,15 @@ static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyO
     return result;
 }
 
-static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+static PyObject* Py_TLObject_read_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+    return pyutl_internal_tlobject_read_bytesio(cls, args, kwargs, false);
+}
+
+static PyObject* Py_TLObject_deserialize_bytesio(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+    return pyutl_internal_tlobject_read_bytesio(cls, args, kwargs, true);
+}
+
+static PyObject* pyutl_internal_tlobject_read_bytes(PyTypeObject* cls, PyObject* args, PyObject* kwargs, const bool deserialize) {
     uint8_t* buf;
     size_t buf_len;
     int read_only = 0;
@@ -870,7 +885,7 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args, PyObj
         return NULL;
     }
 
-    PyObject* result = Py_TLObject_read(cls, buf, buf_len, NULL, read_only);
+    PyObject* result = Py_TLObject_read(cls, buf, buf_len, NULL, read_only, deserialize);
     if(result && read_only) {
         PyObject* bytes;
         if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!|p", kwlist, &PyBytes_Type, &bytes, &read_only)) {
@@ -883,6 +898,14 @@ static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args, PyObj
     }
 
     return result;
+}
+
+static PyObject* Py_TLObject_read_bytes(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+    return pyutl_internal_tlobject_read_bytes(cls, args, kwargs, false);
+}
+
+static PyObject* Py_TLObject_deserialize_bytes(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+    return pyutl_internal_tlobject_read_bytes(cls, args, kwargs, true);
 }
 
 static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(args)) {
@@ -906,6 +929,8 @@ static PyObject* Py_TLObject_write(const Py_TLObject* self, PyObject* Py_UNUSED(
 static PyMethodDef Py_TLObject_methods[] = {
     {"read", (PyCFunction)Py_TLObject_read_bytesio, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
     {"read_bytes", (PyCFunction)Py_TLObject_read_bytes, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
+    {"deserialize", (PyCFunction)Py_TLObject_deserialize_bytesio, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
+    {"deserialize_bytes", (PyCFunction)Py_TLObject_deserialize_bytes, METH_VARARGS | METH_KEYWORDS | METH_CLASS, 0,},
     {"write", (PyCFunction)Py_TLObject_write, METH_NOARGS, 0,},
     {NULL}
 };
@@ -932,15 +957,17 @@ PyType_Spec pyutl_TLObjectType_spec = {
 };
 
 PyObject* Py_TLObject_createType(const utl_MessageDef* message_def) {
-    const size_t alloc_size = 7 + (message_def->namespace_.size ? message_def->namespace_.size + 1 : 0) + message_def->name.size;
+    const utl_MessageDef def = *message_def;
+    
+    const size_t alloc_size = 7 + (def.namespace_.size ? def.namespace_.size + 1 : 0) + def.name.size;
     char* name = malloc(alloc_size + 1);
     name[alloc_size] = '\0';
     memcpy(name, "_pyutl.", 7);
-    if(message_def->namespace_.size) {
-        memcpy(name + 7, message_def->namespace_.data, message_def->namespace_.size);
-        name[7 + message_def->namespace_.size] = '.';
+    if(def.namespace_.size) {
+        memcpy(name + 7, def.namespace_.data, def.namespace_.size);
+        name[7 + def.namespace_.size] = '.';
     }
-    memcpy(name + 7 + message_def->namespace_.size + 1, message_def->name.data, message_def->name.size);
+    memcpy(name + 7 + def.namespace_.size + 1, def.name.data, def.name.size);
 
     PyType_Slot slots[] = {
         {Py_tp_base, tlobject_type},
@@ -970,9 +997,9 @@ PyObject* Py_TLObject_createType(const utl_MessageDef* message_def) {
     }
 
     if (PyObject_SetAttrString(new_type, "__message_def__", msgdef_capsule) < 0 ||
-        PyObject_SetAttrString(new_type, "__tl_id__", PyLong_FromUnsignedLong(message_def->id)) < 0 ||
-        PyObject_SetAttrString(new_type, "__layer__", PyLong_FromUnsignedLong(message_def->layer)) < 0 ||
-        PyObject_SetAttrString(new_type, "__section__", PyLong_FromUnsignedLong(message_def->section)) < 0 ||
+        PyObject_SetAttrString(new_type, "__tl_id__", PyLong_FromUnsignedLong(def.id)) < 0 ||
+        PyObject_SetAttrString(new_type, "__layer__", PyLong_FromUnsignedLong(def.layer)) < 0 ||
+        PyObject_SetAttrString(new_type, "__section__", PyLong_FromUnsignedLong(def.section)) < 0 ||
         PyObject_SetAttrString(new_type, "__tl__", Py_None) < 0) {
         goto failed;
     }
