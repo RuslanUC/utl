@@ -121,6 +121,10 @@ void utl_encode_field(const utl_FieldDef* field, void* value, utl_EncodeBuf* buf
             }
             break;
         }
+
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END:
+            break;
     }
 }
 

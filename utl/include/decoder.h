@@ -14,6 +14,7 @@ uint8_t* utl_DecodeBuf_read(utl_DecodeBuf* buf, size_t n);
 uint8_t* utl_DecodeBuf_read_with_oef_check(utl_DecodeBuf* buf, size_t n);
 
 int32_t utl_decode_int32(utl_DecodeBuf* buffer);
+uint32_t utl_decode_uint32(utl_DecodeBuf* buffer);
 int64_t utl_decode_int64(utl_DecodeBuf* buffer);
 void utl_decode_int128(char* out, utl_DecodeBuf* buffer);
 void utl_decode_int256(char* out, utl_DecodeBuf* buffer);

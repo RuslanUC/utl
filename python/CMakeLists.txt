@@ -17,6 +17,7 @@ add_library(pyutl SHARED
 target_include_directories(pyutl PUBLIC include ${Python3_INCLUDE_DIRS})
 target_link_libraries(pyutl PUBLIC utl ${Python3_LIBRARIES})
 target_compile_definitions(pyutl PUBLIC PY_SSIZE_T_CLEAN)
+target_compile_options(pyutl PRIVATE -Wall -Wextra)
 set_target_properties(pyutl PROPERTIES PREFIX "")
 set_target_properties(pyutl PROPERTIES OUTPUT_NAME "_pyutl.${Python3_SOABI}")
 if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)

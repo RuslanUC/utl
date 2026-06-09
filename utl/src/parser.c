@@ -68,7 +68,7 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
     } else if(type_len == 4 && !memcmp(type_str, "true", 4)) {
         field_type = BIT_BOOL;
         *offset += 0;
-    } else if((type_len == 2 && !memcmp(type_str, "!X", 2)) || type_len == 8 && !memcmp(type_str, "TLObject", 8)) {
+    } else if((type_len == 2 && !memcmp(type_str, "!X", 2)) || (type_len == 8 && !memcmp(type_str, "TLObject", 8))) {
         field_type = TLOBJECT;
         *offset += sizeof(void*);
     } else {
@@ -88,13 +88,13 @@ void utl_parse_fieldType(utl_DefPool* def_pool, char* line, const size_t size, u
     field->sub.type_def = sub_type;
 }
 
-utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, size_t size, utl_Status* status) {
+utl_MessageDef* utl_parse_line(utl_DefPool* def_pool, char* line, uint32_t size, utl_Status* status) {
     utl_Arena_state original_state;
     utl_Arena_save(&def_pool->arena, &original_state);
 
     utl_MessageDef* message_def = utl_MessageDef_new(&def_pool->arena);
     memset(message_def, 0, sizeof(utl_MessageDef));
-    int pos = 0, last = 0;
+    uint32_t pos = 0, last = 0;
 
     while(pos < size && line[pos] != '.' && line[pos] != '#') ++pos;
 

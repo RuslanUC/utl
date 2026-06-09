@@ -19,7 +19,7 @@ typedef struct Py_TLVector {
 
 extern PyType_Spec pyutl_TLVectorType_spec;
 
-bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, ssize_t index);
+bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, int32_t index);
 void Py_TLVector_init_message(Py_TLVector* self, utl_Vector* vector);
 void Py_TLVector_init_message_ro(Py_TLVector* self, utl_RoVector* vector);
 PyObject* Py_TLVector_createType(utl_MessageDefVector* message_def);

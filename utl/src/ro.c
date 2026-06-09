@@ -29,7 +29,7 @@ static bool skip_tlobject(utl_DecodeBuf* buffer, utl_DefPool* def_pool, utl_Type
     if (!utl_DecodeBuf_read_with_oef_check(buffer, 4))
         return false;
     buffer->pos -= 4;
-    const uint32_t tl_id = utl_decode_int32(buffer);
+    const uint32_t tl_id = utl_decode_uint32(buffer);
     utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
     if (!new_def)
         return false;
@@ -45,19 +45,19 @@ static bool skip_vector(utl_DecodeBuf* buffer, utl_DefPool* def_pool, utl_Messag
     if (!utl_DecodeBuf_read_with_oef_check(buffer, 8))
         return false;
     buffer->pos -= 8;
-    if (utl_decode_int32(buffer) != VECTOR_CONSTR)
+    if (utl_decode_uint32(buffer) != VECTOR_CONSTR)
         return false;
-    const size_t size = utl_decode_int32(buffer);
+    const int32_t size = utl_decode_int32(buffer);
     if (!utl_RoVector_get_positions(vector_def, def_pool, buffer, size, NULL))
         return false;
 
     return true;
 }
 
-bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, size_t elements_count, int32_t* positions) {
+bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer, int32_t elements_count, int32_t* positions) {
     const size_t buffer_start = buffer->pos;
 
-    for(size_t i = 0; i < elements_count; i++) {
+    for(int32_t i = 0; i < elements_count; i++) {
         if(positions)
             positions[i] = buffer->pos - buffer_start;
 
@@ -107,7 +107,8 @@ bool utl_RoVector_get_positions(utl_MessageDefVector* def, utl_DefPool* def_pool
             }
 
             // Must be unreachable
-            case STATIC_FIELDS_END: return false;
+            case STATIC_FIELDS_END:
+            case ALL_FIELDS_END: return false;
         }
     }
 
@@ -125,7 +126,7 @@ bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl
         if (field.flag_num && field.type != FLAGS) {
             const uint8_t flag_bit = field.flag_info;
             const uint32_t flags = flags_fields[field.flag_num - 1];
-            const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
+            const bool field_present = (flags & (1 << flag_bit)) != 0;
             if (field.type == BIT_BOOL && positions != NULL)
                 positions[i] = -1;
             if (!field_present) {
@@ -187,7 +188,8 @@ bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl
             }
 
             // Must be unreachable
-            case STATIC_FIELDS_END: return false;
+            case STATIC_FIELDS_END:
+            case ALL_FIELDS_END: return false;
         }
     }
 

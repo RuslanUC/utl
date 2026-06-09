@@ -8,7 +8,7 @@
 #include "constants.h"
 #include "py_def_pool.h"
 
-static PyObject* Py_TLVector_getitem_regular(const Py_TLVector* self, const size_t index) {
+static PyObject* Py_TLVector_getitem_regular(const Py_TLVector* self, const int32_t index) {
     switch (self->vector->message_def->type) {
         case FLAGS:
         case INT32: {
@@ -19,11 +19,11 @@ static PyObject* Py_TLVector_getitem_regular(const Py_TLVector* self, const size
         }
         case INT128: {
             const utl_Int128 value = utl_Vector_getInt128(self->vector, index);
-            return _PyLong_FromByteArray(value.value, 16, true, true);
+            return _PyLong_FromByteArray((uint8_t*)value.value, 16, true, true);
         }
         case INT256: {
             const utl_Int256 value = utl_Vector_getInt256(self->vector, index);
-            return _PyLong_FromByteArray(value.value, 32, true, true);
+            return _PyLong_FromByteArray((uint8_t*)value.value, 32, true, true);
         }
         case DOUBLE: {
             return PyFloat_FromDouble(utl_Vector_getDouble(self->vector, index));
@@ -37,11 +37,11 @@ static PyObject* Py_TLVector_getitem_regular(const Py_TLVector* self, const size
         }
         case BYTES: {
             const utl_StringView bytes = utl_Vector_getBytes(self->vector, index);
-            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
+            return PyBytes_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case STRING: {
             const utl_StringView bytes = utl_Vector_getString(self->vector, index);
-            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
+            return PyUnicode_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case TLOBJECT: {
             utl_Message* message = utl_Vector_getMessage(self->vector, index);
@@ -73,34 +73,32 @@ static PyObject* Py_TLVector_getitem_regular(const Py_TLVector* self, const size
             break;
         }
 
-        case STATIC_FIELDS_END: return NULL;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return NULL;
     }
+
+    return NULL;
 }
 
-static PyObject* Py_TLVector_getitem_readonly(const Py_TLVector* self, const size_t index) {
+static PyObject* Py_TLVector_getitem_readonly(const Py_TLVector* self, const int32_t index) {
     switch (self->vector->message_def->type) {
         case FLAGS:
         case INT32: {
             return PyLong_FromLong(utl_RoVector_getInt32(self->ro_vector, index));
-            break;
         }
         case INT64: {
             return PyLong_FromLong(utl_RoVector_getInt64(self->ro_vector, index));
-            break;
         }
         case INT128: {
             const utl_Int128 value = utl_RoVector_getInt128(self->ro_vector, index);
-            return _PyLong_FromByteArray(value.value, 16, true, true);
-            break;
+            return _PyLong_FromByteArray((uint8_t*)value.value, 16, true, true);
         }
         case INT256: {
             const utl_Int256 value = utl_RoVector_getInt256(self->ro_vector, index);
-            return _PyLong_FromByteArray(value.value, 32, true, true);
-            break;
+            return _PyLong_FromByteArray((uint8_t*)value.value, 32, true, true);
         }
         case DOUBLE: {
             return PyFloat_FromDouble( utl_RoVector_getDouble(self->ro_vector, index));
-            break;
         }
         case FULL_BOOL:
         case BIT_BOOL: {
@@ -111,13 +109,11 @@ static PyObject* Py_TLVector_getitem_readonly(const Py_TLVector* self, const siz
         }
         case BYTES: {
             const utl_StringView bytes = utl_RoVector_getBytes(self->ro_vector, index);
-            return PyBytes_FromStringAndSize(bytes.data, bytes.size);
-            break;
+            return PyBytes_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case STRING: {
             const utl_StringView bytes = utl_RoVector_getString(self->ro_vector, index);
-            return PyUnicode_FromStringAndSize(bytes.data, bytes.size);
-            break;
+            return PyUnicode_FromStringAndSize(bytes.data, (ssize_t)bytes.size);
         }
         case TLOBJECT: {
             utl_RoMessage* message = utl_RoVector_getMessage(self->ro_vector, index);
@@ -158,11 +154,14 @@ static PyObject* Py_TLVector_getitem_readonly(const Py_TLVector* self, const siz
             break;
         }
 
-        case STATIC_FIELDS_END: return NULL;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return NULL;
     }
+
+    return NULL;
 }
 
-static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index) {
+static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const int32_t index) {
     if(self->out_refs[index] != NULL) {
         PyObject* obj = self->out_refs[index];
         Py_INCREF(obj);
@@ -184,7 +183,7 @@ static PyObject* Py_TLVector_getitem(const Py_TLVector* self, const size_t index
     Py_RETURN_NONE;
 }
 
-bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t index) {
+bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t index) {
     switch (vector->message_def->type) {
         case FLAGS:
         case INT32: {
@@ -321,10 +320,16 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t inde
                 return false;
             }
 
-            const size_t len = PyList_Size(item);
+            const ssize_t len_ssize = PyList_Size(item);
+            if(len_ssize > INT32_MAX || len_ssize < INT32_MIN) {
+                PyErr_SetString(PyExc_TypeError, "invalid index, expected 32-bit number");
+                return false;
+            }
+
+            const int32_t len = (int32_t)len_ssize;
             utl_Vector* new_vector = utl_Vector_new(vector->message_def->sub.vector_def, len);
 
-            for(size_t i = 0; i < len; i++) {
+            for(int32_t i = 0; i < len; i++) {
                 if(!Py_TLVector_item_set(new_vector, PyList_GetItem(item, i), -1)) {
                     utl_Vector_free(new_vector);
                     return false;
@@ -345,7 +350,8 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const ssize_t inde
             return true;
         }
 
-        case STATIC_FIELDS_END: return false;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return false;
     }
 
     return false;
@@ -446,8 +452,14 @@ static PyObject* Py_TLVector_new(PyTypeObject* Py_UNUSED(cls), PyObject* Py_UNUS
     return NULL;
 }
 
-static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t index) {
-    const size_t vector_size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t index_ssize) {
+    if(index_ssize > INT32_MAX || index_ssize < INT32_MIN) {
+        PyErr_SetString(PyExc_IndexError, "invalid index, expected 32-bit number");
+        return NULL;
+    }
+
+    const int32_t index = (int32_t)index_ssize;
+    const int32_t vector_size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
     if(index >= vector_size) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
         return NULL;
@@ -456,7 +468,12 @@ static PyObject* Py_TLVector_sq_item(const Py_TLVector* self, const ssize_t inde
     return Py_TLVector_getitem(self, index);
 }
 
-static void Py_TLVector_remove_at_index(const Py_TLVector* self, const size_t index) {
+static void Py_TLVector_remove_at_index(const Py_TLVector* self, const ssize_t index_ssize) {
+    if(index_ssize > INT32_MAX || index_ssize < INT32_MIN) {
+        return;
+    }
+
+    const int32_t index = (int32_t)index_ssize;
     const PyObject* old_ref = self->out_refs[index];
 
     if (self->vector->message_def->type == TLOBJECT && old_ref == NULL) {
@@ -480,11 +497,18 @@ static void Py_TLVector_remove_at_index(const Py_TLVector* self, const size_t in
     self->out_refs[new_size] = NULL;
 }
 
-static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index, PyObject* value) {
+static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index_ssize, PyObject* value) {
     if(self->readonly) {
         PyErr_SetString(PyExc_AttributeError, "Vector is read-only");
         return -1;
     }
+
+    if(index_ssize > INT32_MAX || index_ssize < INT32_MIN) {
+        PyErr_SetString(PyExc_IndexError, "invalid index, expected 32-bit number");
+        return -1;
+    }
+
+    const int32_t index = (int32_t)index_ssize;
 
     if(index >= utl_Vector_size(self->vector) || (index < 0 && value == NULL)) {
         PyErr_SetString(PyExc_IndexError, "list index out of range");
@@ -621,7 +645,7 @@ static PyObject* Py_TLVector_append(Py_TLVector* self, PyObject* args) {
 
         if(refs_capacity_old != refs_capacity) {
             self->out_refs = realloc(self->out_refs, refs_capacity * sizeof(void*));
-            for(size_t i = index + 1; i < refs_capacity; ++i) {
+            for(ssize_t i = index + 1; i < refs_capacity; ++i) {
                 self->out_refs[i] = NULL;
             }
         }

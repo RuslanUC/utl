@@ -88,17 +88,16 @@ bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
     if (a->message_def == NULL || b->message_def == NULL) {
         return false;
     }
-    if (a->message_def != NULL && a->message_def->type != b->message_def->type) {
+    if (a->message_def->type != b->message_def->type) {
         return false;
     }
-    if (a->message_def != NULL && a->message_def->type == TLOBJECT && a->message_def->sub.type_def != b->message_def->
-        sub.type_def) {
+    if (a->message_def->type == TLOBJECT && a->message_def->sub.type_def != b->message_def->sub.type_def) {
         return false;
     }
 
     const size_t el_size = a->message_def->element_size;
     size_t offset = 0;
-    for (size_t i = 0; i < a->size; i++) {
+    for (int32_t i = 0; i < a->size; i++) {
         void* value_a = a->data + offset;
         void* value_b = a->data + offset;
 
@@ -131,6 +130,10 @@ bool utl_Vector_equals(const utl_Vector* a, const utl_Vector* b) {
                     return false;
                 break;
             }
+
+            case STATIC_FIELDS_END:
+            case ALL_FIELDS_END:
+                return false;
         }
 
         offset += el_size;

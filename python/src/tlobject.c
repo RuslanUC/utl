@@ -24,13 +24,13 @@ static PyObject* Py_TLObject_getitem_regular(Py_TLObject* self, const utl_FieldD
             const utl_Int128 bytes = utl_Message_getInt128(self->message, field);
             _UTL_LOG("Get int128 field %d (%.*s) of object %p: %08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
                 ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
-            return _PyLong_FromByteArray(bytes.value, 16, true, true);
+            return _PyLong_FromByteArray((uint8_t*)bytes.value, 16, true, true);
         }
         case INT256: {
             const utl_Int256 bytes = utl_Message_getInt256(self->message, field);
             _UTL_LOG("Get int256 field %d (%.*s) of object %p: %08lx%08lx%08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
                 ((uint64_t*)bytes.value)[3], ((uint64_t*)bytes.value)[2], ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
-            return _PyLong_FromByteArray(bytes.value, 32, true, true);
+            return _PyLong_FromByteArray((uint8_t*)bytes.value, 32, true, true);
         }
         case DOUBLE: {
             const double value = utl_Message_getDouble(self->message, field);
@@ -90,7 +90,8 @@ static PyObject* Py_TLObject_getitem_regular(Py_TLObject* self, const utl_FieldD
             return result_obj;
         }
 
-        case STATIC_FIELDS_END: return NULL;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return NULL;
     }
 
     return NULL;
@@ -113,13 +114,13 @@ static PyObject* Py_TLObject_getitem_readonly(Py_TLObject* self, const utl_Field
             const utl_Int128 bytes = utl_RoMessage_getInt128(self->ro_message, field);
             _UTL_LOG("Get int128 field %d (%.*s) of object %p: %08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
                 ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
-            return _PyLong_FromByteArray(bytes.value, 16, true, true);
+            return _PyLong_FromByteArray((uint8_t*)bytes.value, 16, true, true);
         }
         case INT256: {
             const utl_Int256 bytes = utl_RoMessage_getInt256(self->ro_message, field);
             _UTL_LOG("Get int256 field %d (%.*s) of object %p: %08lx%08lx%08lx%08lx", (int)field->num, (int)field->name.size, field->name.data, self,
                 ((uint64_t*)bytes.value)[3], ((uint64_t*)bytes.value)[2], ((uint64_t*)bytes.value)[1], ((uint64_t*)bytes.value)[0]);
-            return _PyLong_FromByteArray(bytes.value, 32, true, true);
+            return _PyLong_FromByteArray((uint8_t*)bytes.value, 32, true, true);
         }
         case DOUBLE: {
             const double value = utl_RoMessage_getDouble(self->ro_message, field);
@@ -187,7 +188,8 @@ static PyObject* Py_TLObject_getitem_readonly(Py_TLObject* self, const utl_Field
             return result_obj;
         }
 
-        case STATIC_FIELDS_END: return NULL;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return NULL;
     }
 
     return NULL;
@@ -421,7 +423,8 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
             break;
         }
 
-        case STATIC_FIELDS_END: return NULL;
+        case STATIC_FIELDS_END:
+        case ALL_FIELDS_END: return NULL;
     }
 
     if(item == Py_True || item == Py_False)
@@ -661,7 +664,7 @@ static PyObject* Py_TLObject_repr(Py_TLObject* self) {
     tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = '(';
 
-    for(size_t i = 0; i < def->fields_num; i++) {
+    for(uint16_t i = 0; i < def->fields_num; i++) {
         utl_FieldDef field = def->fields[i];
         tmp = utl_EncodeBuf_alloc(&repr_buf, field.name.size);
         memcpy(tmp, field.name.data, field.name.size);
@@ -776,7 +779,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             return NULL;
         }
         utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
-        const uint32_t tl_id = utl_decode_int32(&dbuf);
+        const uint32_t tl_id = utl_decode_uint32(&dbuf);
         def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
             PyErr_SetString(PyExc_TypeError, "Unknown object id");
@@ -792,7 +795,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 
     if(!deserialize) {
         utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
-        const uint32_t tl_id = utl_decode_int32(&dbuf);
+        const uint32_t tl_id = utl_decode_uint32(&dbuf);
         if(tl_id != def->id) {
             PyErr_SetString(PyExc_ValueError, "Invalid object id");
             return NULL;

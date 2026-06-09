@@ -82,7 +82,7 @@ int32_t utl_RoVector_getInt32(const utl_RoVector* vector, const int32_t index) {
     if (vector->message_def->type != INT32 || index >= vector->elements_count)
         return 0;
 
-    const int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    const int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;
     if(pos < 0)
         return 0;
 
@@ -93,7 +93,7 @@ int64_t utl_RoVector_getInt64(const utl_RoVector* vector, const int32_t index) {
     if (vector->message_def->type != INT64 || index >= vector->elements_count)
         return 0;
 
-    const ssize_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    const ssize_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;;
     if(pos < 0)
         return 0;
 
@@ -105,7 +105,7 @@ utl_Int128 utl_RoVector_getInt128(const utl_RoVector* vector, const int32_t inde
     if (vector->message_def->type != INT128 || index >= vector->elements_count)
         return empty_result;
 
-    const int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;
+    const int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;
     if(pos < 0)
         return empty_result;
 
@@ -117,7 +117,7 @@ utl_Int256 utl_RoVector_getInt256(const utl_RoVector* vector, const int32_t inde
     if (vector->message_def->type != INT256 || index >= vector->elements_count)
         return empty_result;
 
-    const int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    const int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;;
     if(pos < 0)
         return empty_result;
 
@@ -128,7 +128,7 @@ double utl_RoVector_getDouble(const utl_RoVector* vector, const int32_t index) {
     if (vector->message_def->type != DOUBLE || index >= vector->elements_count)
         return 0;
 
-    const int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    const int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;;
     if(pos < 0)
         return 0;
 
@@ -139,7 +139,7 @@ bool utl_RoVector_getBool(const utl_RoVector* vector, const int32_t index) {
     if (vector->message_def->type != FULL_BOOL || index >= vector->elements_count)
         return 0;
 
-    const int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;
+    const int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;
     if(pos < 0)
         return 0;
 
@@ -152,7 +152,7 @@ utl_StringView utl_RoVector_getBytes_internal(const utl_RoVector* vector, const 
     if (vector->message_def->type != check_type || index >= vector->elements_count)
         return empty;
 
-    int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;
+    int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;
     if(pos < 0)
         return empty;
 
@@ -180,7 +180,7 @@ utl_RoMessage* utl_RoVector_getMessage(const utl_RoVector* vector, const int32_t
     if (vector->message_def->type != TLOBJECT || index >= vector->elements_count)
         return 0;
 
-    int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;;
     if(pos < 0)
         return 0;
 
@@ -204,7 +204,7 @@ utl_RoVector* utl_RoVector_getVector(const utl_RoVector* vector, const int32_t i
     if (vector->message_def->type != VECTOR || index >= vector->elements_count)
         return 0;
 
-    int32_t pos = vector->field_positions ? vector->field_positions[index] : vector->element_size * index;;
+    int32_t pos = vector->field_positions ? vector->field_positions[index] : (int32_t)vector->element_size * index;;
     if(pos < 0)
         return 0;
 

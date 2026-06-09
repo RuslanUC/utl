@@ -21,7 +21,7 @@ add_library(utl STATIC
         src/logging.c
         src/scratch_alloc.c)
 target_include_directories(utl PUBLIC include)
-target_compile_options(utl PUBLIC "-fPIC")
+target_compile_options(utl PUBLIC -fPIC -Wall -Wextra)
 
 include(FetchContent)
 FetchContent_Declare(unity

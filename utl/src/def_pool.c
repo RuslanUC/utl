@@ -47,7 +47,7 @@ void utl_DefPool_addMessage(utl_DefPool* pool, utl_MessageDef* message) {
 }
 
 void utl_DefPool_removeMessage(utl_DefPool* pool, const uint32_t tl_id) {
-    hmdel(pool->message_defs, tl_id);
+    (void)hmdel(pool->message_defs, tl_id);
 }
 
 utl_TypeDef* utl_DefPool_getType(utl_DefPool* pool, const utl_StringView name) {
@@ -84,7 +84,7 @@ void utl_DefPool_removeType(utl_DefPool* pool, const utl_StringView name) {
     utl_Arena_save(&pool->arena, &save);
 
     const utl_StringView tmp = utl_StringView_clone(&pool->arena, name);
-    shdel(pool->types, tmp.data);
+    (void)shdel(pool->types, tmp.data);
 
     utl_Arena_restore(&pool->arena, save);
 }

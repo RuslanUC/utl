@@ -46,6 +46,12 @@ int32_t utl_decode_int32(utl_DecodeBuf* buffer) {
     return result;
 }
 
+uint32_t utl_decode_uint32(utl_DecodeBuf* buffer) {
+    uint32_t result;
+    utl_decode_intX((char*)&result, buffer, 4);
+    return result;
+}
+
 int64_t utl_decode_int64(utl_DecodeBuf* buffer) {
     int64_t result;
     utl_decode_intX((char*)&result, buffer, 8);
@@ -173,7 +179,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 break;
             }
             case TLOBJECT: {
-                const uint32_t tl_id = utl_decode_int32(buf);
+                const uint32_t tl_id = utl_decode_uint32(buf);
                 utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
                 if (!new_def) {
                     if(status) {
@@ -206,7 +212,7 @@ bool utl_decode_vector(utl_Vector* vector, utl_DefPool* def_pool, const utl_Mess
                 break;
             }
             case VECTOR: {
-                if (utl_decode_int32(buf) != VECTOR_CONSTR) {
+                if (utl_decode_uint32(buf) != VECTOR_CONSTR) {
                     if(status) {
                         status->ok = false;
                         strncpy(status->message, "Expected vector id", UTL_STATUS_MAX_MESSAGE_SIZE);
@@ -247,7 +253,7 @@ bool utl_decode_field(const utl_Message* message, utl_DefPool* def_pool, const u
         const uint8_t flag_bit = field->flag_info;
         const utl_FieldDef* flags_field = message->message_def->flags_fields[field->flag_num - 1];
         const uint32_t flags = utl_Message_getInt32(message, flags_field);
-        const bool field_present = (flags & (1 << flag_bit)) == (1 << flag_bit);
+        const bool field_present = (flags & (1 << flag_bit)) != 0;
         if(field->type == BIT_BOOL)
             utl_Message_setBool(message, field, field_present);
         if(!field_present)
@@ -315,7 +321,7 @@ bool utl_decode_field(const utl_Message* message, utl_DefPool* def_pool, const u
             break;
         }
         case TLOBJECT: {
-            const uint32_t tl_id = utl_decode_int32(buf);
+            const uint32_t tl_id = utl_decode_uint32(buf);
             utl_MessageDef* new_def = utl_DefPool_getMessage(def_pool, tl_id);
             if (!new_def) {
                 if(status) {
@@ -348,7 +354,7 @@ bool utl_decode_field(const utl_Message* message, utl_DefPool* def_pool, const u
             break;
         }
         case VECTOR: {
-            if(utl_decode_int32(buf) != VECTOR_CONSTR) {
+            if(utl_decode_uint32(buf) != VECTOR_CONSTR) {
                 if(status) {
                     status->ok = false;
                     strncpy(status->message, "Expected vector id", UTL_STATUS_MAX_MESSAGE_SIZE);
