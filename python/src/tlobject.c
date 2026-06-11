@@ -225,7 +225,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         case FLAGS:
         case INT32: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             const int64_t num = PyLong_AsLong(item);
@@ -239,7 +239,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case INT64: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Message_setInt64(self->message, field, PyLong_AsLong(item));
@@ -248,7 +248,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case INT128: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             const utl_Int128 bytes = {{0}};
@@ -264,7 +264,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case INT256: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             const utl_Int256 bytes = {{0}};
@@ -280,7 +280,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case DOUBLE: {
             if(!PyFloat_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"float\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"float\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Message_setDouble(self->message, field, PyFloat_AsDouble(item));
@@ -290,7 +290,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         case FULL_BOOL:
         case BIT_BOOL: {
             if(!PyBool_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"bool\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"bool\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Message_setBool(self->message, field, item == Py_True);
@@ -299,7 +299,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case BYTES: {
             if(!PyBytes_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"bytes\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"bytes\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             char* buf;
@@ -308,7 +308,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             if(len > UTL_MAX_STRINT_LENGTH) {
-                PyErr_SetString(PyExc_ValueError, "bytes object is too big");
+                PyErr_Format(PyExc_ValueError, "bytes object is too big, maximum allowed length is %zu", UTL_MAX_STRINT_LENGTH);
                 return false;
             }
             const utl_StringView bytes = {
@@ -321,7 +321,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case STRING: {
             if(!PyUnicode_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"str\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"str\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             ssize_t len;
@@ -330,7 +330,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
                 return false;
             }
             if(len > UTL_MAX_STRINT_LENGTH) {
-                PyErr_SetString(PyExc_ValueError, "string is too big");
+                PyErr_Format(PyExc_ValueError, "string object is too big, maximum allowed length is %zu", UTL_MAX_STRINT_LENGTH);
                 return false;
             }
             const utl_StringView bytes = {
@@ -343,8 +343,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case TLOBJECT: {
             if(!PyObject_TypeCheck(item, tlobject_type)) {
-                // TODO: use PyType_GetName(Py_TYPE(item))
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"TLObject\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
@@ -368,7 +367,7 @@ static bool Py_TLObject_setitem(Py_TLObject* self, const utl_FieldDef* field, Py
         }
         case VECTOR: {
             if(!PyList_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"list\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"list\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
 
@@ -782,7 +781,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         const uint32_t tl_id = utl_decode_uint32(&dbuf);
         def = utl_DefPool_getMessage(state->c_def_pool, tl_id);
         if (!def) {
-            PyErr_SetString(PyExc_TypeError, "Unknown object id");
+            PyErr_Format(PyExc_ValueError, "Unknown object id: %u", tl_id);
             return NULL;
         }
 
@@ -797,7 +796,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
         const uint32_t tl_id = utl_decode_uint32(&dbuf);
         if(tl_id != def->id) {
-            PyErr_SetString(PyExc_ValueError, "Invalid object id");
+            PyErr_Format(PyExc_ValueError, "Unknown object id: expected %u, got %u", def->id, tl_id);
             return NULL;
         }
 
@@ -822,7 +821,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         utl_Status status;
         const size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
         if(!status.ok) {
-            PyErr_SetString(PyExc_ValueError, status.message);
+            PyErr_Format(PyExc_ValueError, "Failed to read object: %s", status.message);
             return NULL;
         }
         if(bytes_read) {

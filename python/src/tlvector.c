@@ -188,16 +188,16 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         case FLAGS:
         case INT32: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
-            const int32_t value = PyLong_AsLong(item);
+            const int32_t value = (int32_t)PyLong_AsLong(item);
             index >= 0 ? utl_Vector_setInt32(vector, index, value) : utl_Vector_appendInt32(vector, value);
             return true;
         }
         case INT64: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             const int64_t value = PyLong_AsLong(item);
@@ -206,7 +206,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case INT128: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Int128 result;
@@ -220,7 +220,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case INT256: {
             if(!PyLong_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"int\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"int\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Int256 result;
@@ -234,7 +234,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case DOUBLE: {
             if(!PyFloat_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"float\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"float\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             const double value = PyFloat_AsDouble(item);
@@ -244,7 +244,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         case FULL_BOOL:
         case BIT_BOOL: {
             if(!PyBool_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"bool\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"bool\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             index >= 0 ? utl_Vector_setBool(vector, index, item == Py_True) : utl_Vector_appendBool(vector, item == Py_True);
@@ -252,7 +252,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case BYTES: {
             if(!PyBytes_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"bytes\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"bytes\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             char* buf;
@@ -261,7 +261,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
                 return false;
             }
             if(len > UTL_MAX_STRINT_LENGTH) {
-                PyErr_SetString(PyExc_ValueError, "bytes object is too big");
+                PyErr_Format(PyExc_ValueError, "bytes object is too big, maximum allowed length is %zu", UTL_MAX_STRINT_LENGTH);
                 return false;
             }
             const utl_StringView bytes = {.size = len, .data = buf};
@@ -270,7 +270,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case STRING: {
             if(!PyUnicode_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"str\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"str\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             ssize_t len;
@@ -279,7 +279,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
                 return false;
             }
             if(len > UTL_MAX_STRINT_LENGTH) {
-                PyErr_SetString(PyExc_ValueError, "string is too big");
+                PyErr_Format(PyExc_ValueError, "string object is too big, maximum allowed length is %zu", UTL_MAX_STRINT_LENGTH);
                 return false;
             }
             const utl_StringView bytes = {.size = len, .data = (char*)buf};
@@ -288,7 +288,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case TLOBJECT: {
             if(!PyObject_TypeCheck(item, tlobject_type)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"TLObject\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"TLObject\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
             utl_Message* message = ((Py_TLObject*)item)->message;
@@ -316,7 +316,7 @@ bool Py_TLVector_item_set(utl_Vector* vector, PyObject* item, const int32_t inde
         }
         case VECTOR: {
             if(!PyList_Check(item)) {
-                PyErr_SetString(PyExc_TypeError, "expected object of type \"list\"");
+                PyErr_Format(PyExc_TypeError, "expected object of type \"list\", got \"%s\"", Py_TYPE(item)->tp_name);
                 return false;
             }
 
@@ -535,8 +535,8 @@ static int Py_TLVector_sq_setitem(const Py_TLVector* self, const ssize_t index_s
 }
 
 static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
-    const size_t size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
-    const size_t alloc_size = size * 8;
+    const int32_t size = self->readonly ? utl_RoVector_size(self->ro_vector) : utl_Vector_size(self->vector);
+    const int32_t alloc_size = size * 8;
 
     utl_EncodeBuf repr_buf = {
         .data = malloc(alloc_size),
@@ -547,8 +547,7 @@ static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
     char* tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = '[';
 
-
-    for(size_t i = 0; i < size; i++) {
+    for(int32_t i = 0; i < size; i++) {
         PyObject* value = Py_TLVector_getitem(self, i);
 
         PyObject* repr = PyObject_Repr(value);
@@ -587,7 +586,7 @@ static PyObject* Py_TLVector_repr(const Py_TLVector* self) {
     tmp = utl_EncodeBuf_alloc(&repr_buf, 1);
     *tmp = ']';
 
-    PyObject* result = PyUnicode_FromStringAndSize(repr_buf.data, repr_buf.pos);
+    PyObject* result = PyUnicode_FromStringAndSize(repr_buf.data, (ssize_t)repr_buf.pos);
     free(repr_buf.data);
 
     return result;
