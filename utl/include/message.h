@@ -1,17 +1,23 @@
 #pragma once
 #include <stdbool.h>
+
 #include "message_def.h"
 #include "message_hdr.h"
 #include "vector.h"
 #include "builtins.h"
+#include "arena_static_refcounted.h"
 
 typedef struct utl_Message {
     UTL_MESSAGE_HEADER;
 
     void* data;
+
+    utl_StaticRefCntArena* arena;
+    bool arena_freed;
 } utl_Message;
 
 utl_Message* utl_Message_new(utl_MessageDef* message_def);
+utl_Message* utl_Message_new_single_alloc(utl_MessageDef* message_def, utl_StaticRefCntArena* arena);
 void utl_Message_free(utl_Message* message);
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field);

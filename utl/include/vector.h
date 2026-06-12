@@ -5,6 +5,7 @@
 #include "message_def.h"
 #include "vector_hdr.h"
 #include "builtins.h"
+#include "arena_static_refcounted.h"
 
 struct utl_Message;
 
@@ -14,10 +15,16 @@ typedef struct utl_Vector {
     int32_t size;
     int32_t capacity;
     void* data;
+
+    utl_StaticRefCntArena* arena;
+    bool arena_freed;
+    bool data_on_arena;
 } utl_Vector;
 
 utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, int32_t initial_size);
+utl_Vector* utl_Vector_new_single_alloc(utl_MessageDefVector* vector_def, int32_t initial_size, utl_StaticRefCntArena* arena);
 void utl_Vector_free(utl_Vector* vector);
+
 int32_t utl_Vector_capacity(const utl_Vector* vector);
 void utl_Vector_remove(utl_Vector* vector, int32_t index);
 int32_t utl_Vector_size(const utl_Vector* vector);

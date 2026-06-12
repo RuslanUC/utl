@@ -7,6 +7,7 @@
 #include "string.h"
 #include "vector.h"
 #include "builtins.h"
+#include "decoder.h"
 #include "encoder.h"
 #include "string_pool.h"
 
@@ -15,8 +16,22 @@ utl_Message* utl_Message_new(utl_MessageDef* message_def) {
 
     message->message_def = message_def;
     message->userdata = NULL;
-    message->data = (void*)(message + 1);
+    message->data = (uint8_t*)(message + 1);
+    message->arena = NULL;
     memset(message->data, 0, message_def->size);
+    return message;
+}
+
+utl_Message* utl_Message_new_single_alloc(utl_MessageDef* message_def, utl_StaticRefCntArena* arena) {
+    utl_Message* message = utl_StaticRefCntArena_alloc(arena, sizeof(utl_Message));
+
+    message->message_def = message_def;
+    message->userdata = NULL;
+    message->data = utl_StaticRefCntArena_alloc(arena, message_def->size);
+    message->arena = arena;
+    message->arena_freed = false;
+    memset(message->data, 0, message_def->size);
+
     return message;
 }
 
@@ -31,7 +46,13 @@ void utl_Message_free(utl_Message* message) {
         utl_StringPool_free(string);
     }
 
-    free(message);
+    if(message->arena == NULL) {
+        free(message);
+    } else if(!message->arena_freed) {
+        message->arena_freed = true;
+        utl_StaticRefCntArena_decref(message->arena);
+        utl_StaticRefCntArena_decref(message->arena);
+    }
 }
 
 bool utl_Message_hasField(const utl_Message* message, const utl_FieldDef* field) {

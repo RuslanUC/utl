@@ -816,11 +816,11 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
 
         return (PyObject*)obj;
     } else {
-        Py_TLObject* obj = (Py_TLObject*)Py_TLObject_new(cls, NULL, NULL);
+        utl_Status status = {0};
+        utl_Message* out = NULL;
 
-        utl_Status status;
-        const size_t read = utl_decode(obj->message, state->c_def_pool, buf, buf_len, &status);
-        if(!status.ok) {
+        const ssize_t read = utl_decode_singlealloc(&out, def, state->c_def_pool, buf, buf_len, &status);
+        if(read < 0 || out == NULL) {
             PyErr_Format(PyExc_ValueError, "Failed to read object: %s", status.message);
             return NULL;
         }
@@ -828,7 +828,10 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
             *bytes_read = read;
         }
 
-        return (PyObject*)obj;
+        PyObject* obj = cls->tp_alloc(cls, 0);
+        Py_TLObject_init_message((Py_TLObject*)obj, def, out);
+
+        return obj;
     }
 }
 

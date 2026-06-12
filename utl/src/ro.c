@@ -120,7 +120,7 @@ bool utl_RoMessage_get_positions(utl_MessageDef* def, utl_DefPool* def_pool, utl
     uint32_t flags_fields[4] = {0};
     size_t flags_num = 0;
 
-    for (int i = 0; i < def->fields_num; i++) {
+    for (uint16_t i = 0; i < def->fields_num; i++) {
         const utl_FieldDef field = def->fields[i];
 
         if (field.flag_num && field.type != FLAGS) {

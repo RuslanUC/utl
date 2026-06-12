@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #ifndef NDEBUG
-extern bool utl_debug_logging;
+extern int utl_debug_logging;
 extern int utl_logging_indent_level;
 #endif
 

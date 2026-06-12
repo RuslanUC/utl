@@ -16,6 +16,25 @@ utl_Vector* utl_Vector_new(utl_MessageDefVector* vector_def, const int32_t initi
     vector->size = 0;
     vector->capacity = initial_size;
     vector->data = calloc(initial_size, vector_def->element_size);
+    vector->arena = NULL;
+    vector->arena_freed = false;
+    vector->data_on_arena = false;
+
+    return vector;
+}
+
+utl_Vector* utl_Vector_new_single_alloc(utl_MessageDefVector* vector_def, const int32_t initial_size, utl_StaticRefCntArena* arena) {
+    utl_Vector* vector = utl_StaticRefCntArena_alloc(arena, sizeof(utl_Vector));
+    vector->message_def = vector_def;
+    vector->userdata = NULL;
+    vector->size = 0;
+    vector->capacity = initial_size;
+    vector->data = utl_StaticRefCntArena_alloc(arena, initial_size * vector_def->element_size);
+    memset(vector->data, 0, initial_size * vector_def->element_size);
+    vector->arena = arena;
+    vector->arena_freed = false;
+    vector->data_on_arena = true;
+
     return vector;
 }
 
@@ -26,15 +45,24 @@ void utl_Vector_free(utl_Vector* vector) {
 
     if(vector->message_def->type == STRING || vector->message_def->type == BYTES) {
         for(int i = 0; i < vector->size; i++) {
-            utl_StringView string = ((utl_StringView*)vector->data)[i];
+            const utl_StringView string = ((utl_StringView*)vector->data)[i];
             if(!string.data)
                 continue;
             utl_StringPool_free(string);
         }
     }
 
-    free(vector->data);
-    free(vector);
+    if(vector->arena == NULL) {
+        free(vector->data);
+        free(vector);
+    } else if(!vector->arena_freed) {
+        vector->arena_freed = true;
+        if(vector->data_on_arena)
+            utl_StaticRefCntArena_decref(vector->arena);
+        else
+            free(vector->data);
+        utl_StaticRefCntArena_decref(vector->arena);
+    }
 }
 
 int32_t utl_Vector_capacity(const utl_Vector* vector) {
@@ -47,9 +75,17 @@ void utl_Vector_resize(utl_Vector* vector, const bool force) {
     if (force || vector->size >= capacity) {
         const size_t element_size = vector->message_def->element_size;
         const int32_t old_capacity = vector->capacity;
-        vector->capacity = capacity * 1.25 + 1;
-        vector->data = realloc(vector->data, element_size * vector->capacity);
-        memset(vector->data + vector->size * element_size, 0, element_size * (vector->capacity - old_capacity));
+        vector->capacity = capacity * 2;
+        if(vector->data_on_arena) {
+            vector->data_on_arena = false;
+            const void* old_data = vector->data;
+            vector->data = calloc(vector->capacity, element_size);
+            memcpy(vector->data, old_data, old_capacity * element_size);
+            utl_StaticRefCntArena_decref(vector->arena);
+        } else {
+            vector->data = realloc(vector->data, element_size * vector->capacity);
+            memset(vector->data + vector->size * element_size, 0, element_size * (vector->capacity - old_capacity));
+        }
     }
 }
 

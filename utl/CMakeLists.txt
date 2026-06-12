@@ -19,7 +19,8 @@ add_library(utl STATIC
         src/parser.c
         src/stb_ds.c
         src/logging.c
-        src/scratch_alloc.c)
+        src/scratch_alloc.c
+        src/arena_static_refcounted.c)
 target_include_directories(utl PUBLIC include)
 target_compile_options(utl PUBLIC -fPIC -Wall -Wextra)
 

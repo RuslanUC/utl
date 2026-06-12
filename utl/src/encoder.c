@@ -36,7 +36,7 @@ void utl_encode_int64(int64_t value, utl_EncodeBuf* buf) {
 }
 
 void utl_encode_double(double value, utl_EncodeBuf* buf) {
-    utl_encode_int64(*(int64_t*)&value, buf);
+    utl_encode_intX((char*)&value, buf, 8);
 }
 
 void utl_encode_bool(const bool value, utl_EncodeBuf* buf) {

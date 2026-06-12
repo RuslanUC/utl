@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 #include "message.h"
 #include "def_pool.h"
 #include "status.h"
@@ -22,4 +24,8 @@ double utl_decode_double(utl_DecodeBuf* buffer);
 bool utl_decode_bool(utl_DecodeBuf* buffer);
 utl_StringView utl_decode_bytes(utl_DecodeBuf* buffer, utl_Status* status);
 
-size_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, uint8_t* buf, size_t size, utl_Status* status);
+ssize_t utl_decode(utl_Message* out_message, utl_DefPool* def_pool, uint8_t* buf, size_t size, utl_Status* status);
+ssize_t utl_decode_singlealloc(utl_Message** out, utl_MessageDef* def, utl_DefPool* def_pool, uint8_t* buf, size_t size, utl_Status* status);
+
+ssize_t utl_Message_measure(utl_MessageDef* def, utl_DefPool* def_pool, utl_DecodeBuf* buffer);
+ssize_t utl_Vector_measure(utl_MessageDefVector* vector_def, int32_t length, utl_DefPool* def_pool, utl_DecodeBuf* buffer);
