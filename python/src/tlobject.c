@@ -796,7 +796,7 @@ static PyObject* Py_TLObject_read(PyTypeObject* cls, uint8_t* buf, size_t buf_le
         utl_DecodeBuf dbuf = { .data = buf, .pos = 0, .size = 4 };
         const uint32_t tl_id = utl_decode_uint32(&dbuf);
         if(tl_id != def->id) {
-            PyErr_Format(PyExc_ValueError, "Unknown object id: expected %u, got %u", def->id, tl_id);
+            PyErr_Format(PyExc_ValueError, "Invalid object id: expected %u, got %u", def->id, tl_id);
             return NULL;
         }
 
