@@ -84,7 +84,7 @@ bool utl_Message_equals(const utl_Message* a, const utl_Message* b) {
         utl_FieldDef field = a->message_def->fields[i];
         if (field.flag_num != 0 && field.type != FLAGS) {
             const bool has_a = utl_Message_hasField(a, &field);
-            const bool has_b = utl_Message_hasField(a, &field);
+            const bool has_b = utl_Message_hasField(b, &field);
 
             if(has_a ^ has_b)
                 return false;
